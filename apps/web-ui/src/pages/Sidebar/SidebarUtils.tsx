@@ -79,11 +79,12 @@ export const transformMenuData = (
     // Determine the relevant order string for the current role
     let prefix = "M";
     if (role) {
-      if (role === "super_admin") prefix = "SA";
-      else if (role === "sch_admin") prefix = "A";
-      else if (role === "teacher") prefix = "T";
-      else if (role === "student") prefix = "S";
-      else if (role === "parent") prefix = "P";
+      const r = role.toLowerCase();
+      if (r === "super_admin") prefix = "SA";
+      else if (r === "school_admin" || r === "sch_admin") prefix = "A";
+      else if (r === "teacher") prefix = "T";
+      else if (r === "student") prefix = "S";
+      else if (r === "parent") prefix = "P";
     }
 
     const getOrder = (item: any) => {

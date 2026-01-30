@@ -73,13 +73,40 @@ const getMenus = async (req, res) => {
         status: "active",
       },
       { menuAccessRoles: 0 },
-    ).sort({ menuOrder: 1 });
+    );
+
+    // Sort in memory because we need to find the specific order code in the array relevant to the role
+    let prefix = "M";
+    const r = role.toLowerCase();
+    if (r === "super_admin") prefix = "SA";
+    else if (r === "school_admin" || r === "sch_admin") prefix = "A";
+    else if (r === "teacher") prefix = "T";
+    else if (r === "parent") prefix = "P";
+    else if (r === "student") prefix = "S";
+
+    const getRoleOrder = (menu) => {
+      const orders = Array.isArray(menu.menuOrder)
+        ? menu.menuOrder
+        : [menu.menuOrder];
+      // Find code starting with prefix
+      const code = orders.find((o) => String(o).startsWith(prefix));
+      return code || "Z99999"; // Fallback to end if no code found
+    };
+
+    const sortedMenus = menus.sort((a, b) => {
+      const orderA = getRoleOrder(a);
+      const orderB = getRoleOrder(b);
+      return orderA.localeCompare(orderB, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    });
 
     return res.status(200).json({
       success: true,
       message: "Menus fetched successfully",
-      data: menus,
-      count: menus.length,
+      data: sortedMenus,
+      count: sortedMenus.length,
     });
   } catch (error) {
     console.error("Error fetching menus:", error);
