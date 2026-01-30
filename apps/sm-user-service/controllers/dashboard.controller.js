@@ -115,8 +115,9 @@ const getMenus = async (req, res) => {
       const orders = Array.isArray(menu.menuOrder)
         ? menu.menuOrder
         : [menu.menuOrder];
-      // Find code starting with prefix
-      const code = orders.find((o) => String(o).startsWith(prefix));
+      // Find code starting with prefix followed by a digit (to avoid S matching SA)
+      const regex = new RegExp(`^${prefix}\\d`);
+      const code = orders.find((o) => regex.test(String(o)));
       return code || "Z99999"; // Fallback to end if no code found
     };
 

@@ -91,8 +91,9 @@ export const transformMenuData = (
       const orders = Array.isArray(item.menuOrder)
         ? item.menuOrder
         : [item.menuOrder];
-      // Find order starting with prefix
-      return orders.find((o: any) => String(o).startsWith(prefix)) || "";
+      // Find order starting with prefix followed by a digit (to avoid S matching SA)
+      const regex = new RegExp(`^${prefix}\\d`);
+      return orders.find((o: any) => regex.test(String(o))) || "";
     };
 
     const orderA = getOrder(a);
