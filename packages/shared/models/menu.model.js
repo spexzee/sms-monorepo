@@ -45,6 +45,10 @@ const menuSchema = new mongoose.Schema(
       },
       default: null,
     },
+    deactivatedRoles: {
+      type: [String],
+      default: [],
+    },
     status: {
       type: String,
       enum: ["active", "inactive"],

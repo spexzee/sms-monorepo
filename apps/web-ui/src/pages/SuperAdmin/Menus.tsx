@@ -13,11 +13,13 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
+  ToggleOn as ToggleOnIcon,
+  ToggleOff as ToggleOffIcon,
 } from "@mui/icons-material";
 import DataTable, { type Column } from "../../components/Table/DataTable";
 import AddMenusDialog from "../../components/Dialogs/AddMenusDialog";
 import ConfirmationDialog from "../../components/Dialogs/ConfirmationDialog";
-import { useGetMenus, useDeleteMenu } from "../../queries/Menus";
+import { useGetMenus, useDeleteMenu, useUpdateMenu } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
 import type { Menu } from "../../types";
 
@@ -80,10 +82,31 @@ const Menus = () => {
   };
 
   const deleteMutation = useDeleteMenu();
+  const updateMutation = useUpdateMenu();
 
   const handleEditClick = (menu: Menu) => {
     setSelectedMenu(menu);
     setIsAddDialogOpen(true);
+  };
+
+  const handleRoleStatusToggle = async (menu: Menu, role: string) => {
+    try {
+      const currentDeactivated = menu.deactivatedRoles || [];
+      let newDeactivated: string[];
+
+      if (currentDeactivated.includes(role)) {
+        newDeactivated = currentDeactivated.filter((r) => r !== role);
+      } else {
+        newDeactivated = [...currentDeactivated, role];
+      }
+
+      await updateMutation.mutateAsync({
+        menuId: menu.menuId,
+        data: { deactivatedRoles: newDeactivated },
+      });
+    } catch (err) {
+      console.error("Failed to update role status:", err);
+    }
   };
 
   const handleDeleteClick = (menu: Menu) => {
@@ -181,13 +204,19 @@ const Menus = () => {
     {
       id: "menuAccessRoles",
       label: "Role",
-      minWidth: 200,
-      format: (value: any) => {
+      minWidth: 250,
+      format: (value: any, row: Menu) => {
         if (!value) return null;
         const roles = Array.isArray(value) ? value : [value];
+        const deactivatedRoles = row.deactivatedRoles || [];
+        const isMenuInactive = row.status === "inactive";
+
         return (
           <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
             {roles.map((role: string) => {
+              const isRoleDeactivated = deactivatedRoles.includes(role);
+              const isInactive = isMenuInactive || isRoleDeactivated;
+
               let color:
                 | "default"
                 | "primary"
@@ -215,15 +244,40 @@ const Menus = () => {
                 default:
                   color = "default";
               }
+
               return (
-                <Chip
+                <Tooltip
                   key={role}
-                  label={role.replace(/_/g, " ")}
-                  size="small"
-                  variant="filled"
-                  color={color}
-                  sx={{ textTransform: "capitalize", fontWeight: 500 }}
-                />
+                  title={`${isRoleDeactivated ? "Activate" : "Deactivate"} for ${role.replace(/_/g, " ")}`}
+                >
+                  <Chip
+                    label={role.replace(/_/g, " ")}
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRoleStatusToggle(row, role);
+                    }}
+                    variant={isInactive ? "outlined" : "filled"}
+                    color={isInactive ? "default" : color}
+                    icon={
+                      isRoleDeactivated ? (
+                        <ToggleOffIcon fontSize="small" />
+                      ) : (
+                        <ToggleOnIcon fontSize="small" />
+                      )
+                    }
+                    sx={{
+                      textTransform: "capitalize",
+                      fontWeight: 500,
+                      textDecoration: isInactive ? "line-through" : "none",
+                      opacity: isInactive ? 0.6 : 1,
+                      cursor: "pointer",
+                      "& .MuiChip-icon": {
+                        color: isInactive ? "inherit" : "white",
+                      },
+                    }}
+                  />
+                </Tooltip>
               );
             })}
           </Box>

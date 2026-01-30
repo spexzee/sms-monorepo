@@ -55,6 +55,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
     menuType: "main",
     status: "active",
     menuOrder: "", // string | number, initializing as empty string for auto-gen
+    deactivatedRoles: [],
   });
 
   const [menuType, setMenuType] = useState<"main" | "sub">("main");
@@ -78,9 +79,9 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
     return Array.isArray(roles) ? roles : [roles];
   }, [menuType, formData.parentMenuId, menus]);
 
-  // Automatically add roles from the parent menu and ensure they are present
+  // Automatically suggest roles from the parent menu when a parent is first selected during creation
   useEffect(() => {
-    if (selectedParentRoles && selectedParentRoles.length > 0) {
+    if (!menuToEdit && selectedParentRoles && selectedParentRoles.length > 0) {
       setFormData((prev) => {
         const currentRoles = Array.isArray(prev.menuAccessRoles)
           ? prev.menuAccessRoles
@@ -103,7 +104,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
         return prev;
       });
     }
-  }, [selectedParentRoles]);
+  }, [selectedParentRoles, menuToEdit]);
 
   // Filter for potential parent menus (Main Menus that are not submenus themselves)
   const parentMenuOptions =
@@ -125,6 +126,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
         menuType: menuToEdit.menuType || "main",
         status: menuToEdit.status || "active",
         menuOrder: menuToEdit.menuOrder ?? "",
+        deactivatedRoles: menuToEdit.deactivatedRoles || [],
       });
       setMenuType(menuToEdit.menuType || "main");
     }
@@ -210,6 +212,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
       menuType: "main",
       status: "active",
       menuOrder: "",
+      deactivatedRoles: [],
     });
     setMenuType("main");
     setErrors({});
@@ -300,22 +303,6 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                   required
                   fullWidth
                 />
-              </Grid>
-
-              {/* Status Selection */}
-              <Grid size={{ xs: 12 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    name="status"
-                    value={formData.status}
-                    onChange={(e) => handleChange(e as any)}
-                    label="Status"
-                  >
-                    <MenuItem value="active">Active</MenuItem>
-                    <MenuItem value="inactive">Inactive</MenuItem>
-                  </Select>
-                </FormControl>
               </Grid>
 
               {/* Menu Type Selection */}
@@ -461,7 +448,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       label="Prefix"
                       value={activeOrderPrefix}
                       onChange={(e) => setActiveOrderPrefix(e.target.value)}
-                      disabled={!menuToEdit}
+                      disabled={!formData.menuAccessRoles?.length}
                     >
                       <MenuItem value="SA">SA (Super Admin)</MenuItem>
                       <MenuItem value="A">A (School Admin)</MenuItem>
@@ -578,9 +565,8 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                                 key={value}
                                 label={roleLabel || value}
                                 onDelete={
-                                  isInherited
-                                    ? undefined
-                                    : () => {
+                                  menuToEdit || !isInherited
+                                    ? () => {
                                         const currentRoles = Array.isArray(
                                           formData.menuAccessRoles,
                                         )
@@ -594,6 +580,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                                           menuAccessRoles: newRoles,
                                         }));
                                       }
+                                    : undefined
                                 }
                                 onMouseDown={(event) => {
                                   event.stopPropagation();
@@ -621,25 +608,36 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                         ? formData.menuAccessRoles
                         : [formData.menuAccessRoles];
 
-                      // Role is inherited (mandatory) if it's already assigned to the parent
-                      const isInherited =
-                        selectedParentRoles !== null &&
-                        selectedParentRoles.includes(role.value);
+                  
 
                       return (
                         <MenuItem
                           key={role.value}
                           value={role.value}
-                          disabled={isInherited}
+                          disabled={
+                            !menuToEdit &&
+                            menuType === "sub" &&
+                            selectedParentRoles !== null &&
+                            selectedParentRoles.includes(role.value)
+                          }
                         >
                           <Checkbox
                             checked={selectedArray.indexOf(role.value) > -1}
-                            disabled={isInherited}
+                            disabled={
+                              !menuToEdit &&
+                              menuType === "sub" &&
+                              selectedParentRoles !== null &&
+                              selectedParentRoles.includes(role.value)
+                            }
                           />
                           <ListItemText
                             primary={role.label}
                             secondary={
-                              isInherited ? "Inherited from parent" : ""
+                              selectedParentRoles?.includes(role.value)
+                                ? !menuToEdit
+                                  ? "Inherited (Mandatory for sub-menu)"
+                                  : "Inherited from parent"
+                                : ""
                             }
                           />
                         </MenuItem>
