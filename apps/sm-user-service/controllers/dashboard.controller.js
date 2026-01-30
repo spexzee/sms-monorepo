@@ -89,7 +89,12 @@ const getMenus = async (req, res) => {
     }
 
     const menus = await menuModel.find(
-      { menuAccessRoles: role, schoolId: schoolId },
+      {
+        menuAccessRoles: role,
+        schoolId: schoolId,
+        status: "active",
+        deactivatedRoles: { $nin: [role] },
+      },
       { menuAccessRoles: 0 },
     );
 

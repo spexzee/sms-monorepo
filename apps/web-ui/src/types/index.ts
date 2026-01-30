@@ -713,6 +713,7 @@ export interface Menu {
   menuOrder: number | string | string[];
   menuIcon: string;
   menuAccessRoles: string | string[];
+  deactivatedRoles?: string[];
   menuType: "main" | "sub";
   hasSubmenu: boolean;
   parentMenuId?: string;
@@ -732,6 +733,7 @@ export interface CreateMenuPayload {
   hasSubmenu: boolean;
   parentMenuId?: string;
   menuOrder: string | number | string[];
+  deactivatedRoles?: string[];
   status: "active" | "inactive";
 }
 

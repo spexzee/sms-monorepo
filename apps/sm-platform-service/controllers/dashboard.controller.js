@@ -69,6 +69,8 @@ const getMenus = async (req, res) => {
     const menus = await Menu.find(
       {
         menuAccessRoles: { $in: accessTokens },
+        deactivatedRoles: { $nin: accessTokens },
+        status: "active",
       },
       { menuAccessRoles: 0 },
     ).sort({ menuOrder: 1 });
