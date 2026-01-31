@@ -5,6 +5,10 @@ const {
   AdminModel: adminModel,
 } = require("@sms/shared");
 const {
+  getPaginationParams,
+  formatPaginationResponse,
+} = require("../utils/pagination");
+const {
   generateMenuId,
   generateMenuOrderCode,
 } = require("../utils/generateMenuID");
@@ -440,13 +444,19 @@ const deleteMenu = async (req, res) => {
 // Get all menus (for Super Admin management)
 const getAllMenus = async (req, res) => {
   try {
-    const menus = await Menu.find().sort({ menuOrder: 1 });
+    const { page, limit, skip } = getPaginationParams(req.query);
+
+    const [menus, total] = await Promise.all([
+      Menu.find().sort({ menuOrder: 1 }).skip(skip).limit(limit),
+      Menu.countDocuments(),
+    ]);
+
+    const response = formatPaginationResponse(menus, total, page, limit);
 
     return res.status(200).json({
       success: true,
       message: "All menus fetched successfully",
-      data: menus,
-      count: menus.length,
+      ...response,
     });
   } catch (error) {
     console.error("Error fetching all menus:", error);

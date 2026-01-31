@@ -39,11 +39,14 @@ export const useGetUserMenus = (schoolId: string, role: string) => {
 };
 
 // Get all menus (for management)
-export const useGetMenus = () => {
+export const useGetMenus = (page: number = 1, limit: number = 10) => {
   return useQuery({
-    queryKey: ["menus", "all"],
+    queryKey: ["menus", "all", page, limit],
     queryFn: () =>
-      useApi<ApiResponse<Menu[]>>("GET", "/api/admin/dashboard/menus/all"), // Assumed endpoint
+      useApi<ApiResponse<Menu[]>>(
+        "GET",
+        `/api/admin/dashboard/menus/all?page=${page}&limit=${limit}`,
+      ),
   });
 };
 

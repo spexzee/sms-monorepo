@@ -6,121 +6,133 @@ import type { Column } from '../../components/Table/DataTable';
 import SchoolAdminDialog from '../../components/Dialogs/AddSchoolAdminDialog';
 import { useGetSchoolAdmins, useUpdateSchoolAdmin } from '../../queries/SchoolAdmin';
 import type { SchoolAdmin } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 const UsersPage: React.FC = () => {
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [editData, setEditData] = useState<SchoolAdmin | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editData, setEditData] = useState<SchoolAdmin | null>(null);
 
-    const { data, isLoading, error } = useGetSchoolAdmins();
-    const updateMutation = useUpdateSchoolAdmin();
+  // Use global pagination state from AuthContext
+  const { page, setPage, limit, setLimit } = useAuth();
 
-    const users = data?.data || [];
+  const { data, isLoading, error } = useGetSchoolAdmins(page, limit);
+  const updateMutation = useUpdateSchoolAdmin();
 
-    const handleAdd = () => {
-        setEditData(null);
-        setDialogOpen(true);
-    };
+  const users = data?.data || [];
 
-    const handleEdit = (user: SchoolAdmin) => {
-        setEditData(user);
-        setDialogOpen(true);
-    };
+  const handleAdd = () => {
+    setEditData(null);
+    setDialogOpen(true);
+  };
 
-    const handleToggleStatus = async (user: SchoolAdmin) => {
+  const handleEdit = (user: SchoolAdmin) => {
+    setEditData(user);
+    setDialogOpen(true);
+  };
+
+  const handleToggleStatus = async (user: SchoolAdmin) => {
         const newStatus = user.status === 'active' ? 'inactive' : 'active';
-        try {
-            await updateMutation.mutateAsync({
-                userId: user.userId,
-                data: { status: newStatus },
-            });
-        } catch (err) {
+    try {
+      await updateMutation.mutateAsync({
+        userId: user.userId,
+        data: { status: newStatus },
+      });
+    } catch (err) {
             console.error('Failed to update status:', err);
-        }
-    };
+    }
+  };
 
-    const handleDialogClose = () => {
-        setDialogOpen(false);
-        setEditData(null);
-    };
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setEditData(null);
+  };
 
-    const columns: Column<SchoolAdmin>[] = [
+  const columns: Column<SchoolAdmin>[] = [
         { id: 'userId', label: 'User ID', minWidth: 100 },
         { id: 'username', label: 'Username', minWidth: 150 },
         { id: 'email', label: 'Email', minWidth: 200 },
         { id: 'schoolId', label: 'School ID', minWidth: 120 },
         { id: 'contactNumber', label: 'Contact', minWidth: 130 },
-        {
+    {
             id: 'status',
             label: 'Status',
-            minWidth: 100,
+      minWidth: 100,
             align: 'center',
             format: (value) => <StatusChip status={(value as 'active' | 'inactive') || 'active'} />,
-        },
-        {
+    },
+    {
             id: 'createdAt',
             label: 'Created',
-            minWidth: 120,
-            format: (value) =>
+      minWidth: 120,
+      format: (value) =>
                 value ? new Date(value as string).toLocaleDateString() : '-',
-        },
-        {
+    },
+    {
             id: 'actions',
             label: 'Actions',
-            minWidth: 120,
+      minWidth: 120,
             align: 'center',
-            format: (_, row) => (
+      format: (_, row) => (
                 <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                    <Tooltip title="Edit">
-                        <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(row);
-                            }}
-                        >
-                            <EditIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(row);
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
                     <Tooltip title={row.status === 'active' ? 'Deactivate' : 'Activate'}>
-                        <IconButton
-                            size="small"
+            <IconButton
+              size="small"
                             color={row.status === 'active' ? 'error' : 'success'}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleStatus(row);
-                            }}
-                            disabled={updateMutation.isPending}
-                        >
-                            <BlockIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-            ),
-        },
-    ];
-
-    return (
-        <Box sx={{ p: 3 }}>
-            <DataTable<SchoolAdmin>
-                title="School Administrators"
-                columns={columns}
-                data={users}
-                isLoading={isLoading}
-                error={error ? (error as { message?: string })?.message || 'Failed to load users' : null}
-                onAddClick={handleAdd}
-                addButtonLabel="Add School Admin"
-                emptyMessage="No school administrators found. Click 'Add School Admin' to create one."
-                getRowKey={(row) => row.userId}
-            />
-
-            <SchoolAdminDialog
-                open={dialogOpen}
-                onClose={handleDialogClose}
-                editData={editData}
-            />
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleStatus(row);
+              }}
+              disabled={updateMutation.isPending}
+            >
+              <BlockIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
-    );
+      ),
+    },
+  ];
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <DataTable<SchoolAdmin>
+        title="School Administrators"
+        columns={columns}
+        data={users}
+        isLoading={isLoading}
+                error={error ? (error as { message?: string })?.message || 'Failed to load users' : null}
+        onAddClick={handleAdd}
+        addButtonLabel="Add School Admin"
+        emptyMessage="No school administrators found. Click 'Add School Admin' to create one."
+        getRowKey={(row) => row.userId}
+        paginationServer
+        paginationTotalRows={data?.pagination?.total || 0}
+        paginationPerPage={limit}
+        onChangePage={(p) => setPage(p)}
+        onChangeRowsPerPage={(l) => {
+          setLimit(l);
+          setPage(1);
+        }}
+      />
+
+      <SchoolAdminDialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        editData={editData}
+      />
+    </Box>
+  );
 };
 
 export default UsersPage;

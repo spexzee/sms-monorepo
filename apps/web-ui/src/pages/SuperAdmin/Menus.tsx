@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Chip,
@@ -21,6 +21,7 @@ import AddMenusDialog from "../../components/Dialogs/AddMenusDialog";
 import ConfirmationDialog from "../../components/Dialogs/ConfirmationDialog";
 import { useGetMenus, useDeleteMenu, useUpdateMenu } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
+import { useAuth } from "../../context/AuthContext";
 import type { Menu } from "../../types";
 
 const Menus = () => {
@@ -32,8 +33,20 @@ const Menus = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
 
+  // Use global pagination state from AuthContext
+  const { page, setPage, limit, setLimit } = useAuth();
+
+  // Reset page when search or school filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, selectedSchool, setPage]);
+
   // Fetch menus and schools
-  const { data: menusData, isLoading: isLoadingMenus, error } = useGetMenus();
+  const {
+    data: menusData,
+    isLoading: isLoadingMenus,
+    error,
+  } = useGetMenus(page, limit);
   const { data: schoolsData, isLoading: isLoadingSchools } = useGetSchools();
 
   const menus = menusData?.data || [];
@@ -41,7 +54,7 @@ const Menus = () => {
 
   // Filter menus based on search term and selected school
   const filteredMenus = useMemo(() => {
-    return menus.filter((menu) => {
+    return menus.filter((menu: Menu) => {
       // School filter
       if (selectedSchool && menu.schoolId !== selectedSchool) {
         return false;
@@ -389,6 +402,14 @@ const Menus = () => {
         error={error ? (error as any).message : null}
         onAddClick={handleAddClick}
         addButtonLabel="Add Menu"
+        paginationServer
+        paginationTotalRows={menusData?.pagination?.total || 0}
+        paginationPerPage={limit}
+        onChangePage={(p) => setPage(p)}
+        onChangeRowsPerPage={(l) => {
+          setLimit(l);
+          setPage(1);
+        }}
       />
 
       <AddMenusDialog

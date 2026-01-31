@@ -1,9 +1,17 @@
+export interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // Common API Response wrapper
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
   count?: number;
+  pagination?: Pagination;
 }
 
 // School Types
