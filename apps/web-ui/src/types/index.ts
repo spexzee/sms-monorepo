@@ -307,6 +307,9 @@ export interface UpdateParentPayload {
 // Query Filter Types
 export interface TeacherFilters {
   status?: "active" | "inactive";
+  department?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface StudentFilters {
@@ -314,11 +317,15 @@ export interface StudentFilters {
   section?: string;
   status?: "active" | "inactive";
   parentId?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface ParentFilters {
   status?: "active" | "inactive";
   relationship?: "father" | "mother" | "guardian" | "other";
+  page?: number;
+  limit?: number;
 }
 
 // Request/Ticket Types
