@@ -445,10 +445,28 @@ const deleteMenu = async (req, res) => {
 const getAllMenus = async (req, res) => {
   try {
     const { page, limit, skip } = getPaginationParams(req.query);
+    const { search, schoolId } = req.query;
+
+    let query = {};
+
+    // Filter by school if provided
+    if (schoolId) {
+      query.schoolId = schoolId;
+    }
+
+    // Filter by search term if provided
+    if (search) {
+      query.$or = [
+        { menuName: { $regex: search, $options: "i" } },
+        { menuUrl: { $regex: search, $options: "i" } },
+        { menuOrder: { $regex: search, $options: "i" } },
+        { menuAccessRoles: { $in: [new RegExp(search, "i")] } },
+      ];
+    }
 
     const [menus, total] = await Promise.all([
-      Menu.find().sort({ menuOrder: 1 }).skip(skip).limit(limit),
-      Menu.countDocuments(),
+      Menu.find(query).sort({ menuOrder: 1 }).skip(skip).limit(limit),
+      Menu.countDocuments(query),
     ]);
 
     const response = formatPaginationResponse(menus, total, page, limit);

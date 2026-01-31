@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Chip,
@@ -46,42 +46,11 @@ const Menus = () => {
     data: menusData,
     isLoading: isLoadingMenus,
     error,
-  } = useGetMenus(page, limit);
+  } = useGetMenus(page, limit, searchTerm, selectedSchool || undefined);
   const { data: schoolsData, isLoading: isLoadingSchools } = useGetSchools();
 
   const menus = menusData?.data || [];
   const schools = schoolsData?.data || [];
-
-  // Filter menus based on search term and selected school
-  const filteredMenus = useMemo(() => {
-    return menus.filter((menu: Menu) => {
-      // School filter
-      if (selectedSchool && menu.schoolId !== selectedSchool) {
-        return false;
-      }
-
-      // Search filter (menuName, roles, menuOrder)
-      const term = searchTerm.trim().toLowerCase();
-      if (term) {
-        const nameMatch = menu.menuName.toLowerCase().includes(term);
-        const orderMatch =
-          menu.menuOrder && String(menu.menuOrder).toLowerCase().includes(term);
-
-        const roles = Array.isArray(menu.menuAccessRoles)
-          ? menu.menuAccessRoles
-          : [menu.menuAccessRoles];
-        const roleMatch = roles.some(
-          (role: string) => role && role.toLowerCase().includes(term),
-        );
-
-        if (!nameMatch && !roleMatch && !orderMatch) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [menus, searchTerm, selectedSchool]);
 
   const isLoading = isLoadingMenus || isLoadingSchools;
 
@@ -397,7 +366,7 @@ const Menus = () => {
       <DataTable<Menu>
         title="Menus Management"
         columns={columns}
-        data={filteredMenus}
+        data={menus}
         isLoading={isLoading}
         error={error ? (error as any).message : null}
         onAddClick={handleAddClick}
