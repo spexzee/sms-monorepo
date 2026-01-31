@@ -1,9 +1,17 @@
+export interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // Common API Response wrapper
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
   count?: number;
+  pagination?: Pagination;
 }
 
 // School Types
@@ -299,6 +307,9 @@ export interface UpdateParentPayload {
 // Query Filter Types
 export interface TeacherFilters {
   status?: "active" | "inactive";
+  department?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface StudentFilters {
@@ -306,11 +317,15 @@ export interface StudentFilters {
   section?: string;
   status?: "active" | "inactive";
   parentId?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface ParentFilters {
   status?: "active" | "inactive";
   relationship?: "father" | "mother" | "guardian" | "other";
+  page?: number;
+  limit?: number;
 }
 
 // Request/Ticket Types

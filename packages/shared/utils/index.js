@@ -1,9 +1,11 @@
-const emailService = require('./emailService');
-const placeholderResolver = require('./placeholderResolver');
-const emailStyleTemplates = require('./emailStyleTemplates');
+const emailService = require("./emailService");
+const placeholderResolver = require("./placeholderResolver");
+const emailStyleTemplates = require("./emailStyleTemplates");
+const pagination = require("./pagination");
 
 module.exports = {
-    ...emailService,
-    ...placeholderResolver,
-    ...emailStyleTemplates,
+  ...emailService,
+  ...placeholderResolver,
+  ...emailStyleTemplates,
+  ...pagination,
 };

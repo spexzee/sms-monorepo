@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Chip,
@@ -21,6 +21,7 @@ import AddMenusDialog from "../../components/Dialogs/AddMenusDialog";
 import ConfirmationDialog from "../../components/Dialogs/ConfirmationDialog";
 import { useGetMenus, useDeleteMenu, useUpdateMenu } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
+import { useAuth } from "../../context/AuthContext";
 import type { Menu } from "../../types";
 
 const Menus = () => {
@@ -32,43 +33,24 @@ const Menus = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
 
+  // Use global pagination state from AuthContext
+  const { page, setPage, limit, setLimit } = useAuth();
+
+  // Reset page when search or school filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, selectedSchool, setPage]);
+
   // Fetch menus and schools
-  const { data: menusData, isLoading: isLoadingMenus, error } = useGetMenus();
+  const {
+    data: menusData,
+    isLoading: isLoadingMenus,
+    error,
+  } = useGetMenus(page, limit, searchTerm, selectedSchool || undefined);
   const { data: schoolsData, isLoading: isLoadingSchools } = useGetSchools();
 
   const menus = menusData?.data || [];
   const schools = schoolsData?.data || [];
-
-  // Filter menus based on search term and selected school
-  const filteredMenus = useMemo(() => {
-    return menus.filter((menu) => {
-      // School filter
-      if (selectedSchool && menu.schoolId !== selectedSchool) {
-        return false;
-      }
-
-      // Search filter (menuName, roles, menuOrder)
-      const term = searchTerm.trim().toLowerCase();
-      if (term) {
-        const nameMatch = menu.menuName.toLowerCase().includes(term);
-        const orderMatch =
-          menu.menuOrder && String(menu.menuOrder).toLowerCase().includes(term);
-
-        const roles = Array.isArray(menu.menuAccessRoles)
-          ? menu.menuAccessRoles
-          : [menu.menuAccessRoles];
-        const roleMatch = roles.some(
-          (role: string) => role && role.toLowerCase().includes(term),
-        );
-
-        if (!nameMatch && !roleMatch && !orderMatch) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [menus, searchTerm, selectedSchool]);
 
   const isLoading = isLoadingMenus || isLoadingSchools;
 
@@ -384,11 +366,19 @@ const Menus = () => {
       <DataTable<Menu>
         title="Menus Management"
         columns={columns}
-        data={filteredMenus}
+        data={menus}
         isLoading={isLoading}
         error={error ? (error as any).message : null}
         onAddClick={handleAddClick}
         addButtonLabel="Add Menu"
+        paginationServer
+        paginationTotalRows={menusData?.pagination?.total || 0}
+        paginationPerPage={limit}
+        onChangePage={(p) => setPage(p)}
+        onChangeRowsPerPage={(l) => {
+          setLimit(l);
+          setPage(1);
+        }}
       />
 
       <AddMenusDialog

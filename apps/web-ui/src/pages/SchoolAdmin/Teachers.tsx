@@ -7,110 +7,121 @@ import TeacherDialog from '../../components/Dialogs/AddTeacherDialog';
 import { useGetTeachers, useUpdateTeacher } from '../../queries/Teacher';
 import type { Teacher } from '../../types';
 import TokenService from '../../queries/token/tokenService';
+import { useAuth } from '../../context/AuthContext';
 
 const TeachersPage = () => {
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [editData, setEditData] = useState<Teacher | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editData, setEditData] = useState<Teacher | null>(null);
 
-    const schoolId = TokenService.getSchoolId() || '';
-    const { data, isLoading, error } = useGetTeachers(schoolId);
-    const updateMutation = useUpdateTeacher(schoolId);
+  const schoolId = TokenService.getSchoolId() || "";
+  const { page, setPage, limit, setLimit } = useAuth();
 
-    const teachers = data?.data || [];
+  const { data, isLoading, error } = useGetTeachers(schoolId, { page, limit });
+  const updateMutation = useUpdateTeacher(schoolId);
 
-    const handleAdd = () => {
-        setEditData(null);
-        setDialogOpen(true);
-    };
+  const teachers = data?.data || [];
 
-    const handleEdit = (teacher: Teacher) => {
-        setEditData(teacher);
-        setDialogOpen(true);
-    };
+  const handleAdd = () => {
+    setEditData(null);
+    setDialogOpen(true);
+  };
 
-    const handleToggleStatus = async (teacher: Teacher) => {
+  const handleEdit = (teacher: Teacher) => {
+    setEditData(teacher);
+    setDialogOpen(true);
+  };
+
+  const handleToggleStatus = async (teacher: Teacher) => {
         const newStatus = teacher.status === 'active' ? 'inactive' : 'active';
-        try {
-            await updateMutation.mutateAsync({
-                teacherId: teacher.teacherId,
-                data: { status: newStatus },
-            });
-        } catch (err) {
+    try {
+      await updateMutation.mutateAsync({
+        teacherId: teacher.teacherId,
+        data: { status: newStatus },
+      });
+    } catch (err) {
             console.error('Failed to update status:', err);
-        }
-    };
+    }
+  };
 
-    const handleDialogClose = () => {
-        setDialogOpen(false);
-        setEditData(null);
-    };
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setEditData(null);
+  };
 
-    const columns: Column<Teacher>[] = [
+  const columns: Column<Teacher>[] = [
         { id: 'teacherId', label: 'ID', minWidth: 100 },
-        {
+    {
             id: 'firstName',
             label: 'Name',
-            minWidth: 150,
-            format: (_, row) => `${row.firstName} ${row.lastName}`,
-        },
+      minWidth: 150,
+      format: (_, row) => `${row.firstName} ${row.lastName}`,
+    },
         { id: 'email', label: 'Email', minWidth: 180 },
         { id: 'phone', label: 'Phone', minWidth: 120 },
-        {
+    {
             id: 'status',
             label: 'Status',
-            minWidth: 100,
+      minWidth: 100,
             align: 'center',
             format: (value) => <StatusChip status={(value as 'active' | 'inactive') || 'active'} />,
-        },
-        {
+    },
+    {
             id: 'actions',
             label: 'Actions',
-            minWidth: 120,
+      minWidth: 120,
             align: 'center',
-            format: (_, row) => (
+      format: (_, row) => (
                 <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                    <Tooltip title="Edit">
+          <Tooltip title="Edit">
                         <IconButton size="small" color="primary" onClick={(e) => { e.stopPropagation(); handleEdit(row); }}>
-                            <EditIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
                     <Tooltip title={row.status === 'active' ? 'Deactivate' : 'Activate'}>
-                        <IconButton
-                            size="small"
+            <IconButton
+              size="small"
                             color={row.status === 'active' ? 'error' : 'success'}
                             onClick={(e) => { e.stopPropagation(); handleToggleStatus(row); }}
-                            disabled={updateMutation.isPending}
-                        >
-                            <BlockIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-            ),
-        },
-    ];
-
-    return (
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
-            <DataTable<Teacher>
-                title="Teachers"
-                columns={columns}
-                data={teachers}
-                isLoading={isLoading}
-                error={error ? (error as { message?: string })?.message || 'Failed to load teachers' : null}
-                onAddClick={handleAdd}
-                addButtonLabel="Add Teacher"
-                emptyMessage="No teachers found. Click 'Add Teacher' to create one."
-                getRowKey={(row) => row.teacherId}
-            />
-
-            <TeacherDialog
-                open={dialogOpen}
-                onClose={handleDialogClose}
-                schoolId={schoolId}
-                editData={editData}
-            />
+              disabled={updateMutation.isPending}
+            >
+              <BlockIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
-    );
+      ),
+    },
+  ];
+
+  return (
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <DataTable<Teacher>
+        title="Teachers"
+        columns={columns}
+        data={teachers}
+        isLoading={isLoading}
+                error={error ? (error as { message?: string })?.message || 'Failed to load teachers' : null}
+        onAddClick={handleAdd}
+        addButtonLabel="Add Teacher"
+        emptyMessage="No teachers found. Click 'Add Teacher' to create one."
+        getRowKey={(row) => row.teacherId}
+        paginationServer
+        paginationTotalRows={data?.pagination?.total || 0}
+        paginationPerPage={limit}
+        onChangePage={(p) => setPage(p)}
+        onChangeRowsPerPage={(l) => {
+          setLimit(l);
+          setPage(1);
+        }}
+      />
+
+      <TeacherDialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        schoolId={schoolId}
+        editData={editData}
+      />
+    </Box>
+  );
 };
 
 export default TeachersPage;

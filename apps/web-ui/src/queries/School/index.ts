@@ -1,67 +1,71 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useApi from "../useApi";
 import type {
-    ApiResponse,
-    School,
-    CreateSchoolPayload,
-    UpdateSchoolPayload,
+  ApiResponse,
+  School,
+  CreateSchoolPayload,
+  UpdateSchoolPayload,
 } from "../../types";
 
 // Query Keys
 export const schoolKeys = {
-    all: ["schools"] as const,
-    detail: (schoolId: string) => ["schools", schoolId] as const,
+  all: ["schools"] as const,
+  detail: (schoolId: string) => ["schools", schoolId] as const,
 };
 
 // Get all schools
-export const useGetSchools = () => {
-    return useQuery({
-        queryKey: schoolKeys.all,
-        queryFn: () => useApi<ApiResponse<School[]>>("GET", "/api/admin/school/get-all-schools"),
-    });
+export const useGetSchools = (page: number = 1, limit: number = 10) => {
+  return useQuery({
+    queryKey: [...schoolKeys.all, page, limit],
+    queryFn: () =>
+      useApi<ApiResponse<School[]>>(
+        "GET",
+        `/api/admin/school/get-all-schools?page=${page}&limit=${limit}`,
+      ),
+  });
 };
 
 // Get school by ID
 export const useGetSchoolById = (schoolId: string) => {
-    return useQuery({
-        queryKey: schoolKeys.detail(schoolId),
-        queryFn: () =>
+  return useQuery({
+    queryKey: schoolKeys.detail(schoolId),
+    queryFn: () =>
             useApi<ApiResponse<School>>("GET", `/api/admin/school/get-school/${schoolId}`),
-        enabled: !!schoolId,
-    });
+    enabled: !!schoolId,
+  });
 };
 
 // Create school
 export const useCreateSchool = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: (data: CreateSchoolPayload) =>
+  return useMutation({
+    mutationFn: (data: CreateSchoolPayload) =>
             useApi<ApiResponse<School>>("POST", "/api/admin/school/create-school", data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: schoolKeys.all });
-        },
-    });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: schoolKeys.all });
+    },
+  });
 };
 
 // Update school
 export const useUpdateSchool = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: ({
-            schoolId,
-            data,
-        }: {
-            schoolId: string;
-            data: UpdateSchoolPayload;
-        }) =>
+  return useMutation({
+    mutationFn: ({
+      schoolId,
+      data,
+    }: {
+      schoolId: string;
+      data: UpdateSchoolPayload;
+    }) =>
             useApi<ApiResponse<School>>("PUT", `/api/admin/school/update-school/${schoolId}`, data),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: schoolKeys.all });
-            queryClient.invalidateQueries({
-                queryKey: schoolKeys.detail(variables.schoolId),
-            });
-        },
-    });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: schoolKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: schoolKeys.detail(variables.schoolId),
+      });
+    },
+  });
 };
