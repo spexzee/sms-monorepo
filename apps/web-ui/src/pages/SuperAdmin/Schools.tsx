@@ -7,6 +7,7 @@ import SchoolDialog from '../../components/Dialogs/AddSchoolDialog';
 import { useGetSchools, useUpdateSchool } from '../../queries/School';
 import type { School } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../hooks/useNotification';
 
 const SchoolsPage: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -14,6 +15,7 @@ const SchoolsPage: React.FC = () => {
 
   // Use global pagination state from AuthContext
   const { page, setPage, limit, setLimit } = useAuth();
+  const notify = useNotification();
 
   const { data, isLoading, error } = useGetSchools(page, limit);
   const updateMutation = useUpdateSchool();
@@ -33,12 +35,14 @@ const SchoolsPage: React.FC = () => {
   const handleToggleStatus = async (school: School) => {
         const newStatus = school.status === 'active' ? 'inactive' : 'active';
     try {
-      await updateMutation.mutateAsync({
+      const res = await updateMutation.mutateAsync({
         schoolId: school.schoolId,
         data: { status: newStatus },
       });
-    } catch (err) {
-            console.error('Failed to update status:', err);
+      notify.success(res.message);
+    } catch (err: any) {
+      console.error("Failed to update status:", err);
+      notify.error(err.message || "Failed to update school status");
     }
   };
 
@@ -128,6 +132,7 @@ const SchoolsPage: React.FC = () => {
       <SchoolDialog
         open={dialogOpen}
         onClose={handleDialogClose}
+        onSuccess={(msg: string) => notify.success(msg)}
         editData={editData}
       />
     </Box>

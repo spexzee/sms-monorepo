@@ -36,12 +36,14 @@ import IconPickerDialog from "./IconPickerDialog";
 interface AddMenusDialogProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: (message: string) => void;
   menuToEdit?: Menu;
 }
 
 const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
   open,
   onClose,
+  onSuccess,
   menuToEdit,
 }) => {
   const [formData, setFormData] = useState<CreateMenuPayload>({
@@ -187,12 +189,14 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
 
     try {
       if (menuToEdit) {
-        await updateMutation.mutateAsync({
+        const res = await updateMutation.mutateAsync({
           menuId: menuToEdit.menuId,
           data: formData,
         });
+        onSuccess?.(res.message);
       } else {
-        await createMutation.mutateAsync(formData);
+        const res = await createMutation.mutateAsync(formData);
+        onSuccess?.(res.message);
       }
       handleClose();
     } catch {
