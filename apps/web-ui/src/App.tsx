@@ -6,6 +6,7 @@ import MainRouters from "./routers/MainRouters";
 import { AuthProvider } from "./context/AuthContext";
 import { ChildSelectorProvider } from "./context/ChildSelectorContext";
 import ErrorBoundary from "./components/ErrorBoundary";
+import GlobalNotification from "./components/GlobalNotification";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +35,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
+          <GlobalNotification />
           <AuthProvider>
             <ChildSelectorProvider>
               <BrowserRouter>

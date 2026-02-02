@@ -22,6 +22,7 @@ import ConfirmationDialog from "../../components/Dialogs/ConfirmationDialog";
 import { useGetMenus, useDeleteMenu, useUpdateMenu } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
 import { useAuth } from "../../context/AuthContext";
+import { useNotificationStore } from "../../stores/notificationStore";
 import type { Menu } from "../../types";
 
 const Menus = () => {
@@ -32,6 +33,7 @@ const Menus = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
+  const { showNotification } = useNotificationStore();
 
   // Use global pagination state from AuthContext
   const { page, setPage, limit, setLimit } = useAuth();
@@ -82,12 +84,14 @@ const Menus = () => {
         newDeactivated = [...currentDeactivated, role];
       }
 
-      await updateMutation.mutateAsync({
+      const res = await updateMutation.mutateAsync({
         menuId: menu.menuId,
         data: { deactivatedRoles: newDeactivated },
       });
-    } catch (err) {
+      showNotification(res.message, "success");
+    } catch (err: any) {
       console.error("Failed to update role status:", err);
+      showNotification(err.message || "Failed to update role status", "error");
     }
   };
 
@@ -99,11 +103,13 @@ const Menus = () => {
   const handleConfirmDelete = async () => {
     if (menuToDelete) {
       try {
-        await deleteMutation.mutateAsync(menuToDelete.menuId);
+        const res = await deleteMutation.mutateAsync(menuToDelete.menuId);
         setDeleteConfirmationOpen(false);
         setMenuToDelete(null);
-      } catch (err) {
+        showNotification(res.message, "success");
+      } catch (err: any) {
         console.error("Failed to delete menu:", err);
+        showNotification(err.message || "Failed to delete menu", "error");
       }
     }
   };
@@ -384,6 +390,7 @@ const Menus = () => {
       <AddMenusDialog
         open={isAddDialogOpen}
         onClose={handleCloseDialog}
+        onSuccess={(msg) => showNotification(msg, "success")}
         menuToEdit={selectedMenu}
       />
 
