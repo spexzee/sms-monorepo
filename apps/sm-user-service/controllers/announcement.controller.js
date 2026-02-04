@@ -304,12 +304,19 @@ const sendAnnouncementEmails = async (schoolId, announcement, recipients) => {
                     schoolPhone: recipientData.school.phone,
                 });
 
+                // Format attachments for email (if any)
+                const emailAttachments = announcement.attachments?.map(att => ({
+                    filename: att.fileName,
+                    path: att.url  // ImageKit CDN URL - Nodemailer will fetch this
+                })) || [];
+
                 // Send email
                 await sendEmail({
                     to: recipient.email,
                     subject: resolvedSubject,
                     html: styledHTML,
-                    from: recipientData.school.name
+                    from: recipientData.school.name,
+                    attachments: emailAttachments  // Include attachments
                 });
 
                 return { success: true, email: recipient.email };
