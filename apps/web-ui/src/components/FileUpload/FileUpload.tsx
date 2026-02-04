@@ -46,8 +46,15 @@ export interface FileUploadProps {
 }
 
 const getFileIcon = (fileType: string) => {
-    if (fileType === 'image') return <ImageIcon color="primary" />;
-    if (fileType === 'pdf') return <PdfIcon color="error" />;
+    // Check if it's an image extension
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileType.toLowerCase()) || fileType === 'image') {
+        return <ImageIcon color="primary" />;
+    }
+    // Check if it's a PDF
+    if (fileType.toLowerCase() === 'pdf') {
+        return <PdfIcon color="error" />;
+    }
+    // Default for all documents
     return <FileIcon color="action" />;
 };
 
@@ -73,18 +80,20 @@ const FileUpload: React.FC<FileUploadProps> = ({
     const [isUploading, setIsUploading] = useState(false);
     const [attachments, setAttachments] = useState<AnnouncementAttachment[]>(currentAttachments);
     const [error, setError] = useState<string | null>(null);
-    const [currentUploadFileType, setCurrentUploadFileType] = useState<'image' | 'pdf' | 'document'>('document');
     const uploadRef = useRef<HTMLInputElement>(null);
+    const fileTypeRef = useRef<'image' | 'pdf' | 'document'>('document'); // Store file type in ref for reliable access
 
     // Handle successful upload
     const handleUploadSuccess = (response: { url: string; fileId: string; name: string }) => {
         setIsUploading(false);
         setError(null);
 
+        console.log('[FileUpload] Upload successful. Using fileType:', fileTypeRef.current);
+
         const newAttachment: AnnouncementAttachment = {
             url: response.url,
             fileName: response.name,
-            fileType: currentUploadFileType, // Use the tracked file type instead of parsing name
+            fileType: fileTypeRef.current, // Use ref value which is set synchronously
             uploadedAt: new Date().toISOString(),
         };
 
@@ -240,12 +249,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
                         // Detect file type from the actual file being uploaded
                         const file = event.target.files?.[0];
                         if (file) {
+                            console.log('[FileUpload] Selected file:', file.name);
                             const detectedType = getFileType(file.name);
-                            setCurrentUploadFileType(detectedType);
+                            console.log('[FileUpload] Detected file type:', detectedType);
+                            fileTypeRef.current = detectedType; // Set ref immediately (synchronous)
                         }
                     }}
                     style={{ display: 'none' }}
-                    accept="image/*,.pdf"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
                 />
             </IKContext>
         </Box>

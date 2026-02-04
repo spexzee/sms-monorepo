@@ -13,7 +13,8 @@ import TokenService from '../../queries/token/tokenService';
 import { useGetTeacherDashboardStats } from '../../queries/TeacherDashboard';
 
 const TeacherDashboard: React.FC = () => {
-    const userName = TokenService.getUserName() || 'Teacher';
+    const user = TokenService.getUser();
+    const userName = `${user?.firstName} ${user?.lastName}`;
     const schoolId = TokenService.getSchoolId() || '';
 
     const { data, isLoading, error } = useGetTeacherDashboardStats(schoolId);

@@ -111,7 +111,6 @@ const LoginPage: React.FC = () => {
 
     loginMutation.mutate(formData, {
       onSuccess: async (res: any) => {
-        console.log("Login response:", res);
         if (res?.data?.token) {
           login(res.data.token);
 

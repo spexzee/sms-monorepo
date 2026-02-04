@@ -62,7 +62,7 @@ const Announcements: React.FC = () => {
 
     const [viewerOpen, setViewerOpen] = useState(false);
     const [currentFile, setCurrentFile] = useState<AnnouncementAttachment | null>(null);
-
+    console.log(currentFile)
     const announcements = data?.data || [];
 
     const handleExpand = (announcementId: string, isSeen: boolean) => {
@@ -98,13 +98,22 @@ const Announcements: React.FC = () => {
         });
     };
 
-    const isImageFile = (fileName: string) => {
-        const ext = fileName.split('.').pop()?.toLowerCase();
-        return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
+    const isImageType = (fileType: string, fileName: string) => {
+        const ext = fileType.toLowerCase();
+        const fileNameExt = fileName.split('.').pop()?.toLowerCase();
+        return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'image'].includes(ext) ||
+            ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileNameExt || '');
     };
 
-    const isPdfFile = (fileName: string) => {
-        return fileName.toLowerCase().endsWith('.pdf');
+    const isPdfType = (fileType: string, fileName: string) => {
+        return fileType.toLowerCase() === 'pdf' || fileName.toLowerCase().endsWith('.pdf');
+    };
+
+    const isDocumentType = (fileType: string, fileName: string) => {
+        const ext = fileType.toLowerCase();
+        const fileNameExt = fileName.split('.').pop()?.toLowerCase();
+        return ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'odt', 'ods', 'odp', 'document'].includes(ext) ||
+            ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'odt', 'ods', 'odp'].includes(fileNameExt || '');
     };
 
     return (
@@ -302,7 +311,7 @@ const Announcements: React.FC = () => {
                     </Box>
                 </DialogTitle>
                 <DialogContent sx={{ p: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: 'grey.100' }}>
-                    {currentFile && (currentFile.fileType === 'image' || isImageFile(currentFile.fileName)) && (
+                    {currentFile && isImageType(currentFile.fileType, currentFile.fileName) && (
                         <Box
                             component="img"
                             src={currentFile.url}
@@ -314,7 +323,7 @@ const Announcements: React.FC = () => {
                             }}
                         />
                     )}
-                    {currentFile && (currentFile.fileType === 'pdf' || isPdfFile(currentFile.fileName)) && (
+                    {currentFile && isPdfType(currentFile.fileType, currentFile.fileName) && (
                         <iframe
                             src={currentFile.url}
                             style={{
@@ -325,24 +334,38 @@ const Announcements: React.FC = () => {
                             title={currentFile.fileName}
                         />
                     )}
-                    {currentFile && currentFile.fileType !== 'image' && currentFile.fileType !== 'pdf' && !isImageFile(currentFile.fileName) && !isPdfFile(currentFile.fileName) && (
-                        <Box sx={{ textAlign: 'center', p: 4 }}>
-                            <AttachFileIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-                            <Typography variant="body1" color="text.secondary">
-                                Preview not available for this file type
-                            </Typography>
-                            <Button
-                                variant="contained"
-                                startIcon={<DownloadIcon />}
-                                href={currentFile.url}
-                                download
-                                target="_blank"
-                                sx={{ mt: 2 }}
-                            >
-                                Download File
-                            </Button>
-                        </Box>
+                    {currentFile && isDocumentType(currentFile.fileType, currentFile.fileName) && (
+                        <iframe
+                            src={`https://docs.google.com/viewer?url=${encodeURIComponent(currentFile.url)}&embedded=true`}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                            }}
+                            title={currentFile.fileName}
+                        />
                     )}
+                    {currentFile &&
+                        !isImageType(currentFile.fileType, currentFile.fileName) &&
+                        !isPdfType(currentFile.fileType, currentFile.fileName) &&
+                        !isDocumentType(currentFile.fileType, currentFile.fileName) && (
+                            <Box sx={{ textAlign: 'center', p: 4 }}>
+                                <AttachFileIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+                                <Typography variant="body1" color="text.secondary">
+                                    Preview not available for this file type
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<DownloadIcon />}
+                                    href={currentFile.url}
+                                    download
+                                    target="_blank"
+                                    sx={{ mt: 2 }}
+                                >
+                                    Download File
+                                </Button>
+                            </Box>
+                        )}
                 </DialogContent>
             </Dialog>
         </Box>

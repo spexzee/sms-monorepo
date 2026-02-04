@@ -13,7 +13,8 @@ import TokenService from '../../queries/token/tokenService';
 import { useGetSimpleStudentAttendance } from '../../queries/Attendance';
 
 const StudentDashboard: React.FC = () => {
-    const userName = TokenService.getUserName() || 'Student';
+    const user = TokenService.getUser();
+    const userName = `${user?.firstName} ${user?.lastName}`;
     const schoolId = TokenService.getSchoolId() || '';
     const studentId = TokenService.getStudentId() || '';
 
