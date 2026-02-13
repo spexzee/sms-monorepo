@@ -25,7 +25,7 @@ const generateUserId = async () => {
 // Create User (School Admin)
 const createUser = async (req, res) => {
   try {
-    const { username, email, password, role, schoolId, contactNumber } =
+    const { username, email, password, role, schoolId, contactNumber, ...rest } =
       req.body;
 
     // Validate input
@@ -39,7 +39,7 @@ const createUser = async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Check if email already exists in EmailRegistry (global check)
-        const existingEmail = await EmailRegistry.findOne({ email: normalizedEmail });
+    const existingEmail = await EmailRegistry.findOne({ email: normalizedEmail });
     if (existingEmail) {
       return res.status(400).json({
         success: false,
@@ -60,6 +60,7 @@ const createUser = async (req, res) => {
     const userId = await generateUserId();
 
     const newUser = new User({
+      ...rest,
       userId,
       username,
       email: normalizedEmail,
@@ -197,7 +198,7 @@ const updateUserById = async (req, res) => {
       const normalizedEmail = updateData.email.toLowerCase().trim();
 
       // Check if new email exists
-            const existingEmail = await EmailRegistry.findOne({ email: normalizedEmail });
+      const existingEmail = await EmailRegistry.findOne({ email: normalizedEmail });
       if (existingEmail) {
         return res.status(400).json({
           success: false,
@@ -208,7 +209,7 @@ const updateUserById = async (req, res) => {
       // Update EmailRegistry
       await EmailRegistry.findOneAndUpdate(
         { email: currentUser.email.toLowerCase() },
-                { email: normalizedEmail }
+        { email: normalizedEmail }
       );
 
       updateData.email = normalizedEmail;
@@ -218,18 +219,18 @@ const updateUserById = async (req, res) => {
     if (updateData.status) {
       await EmailRegistry.findOneAndUpdate(
         { email: currentUser.email.toLowerCase() },
-                { status: updateData.status }
+        { status: updateData.status }
       );
     }
 
-        const updatedUser = await User.findOneAndUpdate(
-            { userId },
-            updateData,
-            {
-      new: true,
-      runValidators: true,
-            }
-        ).select("-password");
+    const updatedUser = await User.findOneAndUpdate(
+      { userId },
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-password");
 
     return res.status(200).json({
       success: true,
@@ -265,7 +266,7 @@ const deleteUserById = async (req, res) => {
     // Update EmailRegistry status
     await EmailRegistry.findOneAndUpdate(
       { email: user.email.toLowerCase() },
-            { status: "inactive" }
+      { status: "inactive" }
     );
 
     return res.status(200).json({
