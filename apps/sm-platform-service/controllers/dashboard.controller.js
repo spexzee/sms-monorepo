@@ -136,6 +136,7 @@ const createMenu = async (req, res) => {
       menuIcon,
       schoolId,
       status,
+      defaultMenu,
     } = req.body;
 
     // Normalize menuAccessRoles to array if it is a string
@@ -167,18 +168,25 @@ const createMenu = async (req, res) => {
       });
     }
 
+    // Normalize schoolId to array
+    let schoolIds = [];
+    if (Array.isArray(schoolId)) {
+      schoolIds = schoolId;
+    } else if (schoolId) {
+      schoolIds = [schoolId];
+    }
+
     const existingMenu = await Menu.findOne({
       menuName,
-      schoolId: schoolId || null,
+      schoolId: schoolIds.length > 0 ? { $all: schoolIds } : { $size: 0 },
       parentMenuId: effectiveParentMenuId,
     });
 
     if (existingMenu) {
       return res.status(400).json({
         success: false,
-        message: `Menu with name "${menuName}" already exists for this ${
-          effectiveParentMenuId ? "parent menu" : "school"
-        }`,
+        message: `Menu with name "${menuName}" already exists for this ${effectiveParentMenuId ? "parent menu" : "school"
+          }`,
       });
     }
 
@@ -189,10 +197,9 @@ const createMenu = async (req, res) => {
       finalMenuOrder === "" ||
       finalMenuOrder === null
     ) {
-      // Pass ALL roles to generator to get an object { role: code }
       finalMenuOrder = await generateMenuOrderCode(
         roles,
-        schoolId,
+        schoolIds[0] || null,
         effectiveParentMenuId,
       );
     }
@@ -205,12 +212,11 @@ const createMenu = async (req, res) => {
       menuUrl,
       menuOrder: finalMenuOrder,
       menuType,
-
       parentMenuId: effectiveParentMenuId,
       menuAccessRoles: roles,
       menuIcon: menuIcon || null,
-      schoolId:
-        roles.includes("super_admin") && !schoolId ? undefined : schoolId,
+      schoolId: roles.includes("super_admin") && schoolIds.length === 0 ? [] : schoolIds,
+      defaultMenu: defaultMenu || false,
       status: status || "active",
     });
 
@@ -239,6 +245,11 @@ const updateMenu = async (req, res) => {
 
     // Prevent menuId overwrite
     delete updateData.menuId;
+
+    // Normalize schoolId to array if provided as string
+    if (updateData.schoolId !== undefined && !Array.isArray(updateData.schoolId)) {
+      updateData.schoolId = updateData.schoolId ? [updateData.schoolId] : [];
+    }
 
     // Normalize menuAccessRoles to array if it is a string
     if (
@@ -286,6 +297,7 @@ const updateMenu = async (req, res) => {
         updateData.schoolId !== undefined
           ? updateData.schoolId
           : currentMenu.schoolId;
+      const newSchoolIdFirst = Array.isArray(newSchoolId) ? newSchoolId[0] : newSchoolId;
 
       let newRole = null;
       if (updateData.menuAccessRoles && updateData.menuAccessRoles.length > 0)
@@ -303,11 +315,11 @@ const updateMenu = async (req, res) => {
       const parentChanged =
         effectiveParentMenuId !== undefined &&
         normalizeId(effectiveParentMenuId) !==
-          normalizeId(currentMenu.parentMenuId);
+        normalizeId(currentMenu.parentMenuId);
 
       const schoolChanged =
         updateData.schoolId !== undefined &&
-        normalizeId(updateData.schoolId) !== normalizeId(currentMenu.schoolId);
+        JSON.stringify(updateData.schoolId) !== JSON.stringify(currentMenu.schoolId);
 
       const currentRole = currentMenu.menuAccessRoles?.[0];
       const roleChanged = newRole && currentRole && newRole !== currentRole;
@@ -319,7 +331,7 @@ const updateMenu = async (req, res) => {
 
         updateData.menuOrder = await generateMenuOrderCode(
           rolesToUse,
-          newSchoolId,
+          newSchoolIdFirst || null,
           newParentId,
         );
       }
@@ -361,9 +373,8 @@ const updateMenu = async (req, res) => {
       if (existingMenu) {
         return res.status(400).json({
           success: false,
-          message: `Menu with name "${checkName}" already exists for this ${
-            checkParentMenuId ? "parent menu" : "school"
-          }`,
+          message: `Menu with name "${checkName}" already exists for this ${checkParentMenuId ? "parent menu" : "school"
+            }`,
         });
       }
     }
@@ -381,9 +392,9 @@ const updateMenu = async (req, res) => {
     if (
       updateData.menuAccessRoles &&
       updateData.menuAccessRoles.includes("super_admin") &&
-      !updateData.schoolId
+      (!updateData.schoolId || updateData.schoolId.length === 0)
     ) {
-      updateData.schoolId = undefined;
+      updateData.schoolId = [];
     }
 
     const updatedMenu = await Menu.findOneAndUpdate({ menuId }, updateData, {
@@ -449,9 +460,9 @@ const getAllMenus = async (req, res) => {
 
     let query = {};
 
-    // Filter by school if provided
+    // Filter by school if provided (schoolId is now an array in the model)
     if (schoolId) {
-      query.schoolId = schoolId;
+      query.schoolId = { $in: [schoolId] };
     }
 
     // Filter by search term if provided
