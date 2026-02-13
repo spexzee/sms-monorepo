@@ -722,13 +722,15 @@ export interface LeaveSummary {
 export interface Menu {
   _id?: string;
   menuId: string;
-  schoolId?: string;
+  schoolId?: string | string[];
   menuName: string;
   menuUrl: string;
   menuOrder: number | string | string[];
   menuIcon: string;
   menuAccessRoles: string | string[];
   deactivatedRoles?: string[];
+  deactivatedSchools?: string[];
+  defaultMenu?: boolean;
   menuType: "main" | "sub";
   hasSubmenu: boolean;
   parentMenuId?: string;
@@ -739,7 +741,7 @@ export interface Menu {
 }
 
 export interface CreateMenuPayload {
-  schoolId?: string;
+  schoolId?: string | string[];
   menuName: string;
   menuUrl: string;
   menuIcon: string;
@@ -749,6 +751,8 @@ export interface CreateMenuPayload {
   parentMenuId?: string;
   menuOrder: string | number | string[];
   deactivatedRoles?: string[];
+  deactivatedSchools?: string[];
+  defaultMenu?: boolean;
   status: "active" | "inactive";
 }
 
@@ -760,6 +764,10 @@ export interface UpdateMenuPayload {
   menuType?: string;
   hasSubmenu?: boolean;
   parentMenuId?: string;
+  deactivatedRoles?: string[];
+  deactivatedSchools?: string[];
+  defaultMenu?: boolean;
+  schoolId?: string | string[];
 }
 
 // ==========================================

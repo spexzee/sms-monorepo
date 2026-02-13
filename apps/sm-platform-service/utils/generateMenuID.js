@@ -96,7 +96,7 @@ const generateMenuOrderCode = async (roles, schoolId, parentMenuId) => {
             { parentMenuId: null },
             { parentMenuId: "" },
           ],
-          schoolId: schoolId || null,
+          schoolId: schoolId ? { $in: [schoolId] } : { $size: 0 },
         };
 
         // Find existing menus with this prefix

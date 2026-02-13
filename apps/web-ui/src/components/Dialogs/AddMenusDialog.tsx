@@ -26,6 +26,7 @@ import {
   OutlinedInput,
   InputAdornment,
   Autocomplete,
+  Switch,
 } from "@mui/material";
 import { Close as CloseIcon, Apps as AppsIcon } from "@mui/icons-material";
 import { useCreateMenu, useGetMenus, useUpdateMenu } from "../../queries/Menus";
@@ -47,7 +48,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
   menuToEdit,
 }) => {
   const [formData, setFormData] = useState<CreateMenuPayload>({
-    schoolId: "",
+    schoolId: [],
     menuName: "",
     menuUrl: "",
     menuIcon: "",
@@ -58,6 +59,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
     status: "active",
     menuOrder: "", // string | number, initializing as empty string for auto-gen
     deactivatedRoles: [],
+    defaultMenu: false,
   });
 
   const [menuType, setMenuType] = useState<"main" | "sub">("main");
@@ -116,7 +118,11 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
   useEffect(() => {
     if (open && menuToEdit) {
       setFormData({
-        schoolId: menuToEdit.schoolId || "",
+        schoolId: Array.isArray(menuToEdit.schoolId)
+          ? menuToEdit.schoolId
+          : menuToEdit.schoolId
+            ? [menuToEdit.schoolId]
+            : [],
         menuName: menuToEdit.menuName || "",
         menuUrl: menuToEdit.menuUrl || "",
         menuIcon: menuToEdit.menuIcon || "",
@@ -129,6 +135,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
         status: menuToEdit.status || "active",
         menuOrder: menuToEdit.menuOrder ?? "",
         deactivatedRoles: menuToEdit.deactivatedRoles || [],
+        defaultMenu: menuToEdit.defaultMenu || false,
       });
       setMenuType(menuToEdit.menuType || "main");
     }
@@ -172,8 +179,12 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
       ? formData.menuAccessRoles.includes("super_admin")
       : formData.menuAccessRoles === "super_admin";
 
-    if (!isSuperAdmin && !formData.schoolId)
-      newErrors.schoolId = "School is required";
+    if (
+      !isSuperAdmin &&
+      (!formData.schoolId ||
+        (Array.isArray(formData.schoolId) && formData.schoolId.length === 0))
+    )
+      newErrors.schoolId = "At least one school is required";
 
     if (menuType === "sub" && !formData.parentMenuId?.trim()) {
       newErrors.parentMenuId = "Main Menu Heading is required";
@@ -206,7 +217,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
 
   const handleClose = () => {
     setFormData({
-      schoolId: "",
+      schoolId: [],
       menuName: "",
       menuUrl: "",
       menuIcon: "",
@@ -217,6 +228,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
       status: "active",
       menuOrder: "",
       deactivatedRoles: [],
+      defaultMenu: false,
     });
     setMenuType("main");
     setErrors({});
@@ -272,27 +284,60 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
             )}
 
             <Grid container spacing={2}>
-              {/* School Selection */}
+              {/* School Selection (Multi-select) */}
               <Grid size={{ xs: 12 }}>
-                <FormControl fullWidth error={!!errors.schoolId}>
-                  <InputLabel>School</InputLabel>
-                  <Select
-                    name="schoolId"
-                    value={formData.schoolId}
-                    onChange={(e) => handleChange(e as any)}
-                    label="School"
-                    disabled={isLoadingSchools}
-                  >
-                    {schools.map((school) => (
-                      <MenuItem key={school.schoolId} value={school.schoolId}>
-                        {school.schoolName}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {errors.schoolId && (
-                    <FormHelperText>{errors.schoolId}</FormHelperText>
+                <Autocomplete
+                  multiple
+                  options={schools}
+                  getOptionLabel={(school: any) => school.schoolName || ""}
+                  value={schools.filter((s: any) =>
+                    Array.isArray(formData.schoolId)
+                      ? formData.schoolId.includes(s.schoolId)
+                      : formData.schoolId === s.schoolId,
                   )}
-                </FormControl>
+                  onChange={(_event, newValue) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      schoolId: newValue.map((s: any) => s.schoolId),
+                    }));
+                    if (errors.schoolId) {
+                      setErrors((prev) => ({ ...prev, schoolId: "" }));
+                    }
+                  }}
+                  loading={isLoadingSchools}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Schools"
+                      error={!!errors.schoolId}
+                      helperText={errors.schoolId}
+                      placeholder="Select schools"
+                    />
+                  )}
+                  isOptionEqualToValue={(option, value) =>
+                    option.schoolId === value.schoolId
+                  }
+                  fullWidth
+                />
+              </Grid>
+
+              {/* Default Menu Toggle */}
+              <Grid size={{ xs: 12 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.defaultMenu || false}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          defaultMenu: e.target.checked,
+                        }))
+                      }
+                      color="primary"
+                    />
+                  }
+                  label="Default Menu (auto-assign to new schools)"
+                />
               </Grid>
 
               {/* Menu Name */}
@@ -422,22 +467,22 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                           onDelete={
                             menuToEdit
                               ? () => {
-                                  setFormData((prev) => {
-                                    const currentOrders = (
-                                      Array.isArray(prev.menuOrder)
-                                        ? prev.menuOrder
-                                        : [prev.menuOrder]
-                                    )
-                                      .filter(Boolean)
-                                      .map(String);
-                                    return {
-                                      ...prev,
-                                      menuOrder: currentOrders.filter(
-                                        (item) => item !== o,
-                                      ),
-                                    };
-                                  });
-                                }
+                                setFormData((prev) => {
+                                  const currentOrders = (
+                                    Array.isArray(prev.menuOrder)
+                                      ? prev.menuOrder
+                                      : [prev.menuOrder]
+                                  )
+                                    .filter(Boolean)
+                                    .map(String);
+                                  return {
+                                    ...prev,
+                                    menuOrder: currentOrders.filter(
+                                      (item) => item !== o,
+                                    ),
+                                  };
+                                });
+                              }
                               : undefined
                           }
                         />
@@ -571,19 +616,19 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                                 onDelete={
                                   menuToEdit || !isInherited
                                     ? () => {
-                                        const currentRoles = Array.isArray(
-                                          formData.menuAccessRoles,
-                                        )
-                                          ? formData.menuAccessRoles
-                                          : [formData.menuAccessRoles];
-                                        const newRoles = currentRoles.filter(
-                                          (r) => r !== value,
-                                        );
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          menuAccessRoles: newRoles,
-                                        }));
-                                      }
+                                      const currentRoles = Array.isArray(
+                                        formData.menuAccessRoles,
+                                      )
+                                        ? formData.menuAccessRoles
+                                        : [formData.menuAccessRoles];
+                                      const newRoles = currentRoles.filter(
+                                        (r) => r !== value,
+                                      );
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        menuAccessRoles: newRoles,
+                                      }));
+                                    }
                                     : undefined
                                 }
                                 onMouseDown={(event) => {
@@ -612,7 +657,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                         ? formData.menuAccessRoles
                         : [formData.menuAccessRoles];
 
-                  
+
 
                       return (
                         <MenuItem

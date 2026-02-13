@@ -37,15 +37,23 @@ const menuSchema = new mongoose.Schema(
       default: null,
     },
     schoolId: {
-      type: String,
+      type: [String],
+      default: [],
       required: function () {
         return !(
           this.menuAccessRoles && this.menuAccessRoles.includes("super_admin")
         );
       },
-      default: null,
+    },
+    defaultMenu: {
+      type: Boolean,
+      default: false,
     },
     deactivatedRoles: {
+      type: [String],
+      default: [],
+    },
+    deactivatedSchools: {
       type: [String],
       default: [],
     },

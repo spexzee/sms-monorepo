@@ -8,21 +8,26 @@ import {
   Autocomplete,
   Grid,
   InputAdornment,
+  Button,
+  Badge,
+  Typography,
 } from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-  ToggleOn as ToggleOnIcon,
-  ToggleOff as ToggleOffIcon,
+  Star as StarIcon,
+  StarBorder as StarBorderIcon,
 } from "@mui/icons-material";
 import DataTable, { type Column } from "../../components/Table/DataTable";
 import AddMenusDialog from "../../components/Dialogs/AddMenusDialog";
 import ConfirmationDialog from "../../components/Dialogs/ConfirmationDialog";
-import { useGetMenus, useDeleteMenu, useUpdateMenu } from "../../queries/Menus";
+import { useGetMenus, useDeleteMenu } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
 import { useAuth } from "../../context/AuthContext";
 import { useNotificationStore } from "../../stores/notificationStore";
+import ManageMenuAccessDialog from "../../components/Dialogs/ManageMenuAccessDialog";
+import HtmlTooltip from "../../components/Common/HtmlTooltip";
 import type { Menu } from "../../types";
 
 const Menus = () => {
@@ -30,6 +35,8 @@ const Menus = () => {
   const [selectedMenu, setSelectedMenu] = useState<Menu | undefined>(undefined);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [menuToDelete, setMenuToDelete] = useState<Menu | null>(null);
+  const [manageMenu, setManageMenu] = useState<Menu | null>(null);
+  const [manageMode, setManageMode] = useState<"roles" | "schools">("roles");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
@@ -66,33 +73,10 @@ const Menus = () => {
   };
 
   const deleteMutation = useDeleteMenu();
-  const updateMutation = useUpdateMenu();
 
   const handleEditClick = (menu: Menu) => {
     setSelectedMenu(menu);
     setIsAddDialogOpen(true);
-  };
-
-  const handleRoleStatusToggle = async (menu: Menu, role: string) => {
-    try {
-      const currentDeactivated = menu.deactivatedRoles || [];
-      let newDeactivated: string[];
-
-      if (currentDeactivated.includes(role)) {
-        newDeactivated = currentDeactivated.filter((r) => r !== role);
-      } else {
-        newDeactivated = [...currentDeactivated, role];
-      }
-
-      const res = await updateMutation.mutateAsync({
-        menuId: menu.menuId,
-        data: { deactivatedRoles: newDeactivated },
-      });
-      showNotification(res.message, "success");
-    } catch (err: any) {
-      console.error("Failed to update role status:", err);
-      showNotification(err.message || "Failed to update role status", "error");
-    }
   };
 
   const handleDeleteClick = (menu: Menu) => {
@@ -191,92 +175,190 @@ const Menus = () => {
 
     {
       id: "menuAccessRoles",
-      label: "Role",
-      minWidth: 250,
+      label: "Roles",
+      minWidth: 120,
       format: (value: any, row: Menu) => {
         if (!value) return null;
         const roles = Array.isArray(value) ? value : [value];
         const deactivatedRoles = row.deactivatedRoles || [];
-        const isMenuInactive = row.status === "inactive";
+        const activeCount = roles.filter(
+          (r: string) => !deactivatedRoles.includes(r),
+        ).length;
+
+        const rolesList = roles.map((role: string) => {
+          const isDeactivated = deactivatedRoles.includes(role);
+          const label = role.replace(/_/g, " ");
+          return (
+            <Box
+              key={role}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                mb: 0.5,
+              }}
+            >
+              <Chip
+                label={label}
+                size="small"
+                variant={isDeactivated ? "outlined" : "filled"}
+                color={isDeactivated ? "default" : "primary"}
+                sx={{
+                  textTransform: "capitalize",
+                  fontSize: "0.75rem",
+                  opacity: isDeactivated ? 0.6 : 1,
+                }}
+              />
+              <Typography
+                variant="caption"
+                color={isDeactivated ? "error" : "success.main"}
+                sx={{ fontWeight: 600 }}
+              >
+                {isDeactivated ? "Inactive" : "Active"}
+              </Typography>
+            </Box>
+          );
+        });
 
         return (
-          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-            {roles.map((role: string) => {
-              const isRoleDeactivated = deactivatedRoles.includes(role);
-              const isInactive = isMenuInactive || isRoleDeactivated;
-
-              let color:
-                | "default"
-                | "primary"
-                | "secondary"
-                | "error"
-                | "info"
-                | "success"
-                | "warning" = "default";
-              switch (role) {
-                case "super_admin":
-                  color = "error";
-                  break;
-                case "sch_admin":
-                  color = "primary";
-                  break;
-                case "teacher":
-                  color = "warning";
-                  break;
-                case "student":
-                  color = "success";
-                  break;
-                case "parent":
-                  color = "warning";
-                  break;
-                default:
-                  color = "default";
-              }
-
-              return (
-                <Tooltip
-                  key={role}
-                  title={`${isRoleDeactivated ? "Activate" : "Deactivate"} for ${role.replace(/_/g, " ")}`}
-                >
-                  <Chip
-                    label={role.replace(/_/g, " ")}
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRoleStatusToggle(row, role);
-                    }}
-                    variant={isInactive ? "outlined" : "filled"}
-                    color={isInactive ? "default" : color}
-                    icon={
-                      isRoleDeactivated ? (
-                        <ToggleOffIcon fontSize="small" />
-                      ) : (
-                        <ToggleOnIcon fontSize="small" />
-                      )
-                    }
-                    sx={{
-                      textTransform: "capitalize",
-                      fontWeight: 500,
-                      textDecoration: isInactive ? "line-through" : "none",
-                      opacity: isInactive ? 0.6 : 1,
-                      cursor: "pointer",
-                      "& .MuiChip-icon": {
-                        color: isInactive ? "inherit" : "white",
-                      },
-                    }}
-                  />
-                </Tooltip>
-              );
-            })}
-          </Box>
+          <HtmlTooltip
+            title={
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
+                  Assigned Roles ({activeCount}/{roles.length} active)
+                </Typography>
+                {rolesList}
+              </Box>
+            }
+            arrow
+            placement="right"
+          >
+            <Badge
+              badgeContent={roles.length}
+              color="primary"
+              sx={{ mr: 1 }}
+            >
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setManageMenu(row);
+                  setManageMode("roles");
+                }}
+                sx={{ minWidth: "auto", fontSize: "0.75rem", py: 0.5, px: 1.5 }}
+              >
+                Manage
+              </Button>
+            </Badge>
+          </HtmlTooltip>
         );
       },
     },
     {
       id: "schoolId",
-      label: "School ID",
-      minWidth: 100,
+      label: "Schools",
+      minWidth: 120,
       hide: "sm",
+      format: (value: any, row: Menu) => {
+        if (!value) return null;
+        const ids = Array.isArray(value) ? value : [value];
+        const deactivatedSchools = row.deactivatedSchools || [];
+
+        if (ids.length === 0)
+          return (
+            <Chip
+              label="Global"
+              size="small"
+              variant="outlined"
+              color="info"
+            />
+          );
+
+        const activeCount = ids.filter(
+          (id: string) => !deactivatedSchools.includes(id),
+        ).length;
+
+        const schoolsList = ids.map((id: string) => {
+          const school = schools.find((s: any) => s.schoolId === id);
+          const isDeactivated = deactivatedSchools.includes(id);
+          return (
+            <Box
+              key={id}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                mb: 0.5,
+              }}
+            >
+              <Chip
+                label={school ? school.schoolName : id}
+                size="small"
+                variant={isDeactivated ? "outlined" : "filled"}
+                color={isDeactivated ? "default" : "primary"}
+                sx={{
+                  fontSize: "0.75rem",
+                  opacity: isDeactivated ? 0.6 : 1,
+                }}
+              />
+              <Typography
+                variant="caption"
+                color={isDeactivated ? "error" : "success.main"}
+                sx={{ fontWeight: 600 }}
+              >
+                {isDeactivated ? "Disabled" : "Enabled"}
+              </Typography>
+            </Box>
+          );
+        });
+
+        return (
+          <HtmlTooltip
+            title={
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
+                  Assigned Schools ({activeCount}/{ids.length} enabled)
+                </Typography>
+                {schoolsList}
+              </Box>
+            }
+            arrow
+            placement="right"
+          >
+            <Badge
+              badgeContent={ids.length}
+              color="primary"
+              sx={{ mr: 1 }}
+            >
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setManageMenu(row);
+                  setManageMode("schools");
+                }}
+                sx={{ minWidth: "auto", fontSize: "0.75rem", py: 0.5, px: 1.5 }}
+              >
+                Manage
+              </Button>
+            </Badge>
+          </HtmlTooltip>
+        );
+      },
+    },
+    {
+      id: "defaultMenu",
+      label: "Default",
+      minWidth: 80,
+      format: (value: any) => (
+        <Tooltip title={value ? "Default menu (auto-assigned to new schools)" : "Not a default menu"}>
+          <IconButton size="small" color={value ? "warning" : "default"}>
+            {value ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
+      ),
     },
     {
       id: "actions",
@@ -403,6 +485,15 @@ const Menus = () => {
         confirmLabel="Delete"
         variant="danger"
         isLoading={deleteMutation.isPending}
+      />
+
+      <ManageMenuAccessDialog
+        open={!!manageMenu}
+        onClose={() => setManageMenu(null)}
+        menu={manageMenu}
+        mode={manageMode}
+        schools={schools}
+        onSuccess={(msg) => showNotification(msg, "success")}
       />
     </Box>
   );

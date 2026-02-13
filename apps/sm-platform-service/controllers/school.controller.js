@@ -1,4 +1,4 @@
-const { SchoolModel: School } = require("@sms/shared");
+const { SchoolModel: School, MenuModel: Menu } = require("@sms/shared");
 const { getSchoolDbConnection } = require("../configs/db");
 const {
   getPaginationParams,
@@ -87,9 +87,21 @@ const createSchool = async (req, res) => {
       });
       console.log(`✅ Database '${schoolDbName}' initialized successfully`);
     } catch (dbError) {
-            console.error(`⚠️ Warning: Could not initialize database '${schoolDbName}':`, dbError.message);
+      console.error(`⚠️ Warning: Could not initialize database '${schoolDbName}':`, dbError.message);
       // Note: We don't fail the school creation if DB init fails
       // The database will be created when first collection is added
+    }
+
+    // Auto-assign default menus to the new school
+    try {
+      const result = await Menu.updateMany(
+        { defaultMenu: true },
+        { $addToSet: { schoolId: schoolId } },
+      );
+      console.log(`📋 Assigned ${result.modifiedCount} default menus to school ${schoolId}`);
+    } catch (menuError) {
+      console.error(`⚠️ Warning: Could not assign default menus to school ${schoolId}:`, menuError.message);
+      // Don't fail school creation if menu assignment fails
     }
 
     return res.status(201).json({
@@ -172,6 +184,28 @@ const updateSchoolById = async (req, res) => {
 
     // Prevent updating schoolId
     delete updateData.schoolId;
+
+    // Detect school status change for cascade deactivation
+    if (updateData.status) {
+      const currentSchool = await School.findOne({ schoolId });
+      if (currentSchool && currentSchool.status !== updateData.status) {
+        if (updateData.status === "inactive") {
+          // Deactivate: add schoolId to deactivatedSchools on all menus containing it
+          await Menu.updateMany(
+            { schoolId: { $in: [schoolId] } },
+            { $addToSet: { deactivatedSchools: schoolId } },
+          );
+          console.log(`🔒 Deactivated all menus for school ${schoolId}`);
+        } else if (updateData.status === "active") {
+          // Reactivate: remove schoolId from deactivatedSchools
+          await Menu.updateMany(
+            { deactivatedSchools: schoolId },
+            { $pull: { deactivatedSchools: schoolId } },
+          );
+          console.log(`🔓 Reactivated all menus for school ${schoolId}`);
+        }
+      }
+    }
 
     const updatedSchool = await School.findOneAndUpdate(
       { schoolId },
