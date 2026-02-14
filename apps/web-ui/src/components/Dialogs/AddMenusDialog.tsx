@@ -110,6 +110,35 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
     }
   }, [selectedParentRoles, menuToEdit]);
 
+  // Synchronize activeOrderPrefix with available roles
+  useEffect(() => {
+    const selectedRoles = Array.isArray(formData.menuAccessRoles)
+      ? formData.menuAccessRoles
+      : [formData.menuAccessRoles];
+
+    const prefixToRoleMap: Record<string, string> = {
+      SA: "super_admin",
+      A: "sch_admin",
+      T: "teacher",
+      S: "student",
+      P: "parent",
+    };
+
+    const currentRole = prefixToRoleMap[activeOrderPrefix];
+
+    // If current prefix is not valid for selected roles, pick the first valid one
+    if (
+      selectedRoles.length > 0 &&
+      (!currentRole || !selectedRoles.includes(currentRole))
+    ) {
+      const firstRole = selectedRoles[0];
+      const newPrefix = Object.keys(prefixToRoleMap).find(
+        (key) => prefixToRoleMap[key] === firstRole,
+      );
+      if (newPrefix) setActiveOrderPrefix(newPrefix);
+    }
+  }, [formData.menuAccessRoles, activeOrderPrefix]);
+
   // Filter for potential parent menus (Main Menus that are not submenus themselves)
   const parentMenuOptions =
     menusData?.data?.filter((menu: any) => !menu.parentMenuId) || [];
@@ -430,129 +459,157 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                 />
               </Grid>
 
-              {/* Menu Order */}
-              <Grid size={{ xs: 12 }}>
-                {/* Existing Codes Display */}
-                <Box
-                  sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 1 }}
-                >
-                  {(Array.isArray(formData.menuOrder)
-                    ? formData.menuOrder
-                    : [formData.menuOrder]
-                  )
-                    .filter(Boolean)
-                    .map((order) => {
-                      const o = String(order);
-                      let color:
-                        | "default"
-                        | "primary"
-                        | "secondary"
-                        | "error"
-                        | "info"
-                        | "success"
-                        | "warning" = "default";
-                      if (o.startsWith("SA")) color = "error";
-                      else if (o.startsWith("A")) color = "primary";
-                      else if (o.startsWith("T")) color = "warning";
-                      else if (o.startsWith("S")) color = "success";
-                      else if (o.startsWith("P")) color = "warning";
+              {/* Menu Order - Only show when editing, as it's auto-generated on create */}
+              {menuToEdit && (
+                <Grid size={{ xs: 12 }}>
+                  {/* Existing Codes Display */}
+                  <Box
+                    sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 1 }}
+                  >
+                    {(Array.isArray(formData.menuOrder)
+                      ? formData.menuOrder
+                      : [formData.menuOrder]
+                    )
+                      .filter(Boolean)
+                      .map((order) => {
+                        const o = String(order);
+                        let color:
+                          | "default"
+                          | "primary"
+                          | "secondary"
+                          | "error"
+                          | "info"
+                          | "success"
+                          | "warning" = "default";
+                        if (o.startsWith("SA")) color = "error";
+                        else if (o.startsWith("A")) color = "primary";
+                        else if (o.startsWith("T")) color = "warning";
+                        else if (o.startsWith("S")) color = "success";
+                        else if (o.startsWith("P")) color = "warning";
 
-                      return (
-                        <Chip
-                          key={o}
-                          label={o}
-                          size="small"
-                          color={color}
-                          variant="outlined"
-                          onDelete={
-                            menuToEdit
-                              ? () => {
-                                setFormData((prev) => {
-                                  const currentOrders = (
-                                    Array.isArray(prev.menuOrder)
-                                      ? prev.menuOrder
-                                      : [prev.menuOrder]
-                                  )
-                                    .filter(Boolean)
-                                    .map(String);
-                                  return {
-                                    ...prev,
-                                    menuOrder: currentOrders.filter(
-                                      (item) => item !== o,
-                                    ),
-                                  };
-                                });
-                              }
-                              : undefined
-                          }
-                        />
-                      );
-                    })}
-                </Box>
-
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  <FormControl sx={{ minWidth: 100 }}>
-                    <InputLabel>Prefix</InputLabel>
-                    <Select
-                      label="Prefix"
-                      value={activeOrderPrefix}
-                      onChange={(e) => setActiveOrderPrefix(e.target.value)}
-                      disabled={!formData.menuAccessRoles?.length}
-                    >
-                      <MenuItem value="SA">SA (Super Admin)</MenuItem>
-                      <MenuItem value="A">A (School Admin)</MenuItem>
-                      <MenuItem value="T">T (Teacher)</MenuItem>
-                      <MenuItem value="S">S (Student)</MenuItem>
-                      <MenuItem value="P">P (Parent)</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField
-                    name="menuOrderNumber"
-                    label="Order No."
-                    value={(() => {
-                      const orders = Array.isArray(formData.menuOrder)
-                        ? formData.menuOrder
-                        : [formData.menuOrder];
-                      const match = orders.find((o) =>
-                        String(o).startsWith(activeOrderPrefix),
-                      );
-                      return match
-                        ? String(match).replace(activeOrderPrefix, "")
-                        : "";
-                    })()}
-                    onChange={(e) => {
-                      const newValue = e.target.value;
-                      const newCode = `${activeOrderPrefix}${newValue}`;
-
-                      setFormData((prev) => {
-                        const currentOrders = (
-                          Array.isArray(prev.menuOrder)
-                            ? prev.menuOrder
-                            : [prev.menuOrder]
-                        )
-                          .filter(Boolean)
-                          .map(String);
-                        // Remove any existing code with this prefix
-                        const filtered = currentOrders.filter(
-                          (o) => !o.startsWith(activeOrderPrefix),
+                        return (
+                          <Chip
+                            key={o}
+                            label={o}
+                            size="small"
+                            color={color}
+                            variant="outlined"
+                            onDelete={() => {
+                              setFormData((prev) => {
+                                const currentOrders = (
+                                  Array.isArray(prev.menuOrder)
+                                    ? prev.menuOrder
+                                    : [prev.menuOrder]
+                                )
+                                  .filter(Boolean)
+                                  .map(String);
+                                return {
+                                  ...prev,
+                                  menuOrder: currentOrders.filter(
+                                    (item) => item !== o,
+                                  ),
+                                };
+                              });
+                            }}
+                          />
                         );
-                        // Add new code if value exists
-                        if (newValue) {
-                          filtered.push(newCode);
-                        }
-                        return {
-                          ...prev,
-                          menuOrder: filtered,
-                        };
-                      });
-                    }}
-                    error={!!errors.menuOrder}
-                    fullWidth
-                    disabled={!menuToEdit}
-                    placeholder={`No. for ${activeOrderPrefix}`}
-                  />
-                </Box>
-              </Grid>
+                      })}
+                  </Box>
+
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <FormControl sx={{ minWidth: 100 }}>
+                      <InputLabel>Prefix</InputLabel>
+                      <Select
+                        label="Prefix"
+                        value={activeOrderPrefix}
+                        onChange={(e) => setActiveOrderPrefix(e.target.value)}
+                        disabled={!formData.menuAccessRoles?.length}
+                      >
+                        {[
+                          {
+                            prefix: "SA",
+                            role: "super_admin",
+                            label: "SA (Super Admin)",
+                          },
+                          {
+                            prefix: "A",
+                            role: "sch_admin",
+                            label: "A (School Admin)",
+                          },
+                          {
+                            prefix: "T",
+                            role: "teacher",
+                            label: "T (Teacher)",
+                          },
+                          {
+                            prefix: "S",
+                            role: "student",
+                            label: "S (Student)",
+                          },
+                          { prefix: "P", role: "parent", label: "P (Parent)" },
+                        ]
+                          .filter((p) => {
+                            const selectedRoles = Array.isArray(
+                              formData.menuAccessRoles,
+                            )
+                              ? formData.menuAccessRoles
+                              : [formData.menuAccessRoles];
+                            return selectedRoles.includes(p.role);
+                          })
+                          .map((p) => (
+                            <MenuItem key={p.prefix} value={p.prefix}>
+                              {p.label}
+                            </MenuItem>
+                          ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      name="menuOrderNumber"
+                      label="Order No."
+                      value={(() => {
+                        const orders = Array.isArray(formData.menuOrder)
+                          ? formData.menuOrder
+                          : [formData.menuOrder];
+                        const match = orders.find((o) =>
+                          String(o).startsWith(activeOrderPrefix),
+                        );
+                        return match
+                          ? String(match).replace(activeOrderPrefix, "")
+                          : "";
+                      })()}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        const newCode = `${activeOrderPrefix}${newValue}`;
+
+                        setFormData((prev) => {
+                          const currentOrders = (
+                            Array.isArray(prev.menuOrder)
+                              ? prev.menuOrder
+                              : [prev.menuOrder]
+                          )
+                            .filter(Boolean)
+                            .map(String);
+                          // Remove any existing code with this prefix
+                          const filtered = currentOrders.filter(
+                            (o) => !o.startsWith(activeOrderPrefix),
+                          );
+                          // Add new code if value exists
+                          if (newValue) {
+                            filtered.push(newCode);
+                          }
+                          return {
+                            ...prev,
+                            menuOrder: filtered,
+                          };
+                        });
+                      }}
+                      error={!!errors.menuOrder}
+                      fullWidth
+                      placeholder={`No. for ${activeOrderPrefix}`}
+                    />
+                  </Box>
+                </Grid>
+              )}
 
               {/* Menu Icon */}
               <Grid size={{ xs: 12 }}>
@@ -616,19 +673,19 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                                 onDelete={
                                   menuToEdit || !isInherited
                                     ? () => {
-                                      const currentRoles = Array.isArray(
-                                        formData.menuAccessRoles,
-                                      )
-                                        ? formData.menuAccessRoles
-                                        : [formData.menuAccessRoles];
-                                      const newRoles = currentRoles.filter(
-                                        (r) => r !== value,
-                                      );
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        menuAccessRoles: newRoles,
-                                      }));
-                                    }
+                                        const currentRoles = Array.isArray(
+                                          formData.menuAccessRoles,
+                                        )
+                                          ? formData.menuAccessRoles
+                                          : [formData.menuAccessRoles];
+                                        const newRoles = currentRoles.filter(
+                                          (r) => r !== value,
+                                        );
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          menuAccessRoles: newRoles,
+                                        }));
+                                      }
                                     : undefined
                                 }
                                 onMouseDown={(event) => {
@@ -656,8 +713,6 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       )
                         ? formData.menuAccessRoles
                         : [formData.menuAccessRoles];
-
-
 
                       return (
                         <MenuItem

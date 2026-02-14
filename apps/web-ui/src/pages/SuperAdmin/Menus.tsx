@@ -18,6 +18,7 @@ import {
   Search as SearchIcon,
   Star as StarIcon,
   StarBorder as StarBorderIcon,
+  RestartAlt as RestartAltIcon,
 } from "@mui/icons-material";
 import DataTable, { type Column } from "../../components/Table/DataTable";
 import AddMenusDialog from "../../components/Dialogs/AddMenusDialog";
@@ -30,6 +31,28 @@ import ManageMenuAccessDialog from "../../components/Dialogs/ManageMenuAccessDia
 import HtmlTooltip from "../../components/Common/HtmlTooltip";
 import type { Menu } from "../../types";
 
+const ROLE_COLOR_MAP: Record<
+  string,
+  "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning"
+> = {
+  super_admin: "error",
+  sch_admin: "primary",
+  teacher: "warning",
+  student: "success",
+  parent: "warning",
+  SA: "error",
+  A: "primary",
+  T: "warning",
+  S: "success",
+  P: "warning",
+};
+
+const getRoleChipColor = (value: string) => {
+  if (ROLE_COLOR_MAP[value]) return ROLE_COLOR_MAP[value];
+  const prefix = value.match(/^(SA|A|T|S|P)/)?.[0];
+  return (prefix && ROLE_COLOR_MAP[prefix]) || "default";
+};
+
 const Menus = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<Menu | undefined>(undefined);
@@ -38,30 +61,47 @@ const Menus = () => {
   const [manageMenu, setManageMenu] = useState<Menu | null>(null);
   const [manageMode, setManageMode] = useState<"roles" | "schools">("roles");
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [appliedSchool, setAppliedSchool] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [schoolInput, setSchoolInput] = useState<string | null>(null);
+
   const { showNotification } = useNotificationStore();
 
   // Use global pagination state from AuthContext
   const { page, setPage, limit, setLimit } = useAuth();
 
-  // Reset page when search or school filter changes
+  // Reset page when applied filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, selectedSchool, setPage]);
+  }, [appliedSearch, appliedSchool, setPage]);
 
   // Fetch menus and schools
   const {
     data: menusData,
     isLoading: isLoadingMenus,
     error,
-  } = useGetMenus(page, limit, searchTerm, selectedSchool || undefined);
+  } = useGetMenus(page, limit, appliedSearch, appliedSchool || undefined);
   const { data: schoolsData, isLoading: isLoadingSchools } = useGetSchools();
 
   const menus = menusData?.data || [];
   const schools = schoolsData?.data || [];
 
   const isLoading = isLoadingMenus || isLoadingSchools;
+
+  const handleSearch = () => {
+    setAppliedSearch(searchInput);
+    setAppliedSchool(schoolInput);
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearchInput("");
+    setSchoolInput(null);
+    setAppliedSearch("");
+    setAppliedSchool(null);
+    setPage(1);
+  };
 
   const handleAddClick = () => {
     setIsAddDialogOpen(true);
@@ -118,25 +158,7 @@ const Menus = () => {
           <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
             {orders.map((orderItem: string) => {
               const order = String(orderItem);
-              let color:
-                | "default"
-                | "primary"
-                | "secondary"
-                | "error"
-                | "info"
-                | "success"
-                | "warning" = "default";
-
-              // Derive color from prefix (SA -> Super Admin, A -> School Admin, etc.)
-              if (order.startsWith("SA"))
-                color = "error"; // super_admin
-              else if (order.startsWith("A"))
-                color = "primary"; // sch_admin
-              else if (order.startsWith("T"))
-                color = "warning"; // teacher
-              else if (order.startsWith("S"))
-                color = "success"; // student
-              else if (order.startsWith("P")) color = "warning"; // parent
+              const color = getRoleChipColor(order);
 
               return (
                 <Chip
@@ -202,7 +224,7 @@ const Menus = () => {
                 label={label}
                 size="small"
                 variant={isDeactivated ? "outlined" : "filled"}
-                color={isDeactivated ? "default" : "primary"}
+                color={isDeactivated ? "default" : getRoleChipColor(role)}
                 sx={{
                   textTransform: "capitalize",
                   fontSize: "0.75rem",
@@ -233,11 +255,7 @@ const Menus = () => {
             arrow
             placement="right"
           >
-            <Badge
-              badgeContent={roles.length}
-              color="primary"
-              sx={{ mr: 1 }}
-            >
+            <Badge badgeContent={roles.length} color="primary" sx={{ mr: 1 }}>
               <Button
                 size="small"
                 variant="outlined"
@@ -259,7 +277,6 @@ const Menus = () => {
       id: "schoolId",
       label: "Schools",
       minWidth: 120,
-      hide: "sm",
       format: (value: any, row: Menu) => {
         if (!value) return null;
         const ids = Array.isArray(value) ? value : [value];
@@ -267,12 +284,7 @@ const Menus = () => {
 
         if (ids.length === 0)
           return (
-            <Chip
-              label="Global"
-              size="small"
-              variant="outlined"
-              color="info"
-            />
+            <Chip label="Global" size="small" variant="outlined" color="info" />
           );
 
         const activeCount = ids.filter(
@@ -326,11 +338,7 @@ const Menus = () => {
             arrow
             placement="right"
           >
-            <Badge
-              badgeContent={ids.length}
-              color="primary"
-              sx={{ mr: 1 }}
-            >
+            <Badge badgeContent={ids.length} color="primary" sx={{ mr: 1 }}>
               <Button
                 size="small"
                 variant="outlined"
@@ -353,9 +361,19 @@ const Menus = () => {
       label: "Default",
       minWidth: 80,
       format: (value: any) => (
-        <Tooltip title={value ? "Default menu (auto-assigned to new schools)" : "Not a default menu"}>
+        <Tooltip
+          title={
+            value
+              ? "Default menu (auto-assigned to new schools)"
+              : "Not a default menu"
+          }
+        >
           <IconButton size="small" color={value ? "warning" : "default"}>
-            {value ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+            {value ? (
+              <StarIcon fontSize="small" />
+            ) : (
+              <StarBorderIcon fontSize="small" />
+            )}
           </IconButton>
         </Tooltip>
       ),
@@ -409,13 +427,16 @@ const Menus = () => {
         }}
       >
         <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <TextField
               fullWidth
               variant="outlined"
               placeholder="Search menus or roles..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSearch();
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -426,15 +447,15 @@ const Menus = () => {
               size="small"
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Autocomplete
               options={schools}
               getOptionLabel={(school: any) => school.schoolName || ""}
               value={
-                schools.find((s: any) => s.schoolId === selectedSchool) || null
+                schools.find((s: any) => s.schoolId === schoolInput) || null
               }
               onChange={(_event, newValue) => {
-                setSelectedSchool(newValue ? newValue.schoolId : null);
+                setSchoolInput(newValue ? newValue.schoolId : null);
               }}
               renderInput={(params) => (
                 <TextField
@@ -447,6 +468,29 @@ const Menus = () => {
               )}
               fullWidth
             />
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button
+                variant="contained"
+                startIcon={<SearchIcon />}
+                onClick={handleSearch}
+                fullWidth
+                sx={{ height: "40px" }}
+              >
+                Search
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={<RestartAltIcon />}
+                onClick={handleClearFilters}
+                fullWidth
+                sx={{ height: "40px" }}
+              >
+                Clear
+              </Button>
+            </Box>
           </Grid>
         </Grid>
       </Box>
