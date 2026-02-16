@@ -226,6 +226,41 @@ const Menus = () => {
         }
       });
 
+      // Add data validation (dropdowns) for menuType, defaultMenu, and status
+      // menuType is column 5 (E), defaultMenu is column 10 (J), status is column 11 (K)
+      // We apply to the first 500 rows to ensure dropdowns are available for new entries
+      for (let i = 2; i <= 500; i++) {
+        // menuType: main, sub
+        (sheet.getCell(`E${i}`) as any).dataValidation = {
+          type: "list",
+          allowBlank: true,
+          formulae: ['"main,sub"'],
+          showErrorMessage: true,
+          errorTitle: "Invalid Menu Type",
+          error: "Please select main or sub",
+        };
+
+        // defaultMenu: true, false
+        (sheet.getCell(`J${i}`) as any).dataValidation = {
+          type: "list",
+          allowBlank: true,
+          formulae: ['"true,false"'],
+          showErrorMessage: true,
+          errorTitle: "Invalid Value",
+          error: "Please select true or false",
+        };
+
+        // status: active, inactive
+        (sheet.getCell(`K${i}`) as any).dataValidation = {
+          type: "list",
+          allowBlank: true,
+          formulae: ['"active,inactive"'],
+          showErrorMessage: true,
+          errorTitle: "Invalid Status",
+          error: "Please select active or inactive",
+        };
+      }
+
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
