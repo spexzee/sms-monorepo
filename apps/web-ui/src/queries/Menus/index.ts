@@ -134,3 +134,19 @@ export const useBulkUpdateMenus = () => {
     },
   });
 };
+
+// Restore menus from backup
+export const useRestoreMenuBackup = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (batchId: string) =>
+      useApi<ApiResponse<void>>("POST", "/api/admin/dashboard/menus/restore", {
+        batchId,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["menus"] });
+    },
+  });
+};
+

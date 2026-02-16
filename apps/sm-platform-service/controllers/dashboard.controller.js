@@ -3,6 +3,7 @@ const {
   UserModel: User,
   MenuModel: Menu,
   AdminModel: adminModel,
+  MenuBackupModel: MenuBackup,
 } = require("@sms/shared");
 const {
   getPaginationParams,
@@ -554,6 +555,16 @@ const bulkUpdateMenus = async (req, res) => {
       });
     }
 
+    // --- Data Safety: Take a snapshot before bulk update ---
+    const currentMenus = await Menu.find({});
+    const batchId = `BATCH_${Date.now()}`;
+
+    await MenuBackup.create({
+      batchId,
+      performedBy: req.user?.userId || "super_admin",
+      menuSnapshot: currentMenus,
+    });
+
     const errors = [];
     const operations = [];
 
@@ -630,6 +641,76 @@ const bulkUpdateMenus = async (req, res) => {
   }
 };
 
+// Get all menu backups
+const getMenuBackups = async (req, res) => {
+  try {
+    const backups = await MenuBackup.find({}, { menuSnapshot: 0 })
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    return res.status(200).json({
+      success: true,
+      data: backups,
+    });
+  } catch (error) {
+    console.error("Error fetching backups:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch backups",
+      error: error.message,
+    });
+  }
+};
+
+// Restore menus from a backup
+const restoreMenuBackup = async (req, res) => {
+  try {
+    const { batchId } = req.body;
+
+    if (!batchId) {
+      return res.status(400).json({
+        success: false,
+        message: "batchId is required",
+      });
+    }
+
+    const backup = await MenuBackup.findOne({ batchId });
+    if (!backup) {
+      return res.status(404).json({
+        success: false,
+        message: "Backup not found",
+      });
+    }
+
+    // 1. Take a temporary snapshot before restoring (safety first!)
+    const currentMenus = await Menu.find({});
+    const safetyBatchId = `RESTORE_SAFETY_${Date.now()}`;
+    await MenuBackup.create({
+      batchId: safetyBatchId,
+      performedBy: req.user?.userId || "super_admin",
+      menuSnapshot: currentMenus,
+    });
+
+    // 2. Wipe current collection and restore from snapshot
+    await Menu.deleteMany({});
+    if (backup.menuSnapshot && backup.menuSnapshot.length > 0) {
+      await Menu.insertMany(backup.menuSnapshot);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Menu collection restored successfully from ${batchId}. A safety backup (${safetyBatchId}) was created before the restore.`,
+    });
+  } catch (error) {
+    console.error("Error restoring backup:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to restore backup",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getMenus,
@@ -639,4 +720,6 @@ module.exports = {
   updateMenu,
   deleteMenu,
   bulkUpdateMenus,
+  getMenuBackups,
+  restoreMenuBackup,
 };
