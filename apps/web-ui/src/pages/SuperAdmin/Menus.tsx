@@ -261,6 +261,28 @@ const Menus = () => {
         };
       }
 
+      // Add guidance for menuIcon (Column H)
+      const iconHeaderCell = sheet.getCell("H1");
+      iconHeaderCell.note = {
+        texts: [
+          { text: "Use Iconify format (e.g., mdi:home, uil:setting).\n" },
+          { text: "Browse icons at: https://icon-sets.iconify.design" },
+        ],
+      };
+
+      // Add a prompt/help message for the icon column cells
+      for (let i = 2; i <= 500; i++) {
+        const cell = sheet.getCell(`H${i}`);
+        (cell as any).dataValidation = {
+          type: "custom",
+          allowBlank: true,
+          formulae: ["=TRUE"], // Allows any input but enables the prompt
+          showInputMessage: true,
+          promptTitle: "Iconify Format",
+          prompt: "Example: mdi:home or uil:setting. Visit icon-sets.iconify.design for names.",
+        };
+      }
+
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
