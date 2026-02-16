@@ -7,6 +7,7 @@ module.exports = {
     AdminModel: require('./admin.model'),
     UserModel: require('./users.model'),
     MenuModel: require('./menu.model'),
+    MenuBackupModel: require('./menuBackup.model'),
     EmailRegistryModel: require('./EmailRegistry.model'),
     AttendanceCheckinSchema: require('./attendance-checkin.model'),
     AttendancePeriodSchema: require('./attendance-period.model'),

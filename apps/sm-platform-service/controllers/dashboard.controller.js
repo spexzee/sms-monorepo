@@ -3,6 +3,7 @@ const {
   UserModel: User,
   MenuModel: Menu,
   AdminModel: adminModel,
+  MenuBackupModel: MenuBackup,
 } = require("@sms/shared");
 const {
   getPaginationParams,
@@ -553,6 +554,16 @@ const bulkUpdateMenus = async (req, res) => {
         message: "menus array is required and must not be empty",
       });
     }
+
+    // --- Data Safety: Take a snapshot before bulk update ---
+    const currentMenus = await Menu.find({});
+    const batchId = `BATCH_${Date.now()}`;
+
+    await MenuBackup.create({
+      batchId,
+      performedBy: req.user?.userId || "super_admin",
+      menuSnapshot: currentMenus,
+    });
 
     const errors = [];
     const operations = [];
