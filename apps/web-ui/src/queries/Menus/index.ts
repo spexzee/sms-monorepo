@@ -107,3 +107,30 @@ export const useDeleteMenu = () => {
     },
   });
 };
+
+// Get all menus without pagination (for Excel export)
+export const useGetAllMenusForExport = () => {
+  return useQuery({
+    queryKey: ["menus", "export"],
+    queryFn: () =>
+      useApi<ApiResponse<Menu[]>>("GET", "/api/admin/dashboard/menus/export"),
+    enabled: false, // Only fetch on demand via refetch()
+  });
+};
+
+// Bulk update menus (from Excel upload)
+export const useBulkUpdateMenus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (menus: Partial<Menu>[]) =>
+      useApi<ApiResponse<{ matched: number; modified: number; errorCount: number }>>(
+        "POST",
+        "/api/admin/dashboard/menus/bulk-update",
+        { menus },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["menus"] });
+    },
+  });
+};

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Box,
   Chip,
@@ -31,10 +31,18 @@ import {
   KeyboardArrowRight as ExpandRightIcon,
   RestartAlt as RestartAltIcon,
   SubdirectoryArrowRight as SubMenuIcon,
+  Download as DownloadIcon,
+  Upload as UploadIcon,
 } from "@mui/icons-material";
+import ExcelJS from "exceljs";
 import AddMenusDialog from "../../components/Dialogs/AddMenusDialog";
 import ConfirmationDialog from "../../components/Dialogs/ConfirmationDialog";
-import { useGetMenus, useDeleteMenu } from "../../queries/Menus";
+import {
+  useGetMenus,
+  useDeleteMenu,
+  useGetAllMenusForExport,
+  useBulkUpdateMenus,
+} from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
 import { useAuth } from "../../context/AuthContext";
 import { useNotificationStore } from "../../stores/notificationStore";
@@ -76,6 +84,8 @@ const Menus = () => {
   const [manageMenu, setManageMenu] = useState<Menu | null>(null);
   const [manageMode, setManageMode] = useState<"roles" | "schools">("roles");
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [appliedSearch, setAppliedSearch] = useState("");
   const [appliedSchool, setAppliedSchool] = useState<string | null>(null);
@@ -98,6 +108,8 @@ const Menus = () => {
     isLoading: isLoadingMenus,
     error,
   } = useGetMenus(page, limit, appliedSearch, appliedSchool || undefined);
+  const { refetch: fetchAllMenus } = useGetAllMenusForExport();
+  const bulkUpdateMutation = useBulkUpdateMenus();
   const { data: schoolsData, isLoading: isLoadingSchools } = useGetSchools();
 
   const menus = menusData?.data || [];
@@ -144,6 +156,242 @@ const Menus = () => {
 
   const handleAddClick = () => {
     setIsAddDialogOpen(true);
+  };
+
+  // ---- Excel template columns ----
+  const TEMPLATE_COLUMNS = [
+    "menuId",
+    "menuName",
+    "menuUrl",
+    "menuOrder",
+    "menuType",
+    "parentMenuId",
+    "menuAccessRoles",
+    "menuIcon",
+    "schoolId",
+    "defaultMenu",
+    "status",
+  ];
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const result = await fetchAllMenus();
+      const allMenus: Menu[] = result.data?.data || [];
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Menus");
+
+      // Header row
+      sheet.columns = TEMPLATE_COLUMNS.map((col) => ({
+        header: col,
+        key: col,
+        width: col === "menuId" ? 12 : col === "menuName" ? 25 : 20,
+      }));
+
+      // Style header row
+      const headerRow = sheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF1976D2" },
+      };
+      headerRow.alignment = { horizontal: "center" };
+
+      // Add data rows
+      allMenus.forEach((menu: any) => {
+        const row: Record<string, any> = {};
+        TEMPLATE_COLUMNS.forEach((col) => {
+          const val = menu[col];
+          if (Array.isArray(val)) {
+            row[col] = val.join(", ");
+          } else if (typeof val === "boolean") {
+            row[col] = val ? "true" : "false";
+          } else {
+            row[col] = val ?? "";
+          }
+        });
+        sheet.addRow(row);
+      });
+
+      // Lock menuId column (light gray background to indicate read-only)
+      sheet.eachRow((row, rowNum) => {
+        if (rowNum > 1) {
+          const cell = row.getCell(1);
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFF0F0F0" },
+          };
+        }
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `menus_template_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      showNotification("Template downloaded successfully", "success");
+    } catch (err: any) {
+      console.error("Download failed:", err);
+      showNotification(err.message || "Failed to download template", "error");
+    }
+  };
+
+  const handleUploadExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input so the same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    setIsUploading(true);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const arrayBuffer = await file.arrayBuffer();
+      await workbook.xlsx.load(arrayBuffer);
+
+      const sheet = workbook.getWorksheet("Menus") || workbook.getWorksheet(1);
+      if (!sheet) {
+        showNotification("Invalid file: no worksheet found", "error");
+        return;
+      }
+
+      // Validate columns
+      const headerRow = sheet.getRow(1);
+      const headers: string[] = [];
+      headerRow.eachCell((cell, colNum) => {
+        headers[colNum - 1] = String(cell.value || "").trim();
+      });
+
+      // Check for exact column match
+      const templateSet = new Set(TEMPLATE_COLUMNS);
+      const headerSet = new Set(headers);
+
+      const extraCols = headers.filter((h) => !templateSet.has(h));
+      const missingCols = TEMPLATE_COLUMNS.filter((c) => !headerSet.has(c));
+
+      if (extraCols.length > 0) {
+        showNotification(
+          `Invalid template: Please use the downloaded template.`,
+          "error",
+        );
+        return;
+      }
+
+      if (missingCols.length > 0) {
+        showNotification(
+          `Invalid template: Please use the downloaded template.`,
+          "error",
+        );
+        return;
+      }
+
+      // Fetch current data to diff
+      const currentResult = await fetchAllMenus();
+      const currentMenus: Menu[] = currentResult.data?.data || [];
+      const currentMap = new Map(currentMenus.map((m) => [m.menuId, m]));
+
+      // Parse rows
+      const changedMenus: Partial<Menu>[] = [];
+
+      sheet.eachRow((row, rowNum) => {
+        if (rowNum === 1) return; // Skip header
+
+        const rowData: Record<string, any> = {};
+        headers.forEach((header, idx) => {
+          const cell = row.getCell(idx + 1);
+          rowData[header] = cell.value ?? "";
+        });
+
+        const menuId = String(rowData.menuId || "").trim();
+        if (!menuId) return;
+
+        const current = currentMap.get(menuId);
+        if (!current) return; // Skip unknown menuIds
+
+        // Convert Excel values back to proper types
+        const parseArrayField = (val: any): string[] => {
+          const str = String(val || "").trim();
+          if (!str) return [];
+          return str.split(",").map((s: string) => s.trim()).filter(Boolean);
+        };
+
+        const parseBool = (val: any): boolean => {
+          const str = String(val || "").trim().toLowerCase();
+          return str === "true" || str === "1" || str === "yes";
+        };
+
+        const uploaded: Record<string, any> = {
+          menuId,
+          menuName: String(rowData.menuName || "").trim(),
+          menuUrl: String(rowData.menuUrl || "").trim(),
+          menuOrder: parseArrayField(rowData.menuOrder),
+          menuType: String(rowData.menuType || "").trim(),
+          parentMenuId: String(rowData.parentMenuId || "").trim() || null,
+          menuAccessRoles: parseArrayField(rowData.menuAccessRoles),
+          menuIcon: String(rowData.menuIcon || "").trim() || null,
+          schoolId: parseArrayField(rowData.schoolId),
+          defaultMenu: parseBool(rowData.defaultMenu),
+          status: String(rowData.status || "").trim(),
+        };
+
+        // Diff against current
+        let hasChanges = false;
+        const fieldsToCompare = TEMPLATE_COLUMNS.filter((f) => f !== "menuId");
+
+        for (const field of fieldsToCompare) {
+          const currentVal = (current as any)[field];
+          const uploadedVal = uploaded[field];
+
+          if (Array.isArray(currentVal)) {
+            const currentArr = (currentVal || []).map(String).sort();
+            const uploadedArr = (uploadedVal || []).map(String).sort();
+            if (JSON.stringify(currentArr) !== JSON.stringify(uploadedArr)) {
+              hasChanges = true;
+              break;
+            }
+          } else if (typeof currentVal === "boolean") {
+            if (currentVal !== uploadedVal) {
+              hasChanges = true;
+              break;
+            }
+          } else {
+            if (String(currentVal ?? "") !== String(uploadedVal ?? "")) {
+              hasChanges = true;
+              break;
+            }
+          }
+        }
+
+        if (hasChanges) {
+          changedMenus.push(uploaded as Partial<Menu>);
+        }
+      });
+
+      if (changedMenus.length === 0) {
+        showNotification("No changes found in the uploaded file", "info");
+        return;
+      }
+
+      // Send changes to backend
+      const res = await bulkUpdateMutation.mutateAsync(changedMenus);
+      showNotification(
+        res.message || `${changedMenus.length} menu(s) updated successfully`,
+        "success",
+      );
+    } catch (err: any) {
+      console.error("Upload failed:", err);
+      showNotification(err.message || "Failed to process uploaded file", "error");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleCloseDialog = () => {
@@ -546,14 +794,40 @@ const Menus = () => {
         <Typography variant="h5" fontWeight={600} color="text.primary">
           Menus Management
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddClick}
-          sx={{ textTransform: "none", borderRadius: 2, px: 3 }}
-        >
-          Add Menu
-        </Button>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleDownloadTemplate}
+            sx={{ textTransform: "none", borderRadius: 2 }}
+          >
+            Download Template
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={isUploading ? <CircularProgress size={18} /> : <UploadIcon />}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            sx={{ textTransform: "none", borderRadius: 2 }}
+          >
+            {isUploading ? "Uploading..." : "Upload Excel"}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            style={{ display: "none" }}
+            onChange={handleUploadExcel}
+          />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddClick}
+            sx={{ textTransform: "none", borderRadius: 2, px: 3 }}
+          >
+            Add Menu
+          </Button>
+        </Box>
       </Box>
 
       {/* Table */}
