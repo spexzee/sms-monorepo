@@ -8,6 +8,9 @@ const {
     updateStudentById,
     deleteStudentById,
     searchStudents,
+    bulkCreateStudents,
+    getStudentBackups,
+    restoreStudentBackup,
 } = require("../controllers/student.controller");
 const { Authenticated, authorizeRoles } = require("@sms/shared/middlewares");
 
@@ -18,6 +21,30 @@ router.get(
     Authenticated,
     authorizeRoles("super_admin", "sch_admin"),
     searchStudents
+);
+
+// GET /api/school/:schoolId/students/backups - Get student backups
+router.get(
+    "/backups",
+    Authenticated,
+    authorizeRoles("super_admin", "sch_admin"),
+    getStudentBackups
+);
+
+// POST /api/school/:schoolId/students/restore - Restore student backup
+router.post(
+    "/restore",
+    Authenticated,
+    authorizeRoles("super_admin", "sch_admin"),
+    restoreStudentBackup
+);
+
+// POST /api/school/:schoolId/students/bulk-upload - Bulk create students
+router.post(
+    "/bulk-upload",
+    Authenticated,
+    authorizeRoles("super_admin", "sch_admin"),
+    bulkCreateStudents
 );
 
 // POST /api/school/:schoolId/students - Create a new student

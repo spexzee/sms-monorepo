@@ -10,6 +10,11 @@ const {
   getPaginationParams,
   formatPaginationResponse,
 } = require("../utils/pagination");
+const {
+  createBackup,
+  getBackups,
+  restoreBackup,
+} = require("../utils/backupHelper");
 
 /**
  * Get Student model for a specific school database
@@ -662,6 +667,300 @@ const searchStudents = async (req, res) => {
   }
 };
 
+// Bulk create students from Excel upload
+const bulkCreateStudents = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+    const { students } = req.body;
+
+    if (!students || !Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "students array is required and must not be empty",
+      });
+    }
+
+    const schoolDbName = await getSchoolDbName(schoolId);
+    if (!schoolDbName) {
+      return res.status(404).json({
+        success: false,
+        message: "School not found",
+      });
+    }
+
+    const Student = getStudentModel(schoolDbName);
+    const Parent = getParentModel(schoolDbName);
+    const Class = getClassModel(schoolDbName);
+
+    // Fetch all classes and parents for caching to avoid N+1 queries
+    const [allClasses, allParents] = await Promise.all([
+      Class.find().lean(),
+      Parent.find().select("parentId firstName lastName email phone").lean(),
+    ]);
+
+    // Lookup helpers
+    const findClass = (val) => {
+      if (!val) return null;
+      const search = String(val).trim().toLowerCase();
+      return allClasses.find(
+        (c) =>
+          c.classId.toLowerCase() === search || c.name.toLowerCase() === search
+      );
+    };
+
+    const findSection = (cls, val) => {
+      if (!cls || !cls.sections || !val) return null;
+      const search = String(val).trim().toLowerCase();
+      return cls.sections.find(
+        (s) =>
+          s.sectionId.toLowerCase() === search || s.name.toLowerCase() === search
+      );
+    };
+
+    const findParent = (val) => {
+      if (!val) return null;
+      const search = String(val).trim().toLowerCase();
+      return allParents.find(
+        (p) =>
+          p.parentId.toLowerCase() === search ||
+          (p.phone && String(p.phone).toLowerCase() === search) ||
+          (p.email && p.email.toLowerCase() === search)
+      );
+    };
+
+    // Create backup snapshot before bulk operation
+    try {
+      const currentStudents = await Student.find().lean();
+      await createBackup(schoolDbName, "students", currentStudents, {
+        performedBy: req.user?.userId || "system",
+        performedByRole: req.user?.role || "",
+        operationType: "bulk_insert",
+        description: `Before bulk student upload of ${students.length} records`,
+      });
+    } catch (backupErr) {
+      console.warn("Bulk upload: Backup creation failed, but proceeding:", backupErr.message);
+    }
+
+    let inserted = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (let i = 0; i < students.length; i++) {
+      const row = students[i];
+      const rowNum = i + 2; // Excel row number (1-indexed header + 1)
+
+      try {
+        // Validate required fields
+        if (!row.firstName || !row.lastName || !row.password || !row.class) {
+          errors.push({
+            row: rowNum,
+            message: "Missing required fields: firstName, lastName, password, class",
+          });
+          failed++;
+          continue;
+        }
+
+        // --- Smart Lookups ---
+        const targetClass = findClass(row.class);
+        if (!targetClass) {
+          errors.push({
+            row: rowNum,
+            message: `Class "${row.class}" not found. Please provide a valid Class Name or ID.`,
+          });
+          failed++;
+          continue;
+        }
+
+        let sectionId = undefined;
+        if (row.section) {
+          const targetSection = findSection(targetClass, row.section);
+          if (!targetSection) {
+            errors.push({
+              row: rowNum,
+              message: `Section "${row.section}" not found in class "${targetClass.name}".`,
+            });
+            failed++;
+            continue;
+          }
+          sectionId = targetSection.sectionId;
+        }
+
+        let parentId = undefined;
+        if (row.parentId) {
+          const targetParent = findParent(row.parentId);
+          if (!targetParent) {
+            errors.push({
+              row: rowNum,
+              message: `Parent "${row.parentId}" not found. Provide a valid Parent ID, Phone, or Email.`,
+            });
+            failed++;
+            continue;
+          }
+          parentId = targetParent.parentId;
+        }
+        // ---------------------
+
+        // Check email uniqueness globally
+        let emailVal = row.email;
+        if (typeof emailVal === "object" && emailVal !== null && emailVal.text) {
+          emailVal = emailVal.text;
+        }
+
+        const normalizedEmail = emailVal
+          ? String(emailVal).toLowerCase().trim()
+          : undefined;
+
+        if (normalizedEmail) {
+          const existingEmail = await EmailRegistry.findOne({
+            email: normalizedEmail,
+          });
+          if (existingEmail) {
+            errors.push({
+              row: rowNum,
+              message: `Email "${normalizedEmail}" already exists in the system`,
+            });
+            failed++;
+            continue;
+          }
+        }
+
+        // Generate studentId
+        const studentId = await generateStudentId(Student);
+
+        const newStudent = new Student({
+          studentId,
+          schoolId,
+          firstName: String(row.firstName).trim(),
+          lastName: String(row.lastName).trim(),
+          email: normalizedEmail,
+          password: String(row.password), // Plain text (matches existing createStudent behavior)
+          phone: row.phone ? String(row.phone).trim() : undefined,
+          class: targetClass.classId, // Store ID
+          section: sectionId, // Store ID
+          rollNumber: row.rollNumber ? String(row.rollNumber).trim() : undefined,
+          parentId: parentId, // Store ID
+          dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : undefined,
+          gender: row.gender ? String(row.gender).trim().toLowerCase() : undefined,
+          address: row.address ? String(row.address).trim() : undefined,
+          status: row.status ? String(row.status).trim().toLowerCase() : "active",
+        });
+
+        const savedStudent = await newStudent.save();
+
+        // Register in EmailRegistry
+        if (normalizedEmail) {
+          await EmailRegistry.create({
+            email: normalizedEmail,
+            role: "student",
+            schoolId,
+            userId: savedStudent.studentId,
+            status: savedStudent.status || "active",
+          });
+        }
+
+        // Link parent if provided
+        if (parentId) {
+          try {
+            await Parent.findOneAndUpdate(
+              { parentId: parentId },
+              { $addToSet: { studentIds: studentId } }
+            );
+          } catch (parentErr) {
+            // Non-blocking - student is still created
+            console.warn(
+              `Row ${rowNum}: Could not link parent ${parentId}:`,
+              parentErr.message
+            );
+          }
+        }
+
+        inserted++;
+      } catch (rowError) {
+        errors.push({
+          row: rowNum,
+          message: rowError.message || "Unknown error",
+        });
+        failed++;
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Bulk upload completed: ${inserted} inserted, ${failed} failed`,
+      data: { inserted, failed, total: students.length, errors },
+    });
+  } catch (error) {
+    console.error("Error bulk creating students:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error bulk creating students",
+      error: error.message,
+    });
+  }
+};
+
+// Get student backups (Backend only for now)
+const getStudentBackups = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+    const schoolDbName = await getSchoolDbName(schoolId);
+    if (!schoolDbName) {
+      return res.status(404).json({ success: false, message: "School not found" });
+    }
+
+    const backups = await getBackups(schoolDbName, "students");
+
+    return res.status(200).json({
+      success: true,
+      message: "Student backups fetched successfully",
+      data: backups,
+    });
+  } catch (error) {
+    console.error("Error fetching student backups:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching student backups",
+      error: error.message,
+    });
+  }
+};
+
+// Restore student backup (Backend only for now)
+const restoreStudentBackup = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+    const { batchId } = req.body;
+
+    if (!batchId) {
+      return res.status(400).json({ success: false, message: "batchId is required" });
+    }
+
+    const schoolDbName = await getSchoolDbName(schoolId);
+    if (!schoolDbName) {
+      return res.status(404).json({ success: false, message: "School not found" });
+    }
+
+    const Student = getStudentModel(schoolDbName);
+
+    const result = await restoreBackup(schoolDbName, "students", batchId, Student, {
+      performedBy: req.user?.userId || "system",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully restored ${result.restoredCount} student records`,
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error restoring student backup:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error restoring student backup",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createStudent,
   getStudentById,
@@ -669,5 +968,7 @@ module.exports = {
   updateStudentById,
   deleteStudentById,
   searchStudents,
+  bulkCreateStudents,
+  getStudentBackups,
+  restoreStudentBackup,
 };
-
