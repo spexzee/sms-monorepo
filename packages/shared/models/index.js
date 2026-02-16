@@ -40,4 +40,7 @@ module.exports = {
 
     // Homework
     HomeworkSchema: require('./homework.model'),
+
+    // Backup
+    BackupSchema: require('./backup.schema'),
 };

@@ -51,7 +51,7 @@ export const useGetStudentById = (schoolId: string, studentId: string) => {
     queryFn: () =>
       useApi<ApiResponse<Student>>(
         "GET",
-                `/api/school/${schoolId}/students/${studentId}`
+        `/api/school/${schoolId}/students/${studentId}`
       ),
     enabled: !!schoolId && !!studentId,
   });
@@ -66,7 +66,7 @@ export const useCreateStudent = (schoolId: string) => {
       useApi<ApiResponse<Student>>(
         "POST",
         `/api/school/${schoolId}/students`,
-                data
+        data
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: studentKeys.all(schoolId) });
@@ -89,7 +89,7 @@ export const useUpdateStudent = (schoolId: string) => {
       useApi<ApiResponse<Student>>(
         "PUT",
         `/api/school/${schoolId}/students/${studentId}`,
-                data
+        data
       ),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: studentKeys.all(schoolId) });
@@ -108,7 +108,7 @@ export const useDeleteStudent = (schoolId: string) => {
     mutationFn: (studentId: string) =>
       useApi<ApiResponse<Student>>(
         "DELETE",
-                `/api/school/${schoolId}/students/${studentId}`
+        `/api/school/${schoolId}/students/${studentId}`
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: studentKeys.all(schoolId) });
@@ -122,6 +122,26 @@ export const searchStudentsApi = (schoolId: string, query: string) =>
     "GET",
     `/api/school/${schoolId}/students/search`,
     undefined,
-        { query }
+    { query }
   );
+
+// Bulk create students (from Excel upload)
+export const useBulkCreateStudents = (schoolId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (students: Partial<CreateStudentPayload>[]) =>
+      useApi<
+        ApiResponse<{
+          inserted: number;
+          failed: number;
+          total: number;
+          errors: { row: number; message: string }[];
+        }>
+      >("POST", `/api/school/${schoolId}/students/bulk-upload`, { students }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: studentKeys.all(schoolId) });
+    },
+  });
+};
 
