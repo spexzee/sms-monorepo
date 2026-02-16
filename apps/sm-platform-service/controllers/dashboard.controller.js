@@ -453,21 +453,22 @@ const deleteMenu = async (req, res) => {
 };
 
 // Get all menus (for Super Admin management)
+// Paginates only main menus; submenus are always included with their parent
 const getAllMenus = async (req, res) => {
   try {
     const { page, limit, skip } = getPaginationParams(req.query);
     const { search, schoolId } = req.query;
 
-    let query = {};
+    let baseQuery = {};
 
     // Filter by school if provided (schoolId is now an array in the model)
     if (schoolId) {
-      query.schoolId = { $in: [schoolId] };
+      baseQuery.schoolId = { $in: [schoolId] };
     }
 
     // Filter by search term if provided
     if (search) {
-      query.$or = [
+      baseQuery.$or = [
         { menuName: { $regex: search, $options: "i" } },
         { menuUrl: { $regex: search, $options: "i" } },
         { menuOrder: { $regex: search, $options: "i" } },
@@ -475,12 +476,36 @@ const getAllMenus = async (req, res) => {
       ];
     }
 
-    const [menus, total] = await Promise.all([
-      Menu.find(query).sort({ menuOrder: 1 }).skip(skip).limit(limit),
-      Menu.countDocuments(query),
+    // Only paginate main menus
+    const mainMenuQuery = { ...baseQuery, menuType: "main" };
+
+    const [mainMenus, totalMainMenus] = await Promise.all([
+      Menu.find(mainMenuQuery).sort({ menuOrder: 1 }).skip(skip).limit(limit),
+      Menu.countDocuments(mainMenuQuery),
     ]);
 
-    const response = formatPaginationResponse(menus, total, page, limit);
+    // Fetch all submenus belonging to these main menus
+    const mainMenuIds = mainMenus.map((m) => m.menuId);
+    let subMenus = [];
+    if (mainMenuIds.length > 0) {
+      subMenus = await Menu.find({
+        ...baseQuery,
+        menuType: "sub",
+        parentMenuId: { $in: mainMenuIds },
+      }).sort({ menuOrder: 1 });
+    }
+
+    // Merge main menus and submenus into a flat sorted list
+    const allMenus = [...mainMenus, ...subMenus].sort((a, b) => {
+      const orderA = Array.isArray(a.menuOrder) ? a.menuOrder[0] : a.menuOrder;
+      const orderB = Array.isArray(b.menuOrder) ? b.menuOrder[0] : b.menuOrder;
+      return String(orderA || "").localeCompare(String(orderB || ""), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    });
+
+    const response = formatPaginationResponse(allMenus, totalMainMenus, page, limit);
 
     return res.status(200).json({
       success: true,
@@ -497,11 +522,121 @@ const getAllMenus = async (req, res) => {
   }
 };
 
+// Get all menus without pagination (for Excel export)
+const getAllMenusForExport = async (req, res) => {
+  try {
+    const menus = await Menu.find().sort({ menuOrder: 1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "All menus fetched for export",
+      data: menus,
+    });
+  } catch (error) {
+    console.error("Error fetching menus for export:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch menus for export",
+      error: error.message,
+    });
+  }
+};
+
+// Bulk update menus (from Excel upload)
+const bulkUpdateMenus = async (req, res) => {
+  try {
+    const { menus } = req.body;
+
+    if (!Array.isArray(menus) || menus.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "menus array is required and must not be empty",
+      });
+    }
+
+    const errors = [];
+    const operations = [];
+
+    for (let i = 0; i < menus.length; i++) {
+      const item = menus[i];
+
+      if (!item.menuId) {
+        errors.push({ row: i + 1, error: "Missing menuId" });
+        continue;
+      }
+
+      // Build update object from allowed fields only
+      const allowedFields = [
+        "menuName",
+        "menuUrl",
+        "menuType",
+        "parentMenuId",
+        "menuAccessRoles",
+        "menuIcon",
+        "schoolId",
+        "defaultMenu",
+        "status",
+      ];
+
+      const updateData = {};
+      for (const field of allowedFields) {
+        if (item[field] !== undefined) {
+          updateData[field] = item[field];
+        }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        continue; // No updatable fields
+      }
+
+      operations.push({
+        updateOne: {
+          filter: { menuId: item.menuId },
+          update: { $set: updateData },
+        },
+      });
+    }
+
+    if (errors.length > 0 && operations.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "All rows had errors",
+        errors,
+      });
+    }
+
+    let result = { modifiedCount: 0, matchedCount: 0 };
+    if (operations.length > 0) {
+      result = await Menu.bulkWrite(operations);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Bulk update completed: ${result.modifiedCount} menu(s) updated`,
+      data: {
+        matched: result.matchedCount,
+        modified: result.modifiedCount,
+        errorCount: errors.length,
+      },
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error) {
+    console.error("Error in bulk update:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to bulk update menus",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getMenus,
   getAllMenus,
+  getAllMenusForExport,
   createMenu,
   updateMenu,
   deleteMenu,
+  bulkUpdateMenus,
 };
