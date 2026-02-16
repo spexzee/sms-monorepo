@@ -20,6 +20,10 @@ import {
   Paper,
   CircularProgress,
   TablePagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -33,6 +37,7 @@ import {
   SubdirectoryArrowRight as SubMenuIcon,
   Download as DownloadIcon,
   Upload as UploadIcon,
+  SettingsBackupRestore as RestoreIcon,
 } from "@mui/icons-material";
 import ExcelJS from "exceljs";
 import AddMenusDialog from "../../components/Dialogs/AddMenusDialog";
@@ -42,6 +47,7 @@ import {
   useDeleteMenu,
   useGetAllMenusForExport,
   useBulkUpdateMenus,
+  useRestoreMenuBackup,
 } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
 import { useAuth } from "../../context/AuthContext";
@@ -85,6 +91,8 @@ const Menus = () => {
   const [manageMode, setManageMode] = useState<"roles" | "schools">("roles");
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const [isUploading, setIsUploading] = useState(false);
+  const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
+  const [restoreBatchId, setRestoreBatchId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [appliedSearch, setAppliedSearch] = useState("");
@@ -110,6 +118,7 @@ const Menus = () => {
   } = useGetMenus(page, limit, appliedSearch, appliedSchool || undefined);
   const { refetch: fetchAllMenus } = useGetAllMenusForExport();
   const bulkUpdateMutation = useBulkUpdateMenus();
+  const restoreMutation = useRestoreMenuBackup();
   const { data: schoolsData, isLoading: isLoadingSchools } = useGetSchools();
 
   const menus = menusData?.data || [];
@@ -485,6 +494,23 @@ const Menus = () => {
   const handleCancelDelete = () => {
     setDeleteConfirmationOpen(false);
     setMenuToDelete(null);
+  };
+
+  const handleRestoreBackup = async () => {
+    if (!restoreBatchId.trim()) {
+      showNotification("Please enter a Batch ID", "error");
+      return;
+    }
+
+    try {
+      await restoreMutation.mutateAsync(restoreBatchId.trim());
+      showNotification("Menus restored successfully", "success");
+      setIsRestoreDialogOpen(false);
+      setRestoreBatchId("");
+    } catch (err: any) {
+      console.error("Restore failed:", err);
+      showNotification(err.message || "Failed to restore backup", "error");
+    }
   };
 
   // ---- Shared cell renderers ----
@@ -877,6 +903,14 @@ const Menus = () => {
             onChange={handleUploadExcel}
           />
           <Button
+            variant="outlined"
+            startIcon={<RestoreIcon />}
+            onClick={() => setIsRestoreDialogOpen(true)}
+            sx={{ textTransform: "none", borderRadius: 2 }}
+          >
+            Restore Backup
+          </Button>
+          <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleAddClick}
@@ -1003,6 +1037,49 @@ const Menus = () => {
         schools={schools}
         onSuccess={(msg) => showNotification(msg, "success")}
       />
+
+      {/* Restore Backup Dialog */}
+      <Dialog
+        open={isRestoreDialogOpen}
+        onClose={() => !restoreMutation.isPending && setIsRestoreDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>Restore Menu Backup</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter the Batch ID of the backup you want to restore. This will replace the current menu
+            table with the backup snapshot.
+          </Typography>
+          <TextField
+            fullWidth
+            label="Batch ID"
+            placeholder="e.g., BATCH_1740212345678"
+            value={restoreBatchId}
+            onChange={(e) => setRestoreBatchId(e.target.value)}
+            disabled={restoreMutation.isPending}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button
+            onClick={() => setIsRestoreDialogOpen(false)}
+            disabled={restoreMutation.isPending}
+            sx={{ textTransform: "none" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleRestoreBackup}
+            disabled={restoreMutation.isPending || !restoreBatchId.trim()}
+            sx={{ textTransform: "none", borderRadius: 2 }}
+          >
+            {restoreMutation.isPending ? <CircularProgress size={24} /> : "Restore Now"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
