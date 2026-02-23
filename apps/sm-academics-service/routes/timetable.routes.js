@@ -28,7 +28,7 @@ router.post(
 router.get(
     "/config/active",
     Authenticated,
-    authorizeRoles("sch_admin", "teacher", "student"),
+    authorizeRoles("sch_admin", "teacher", "student", "parent"),
     configController.getActiveConfig
 );
 
@@ -136,7 +136,7 @@ router.post(
 router.get(
     "/class/:classId/:sectionId",
     Authenticated,
-    authorizeRoles("sch_admin", "teacher", "student"),
+    authorizeRoles("sch_admin", "teacher", "student", "parent"),
     entryController.getClassTimetable
 );
 
@@ -212,7 +212,7 @@ router.post(
 router.get(
     "/substitute/date/:date",
     Authenticated,
-    authorizeRoles("sch_admin", "teacher"),
+    authorizeRoles("sch_admin", "teacher", "parent", "student"),
     substituteController.getSubstitutesForDate
 );
 

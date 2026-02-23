@@ -49,6 +49,10 @@ const menuSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    showInSidebar: {
+      type: Boolean,
+      default: true,
+    },
     deactivatedRoles: {
       type: [String],
       default: [],

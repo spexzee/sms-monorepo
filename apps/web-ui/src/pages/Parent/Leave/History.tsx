@@ -16,6 +16,7 @@ import {
     TableHead,
     TableRow,
     Button,
+    Grid,
 } from '@mui/material';
 import {
     History as HistoryIcon,
@@ -26,7 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useChildSelector } from '../../../context/ChildSelectorContext';
-import { useGetMyLeaves } from '../../../queries/Leave';
+import { useGetParentLeaves } from '../../../queries/Leave';
 import TokenService from '../../../queries/token/tokenService';
 
 interface LeaveRequest {
@@ -36,23 +37,27 @@ interface LeaveRequest {
     leaveType: string;
     reason: string;
     status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+    applicantName?: string;
+    childName?: string;
+    numberOfDays?: number;
     createdAt: string;
 }
 
 const ParentLeaveHistory: React.FC = () => {
     const navigate = useNavigate();
     const schoolId = TokenService.getSchoolId() || '';
-    const { selectedChild, isLoading: loadingChild } = useChildSelector();
+    const { children, isLoading: loadingChildren } = useChildSelector();
 
     const [tabValue, setTabValue] = useState(0);
     const statusFilter = tabValue === 1 ? 'pending' : tabValue === 2 ? 'approved' : tabValue === 3 ? 'rejected' : undefined;
 
-    const { data, isLoading, error } = useGetMyLeaves(schoolId, {
+    const { data, isLoading, error } = useGetParentLeaves(schoolId, {
         status: statusFilter,
     });
 
     const responseData = data?.data;
     const leaves: LeaveRequest[] = Array.isArray(responseData) ? responseData : (responseData?.leaves || []);
+    const summary = responseData?.summary;
 
     const getStatusChip = (status: string) => {
         switch (status) {
@@ -77,24 +82,6 @@ const ParentLeaveHistory: React.FC = () => {
         });
     };
 
-    // Show loading while children are being loaded
-    if (loadingChild) {
-        return (
-            <Box sx={{ p: 3 }}>
-                <Skeleton variant="text" width="40%" height={40} sx={{ mb: 2 }} />
-                <Skeleton variant="rectangular" width="100%" height={300} />
-            </Box>
-        );
-    }
-
-    if (!selectedChild) {
-        return (
-            <Box sx={{ p: 3 }}>
-                <Alert severity="info">Please select a child to view their leave history.</Alert>
-            </Box>
-        );
-    }
-
     if (error) {
         return (
             <Box sx={{ p: 3 }}>
@@ -114,7 +101,11 @@ const ParentLeaveHistory: React.FC = () => {
                         </Typography>
                     </Box>
                     <Typography variant="body1" color="text.secondary">
-                        {selectedChild ? `${selectedChild.firstName}'s leave requests` : 'Loading...'}
+                        {children.length > 1
+                            ? 'Leave requests for all your children'
+                            : children.length === 1
+                                ? `${children[0].firstName}'s leave requests`
+                                : 'Loading...'}
                     </Typography>
                 </Box>
                 <Button
@@ -126,6 +117,44 @@ const ParentLeaveHistory: React.FC = () => {
                 </Button>
             </Box>
 
+            {/* Summary Cards */}
+            {summary && (
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <Card sx={{ textAlign: 'center' }}>
+                            <CardContent sx={{ py: 2 }}>
+                                <Typography variant="h4" fontWeight={600}>{summary.total}</Typography>
+                                <Typography variant="body2" color="text.secondary">Total</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <Card sx={{ textAlign: 'center' }}>
+                            <CardContent sx={{ py: 2 }}>
+                                <Typography variant="h4" fontWeight={600} color="warning.main">{summary.pending}</Typography>
+                                <Typography variant="body2" color="text.secondary">Pending</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <Card sx={{ textAlign: 'center' }}>
+                            <CardContent sx={{ py: 2 }}>
+                                <Typography variant="h4" fontWeight={600} color="success.main">{summary.approved}</Typography>
+                                <Typography variant="body2" color="text.secondary">Approved</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <Card sx={{ textAlign: 'center' }}>
+                            <CardContent sx={{ py: 2 }}>
+                                <Typography variant="h4" fontWeight={600} color="error.main">{summary.rejected}</Typography>
+                                <Typography variant="body2" color="text.secondary">Rejected</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            )}
+
             <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ mb: 3 }}>
                 <Tab label="All" />
                 <Tab label="Pending" />
@@ -134,7 +163,7 @@ const ParentLeaveHistory: React.FC = () => {
             </Tabs>
 
             <Card>
-                {isLoading || loadingChild ? (
+                {isLoading || loadingChildren ? (
                     <CardContent>
                         {[1, 2, 3].map((i) => (
                             <Skeleton key={i} variant="rectangular" height={50} sx={{ mb: 1, borderRadius: 1 }} />
@@ -160,16 +189,29 @@ const ParentLeaveHistory: React.FC = () => {
                         <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>Dates</TableCell>
-                                    <TableCell>Type</TableCell>
-                                    <TableCell>Reason</TableCell>
-                                    <TableCell>Status</TableCell>
-                                    <TableCell>Applied On</TableCell>
+                                    {children.length > 1 && (
+                                        <TableCell sx={{ fontWeight: 600 }}>Child</TableCell>
+                                    )}
+                                    <TableCell sx={{ fontWeight: 600 }}>Dates</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Reason</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Applied On</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {leaves.map((leave: LeaveRequest) => (
                                     <TableRow key={leave.leaveId}>
+                                        {children.length > 1 && (
+                                            <TableCell>
+                                                <Chip
+                                                    size="small"
+                                                    label={leave.childName || leave.applicantName || '-'}
+                                                    color="primary"
+                                                    variant="outlined"
+                                                />
+                                            </TableCell>
+                                        )}
                                         <TableCell>
                                             {formatDate(leave.startDate)} - {formatDate(leave.endDate)}
                                         </TableCell>
@@ -178,6 +220,7 @@ const ParentLeaveHistory: React.FC = () => {
                                                 size="small"
                                                 label={leave.leaveType.replace('_', ' ')}
                                                 variant="outlined"
+                                                sx={{ textTransform: 'capitalize' }}
                                             />
                                         </TableCell>
                                         <TableCell>

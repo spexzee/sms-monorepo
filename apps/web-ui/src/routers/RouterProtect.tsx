@@ -6,7 +6,6 @@ import {
   useGetSchoolAdminMenus,
   useGetUserMenus,
 } from "../queries/Menus";
-import { transformMenuData } from "../pages/Sidebar/SidebarUtils";
 import { Box, CircularProgress } from "@mui/material";
 
 interface ProtectedRouteProps {
@@ -77,23 +76,43 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         ? schoolAdminMenus?.data
         : userMenus?.data || [];
 
-  const transformedMenus = transformMenuData(menus || [], userRole || "");
 
-  const activePaths: string[] = [];
-  transformedMenus.forEach((item) => {
-    if (item.path) activePaths.push(item.path);
-    if (item.subItems) {
-      item.subItems.forEach((sub) => {
-        if (sub.path) activePaths.push(sub.path);
-      });
-    }
-  });
+  // Build activePaths from RAW menus (not sidebar-filtered) so routes hidden
+  // from the sidebar (showInSidebar: false) are still accessible via navigation.
+  const buildPathsFromRawMenus = (rawMenus: any[], role: string): string[] => {
+    const rolePrefixMap: Record<string, string> = {
+      super_admin: "/super-admin",
+      sch_admin: "/school-admin",
+      teacher: "/teacher",
+      student: "/student",
+      parent: "/parent",
+    };
+    const basePath = rolePrefixMap[role] || "";
+    const paths: string[] = [];
+    (rawMenus || []).forEach((menu: any) => {
+      if (menu.menuUrl) {
+        const url = menu.menuUrl.startsWith("/")
+          ? menu.menuUrl
+          : `/${menu.menuUrl}`;
+        paths.push(`${basePath}${url}`);
+      }
+    });
+    return paths;
+  };
+
+  const activePaths = buildPathsFromRawMenus(menus || [], userRole || "");
 
   const currentPath = location.pathname;
 
-  const isAllowed = activePaths.some(
-    (path) => currentPath === path || currentPath.startsWith(path + "/"),
-  );
+  const isAllowed = activePaths.some((path) => {
+    // Convert dynamic segments like :studentId to a regex wildcard
+    if (path.includes(":")) {
+      const pattern = path.replace(/:[^/]+/g, "[^/]+");
+      const regex = new RegExp(`^${pattern}(/.*)?$`);
+      return regex.test(currentPath);
+    }
+    return currentPath === path || currentPath.startsWith(path + "/");
+  });
 
   const rolePrefixes = [
     "/super-admin",

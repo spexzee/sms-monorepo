@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -10,10 +10,15 @@ import {
     Alert,
     CircularProgress,
     Grid,
+    Autocomplete,
+    Checkbox,
+    Chip,
 } from '@mui/material';
 import {
     Send as SendIcon,
     ArrowBack as ArrowBackIcon,
+    CheckBoxOutlineBlank,
+    CheckBox as CheckBoxIcon,
 } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -22,7 +27,9 @@ import { useNavigate } from 'react-router-dom';
 import { useChildSelector } from '../../../context/ChildSelectorContext';
 import { useApplyLeave } from '../../../queries/Leave';
 import TokenService from '../../../queries/token/tokenService';
-import type { LeaveType } from '../../../types';
+import type { LeaveType, Student } from '../../../types';
+
+type ChildOption = Student & { className?: string; sectionName?: string };
 
 const leaveTypes: { value: LeaveType; label: string }[] = [
     { value: 'sick', label: 'Sick Leave' },
@@ -67,6 +74,18 @@ const datePickerSlotProps = {
                 borderRadius: 3,
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
             },
+            '& .MuiDateCalendar-root': {
+                height: 300,
+            },
+            '& .MuiDayCalendar-slideTransition': {
+                minHeight: 180,
+            },
+            '& .MuiDayCalendar-weekContainer': {
+                margin: '1px 0',
+            },
+            '& .MuiDialogActions-root': {
+                padding: '4px 8px',
+            },
             '& .MuiDayCalendar-weekDayLabel': {
                 fontWeight: 600,
                 color: 'primary.main',
@@ -92,8 +111,10 @@ const ParentApplyLeave: React.FC = () => {
     const schoolId = TokenService.getSchoolId() || '';
     const { selectedChild, children, isLoading: loadingChildren } = useChildSelector();
 
+    const isMultiSelect = children.length > 1;
+
+    const [selectedStudents, setSelectedStudents] = useState<ChildOption[]>([]);
     const [formData, setFormData] = useState({
-        studentId: selectedChild?.studentId || '',
         leaveType: '' as LeaveType | '',
         reason: '',
     });
@@ -103,6 +124,15 @@ const ParentApplyLeave: React.FC = () => {
     const [success, setSuccess] = useState(false);
 
     const applyLeave = useApplyLeave(schoolId);
+
+    // Initialize selected students
+    useEffect(() => {
+        if (children.length === 1 && selectedStudents.length === 0) {
+            setSelectedStudents([children[0]]);
+        } else if (selectedChild && selectedStudents.length === 0) {
+            setSelectedStudents([selectedChild]);
+        }
+    }, [children, selectedChild]);
 
     const handleChange = (field: string) => (
         event: React.ChangeEvent<HTMLInputElement>
@@ -114,7 +144,7 @@ const ParentApplyLeave: React.FC = () => {
         e.preventDefault();
         setError('');
 
-        if (!formData.studentId || !formData.leaveType || !formData.reason || !startDate || !endDate) {
+        if (selectedStudents.length === 0 || !formData.leaveType || !formData.reason || !startDate || !endDate) {
             setError('Please fill in all required fields');
             return;
         }
@@ -130,6 +160,7 @@ const ParentApplyLeave: React.FC = () => {
                 reason: formData.reason,
                 startDate: startDate.toISOString(),
                 endDate: endDate.toISOString(),
+                studentIds: selectedStudents.map(s => s.studentId),
             });
             setSuccess(true);
             setTimeout(() => {
@@ -139,6 +170,9 @@ const ParentApplyLeave: React.FC = () => {
             setError((err as Error)?.message || 'Failed to apply for leave');
         }
     };
+
+    const getChildLabel = (child: ChildOption) =>
+        `${child.firstName} ${child.lastName} - ${child.className || child.class}`;
 
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -155,7 +189,9 @@ const ParentApplyLeave: React.FC = () => {
                     Apply for Leave
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                    Submit a leave request for your child
+                    {isMultiSelect
+                        ? 'Submit a leave request for your children'
+                        : 'Submit a leave request for your child'}
                 </Typography>
 
                 {success && (
@@ -175,20 +211,67 @@ const ParentApplyLeave: React.FC = () => {
                         <form onSubmit={handleSubmit}>
                             <Grid container spacing={3}>
                                 <Grid size={{ xs: 12 }}>
-                                    <TextField
-                                        select
-                                        fullWidth
-                                        label="Select Child *"
-                                        value={formData.studentId}
-                                        onChange={handleChange('studentId')}
-                                        disabled={loadingChildren}
-                                    >
-                                        {children.map((child) => (
-                                            <MenuItem key={child.studentId} value={child.studentId}>
-                                                {child.firstName} {child.lastName} - {child.className || child.class}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
+                                    {isMultiSelect ? (
+                                        <Autocomplete
+                                            multiple
+                                            id="select-children"
+                                            options={children}
+                                            value={selectedStudents}
+                                            onChange={(_event, newValue) => {
+                                                setSelectedStudents(newValue as ChildOption[]);
+                                            }}
+                                            disableCloseOnSelect
+                                            getOptionLabel={getChildLabel}
+                                            isOptionEqualToValue={(option, value) =>
+                                                option.studentId === value.studentId
+                                            }
+                                            renderOption={(props, option, { selected }) => {
+                                                const { key, ...restProps } = props;
+                                                return (
+                                                    <li key={key} {...restProps}>
+                                                        <Checkbox
+                                                            icon={<CheckBoxOutlineBlank fontSize="small" />}
+                                                            checkedIcon={<CheckBoxIcon fontSize="small" />}
+                                                            style={{ marginRight: 8 }}
+                                                            checked={selected}
+                                                        />
+                                                        {getChildLabel(option)}
+                                                    </li>
+                                                );
+                                            }}
+                                            renderTags={(value, getTagProps) =>
+                                                value.map((option, index) => {
+                                                    const { key, ...chipProps } = getTagProps({ index });
+                                                    return (
+                                                        <Chip
+                                                            key={key}
+                                                            label={`${option.firstName} ${option.lastName}`}
+                                                            size="small"
+                                                            color="primary"
+                                                            variant="outlined"
+                                                            {...chipProps}
+                                                        />
+                                                    );
+                                                })
+                                            }
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    label="Select Children *"
+                                                    placeholder={selectedStudents.length === 0 ? 'Select one or more children' : ''}
+                                                />
+                                            )}
+                                            loading={loadingChildren}
+                                        />
+                                    ) : (
+                                        <TextField
+                                            fullWidth
+                                            label="Child *"
+                                            value={selectedStudents.length > 0 ? getChildLabel(selectedStudents[0]) : ''}
+                                            disabled
+                                            InputProps={{ readOnly: true }}
+                                        />
+                                    )}
                                 </Grid>
 
                                 <Grid size={{ xs: 12 }}>

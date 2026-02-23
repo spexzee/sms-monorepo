@@ -60,6 +60,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
     menuOrder: "", // string | number, initializing as empty string for auto-gen
     deactivatedRoles: [],
     defaultMenu: false,
+    showInSidebar: true,
   });
 
   const [menuType, setMenuType] = useState<"main" | "sub">("main");
@@ -165,6 +166,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
         menuOrder: menuToEdit.menuOrder ?? "",
         deactivatedRoles: menuToEdit.deactivatedRoles || [],
         defaultMenu: menuToEdit.defaultMenu || false,
+        showInSidebar: menuToEdit.showInSidebar !== false,
       });
       setMenuType(menuToEdit.menuType || "main");
     }
@@ -258,6 +260,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
       menuOrder: "",
       deactivatedRoles: [],
       defaultMenu: false,
+      showInSidebar: true,
     });
     setMenuType("main");
     setErrors({});
@@ -366,6 +369,25 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                     />
                   }
                   label="Default Menu (auto-assign to new schools)"
+                />
+              </Grid>
+
+              {/* Show in Sidebar Toggle */}
+              <Grid size={{ xs: 12 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.showInSidebar !== false}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          showInSidebar: e.target.checked,
+                        }))
+                      }
+                      color="primary"
+                    />
+                  }
+                  label="Show in Sidebar (disable for pages accessed only via navigation, e.g. dynamic routes)"
                 />
               </Grid>
 
@@ -673,19 +695,19 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                                 onDelete={
                                   menuToEdit || !isInherited
                                     ? () => {
-                                        const currentRoles = Array.isArray(
-                                          formData.menuAccessRoles,
-                                        )
-                                          ? formData.menuAccessRoles
-                                          : [formData.menuAccessRoles];
-                                        const newRoles = currentRoles.filter(
-                                          (r) => r !== value,
-                                        );
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          menuAccessRoles: newRoles,
-                                        }));
-                                      }
+                                      const currentRoles = Array.isArray(
+                                        formData.menuAccessRoles,
+                                      )
+                                        ? formData.menuAccessRoles
+                                        : [formData.menuAccessRoles];
+                                      const newRoles = currentRoles.filter(
+                                        (r) => r !== value,
+                                      );
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        menuAccessRoles: newRoles,
+                                      }));
+                                    }
                                     : undefined
                                 }
                                 onMouseDown={(event) => {
