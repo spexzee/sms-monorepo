@@ -1,17 +1,19 @@
-import { useState } from 'react';
-import { Box, IconButton, Tooltip } from '@mui/material';
-import { Edit as EditIcon, Block as BlockIcon } from '@mui/icons-material';
-import DataTable, { StatusChip } from '../../components/Table/DataTable';
-import type { Column } from '../../components/Table/DataTable';
-import TeacherDialog from '../../components/Dialogs/AddTeacherDialog';
-import { useGetTeachers, useUpdateTeacher } from '../../queries/Teacher';
-import type { Teacher } from '../../types';
-import TokenService from '../../queries/token/tokenService';
-import { useAuth } from '../../context/AuthContext';
+import { useState } from "react";
+import { Box, IconButton, Tooltip, Chip } from "@mui/material";
+import { Edit as EditIcon, Block as BlockIcon } from "@mui/icons-material";
+import DataTable, { StatusChip } from "../../components/Table/DataTable";
+import type { Column } from "../../components/Table/DataTable";
+import TeacherDialog from "../../components/Dialogs/AddTeacherDialog";
+import { useGetTeachers, useUpdateTeacher } from "../../queries/Teacher";
+import type { Teacher } from "../../types";
+import TokenService from "../../queries/token/tokenService";
+import { useAuth } from "../../context/AuthContext";
+import { useNotification } from "../../hooks/useNotification";
 
 const TeachersPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editData, setEditData] = useState<Teacher | null>(null);
+  const notification = useNotification();
 
   const schoolId = TokenService.getSchoolId() || "";
   const { page, setPage, limit, setLimit } = useAuth();
@@ -32,14 +34,18 @@ const TeachersPage = () => {
   };
 
   const handleToggleStatus = async (teacher: Teacher) => {
-        const newStatus = teacher.status === 'active' ? 'inactive' : 'active';
+    const newStatus = teacher.status === "active" ? "inactive" : "active";
     try {
       await updateMutation.mutateAsync({
         teacherId: teacher.teacherId,
         data: { status: newStatus },
       });
+      notification.success(
+        `Teacher ${newStatus === "active" ? "activated" : "deactivated"} successfully`,
+      );
     } catch (err) {
-            console.error('Failed to update status:', err);
+      notification.error("Failed to update status");
+      console.error("Failed to update status:", err);
     }
   };
 
@@ -49,39 +55,65 @@ const TeachersPage = () => {
   };
 
   const columns: Column<Teacher>[] = [
-        { id: 'teacherId', label: 'ID', minWidth: 100 },
+    { id: "teacherId", label: "ID", minWidth: 100 },
     {
-            id: 'firstName',
-            label: 'Name',
+      id: "firstName",
+      label: "Name",
       minWidth: 150,
       format: (_, row) => `${row.firstName} ${row.lastName}`,
     },
-        { id: 'email', label: 'Email', minWidth: 180 },
-        { id: 'phone', label: 'Phone', minWidth: 120 },
+    { id: "email", label: "Email", minWidth: 180 },
+    { id: "phone", label: "Phone", minWidth: 120 },
     {
-            id: 'status',
-            label: 'Status',
-      minWidth: 100,
-            align: 'center',
-            format: (value) => <StatusChip status={(value as 'active' | 'inactive') || 'active'} />,
+      id: "classTeacherSectionId",
+      label: "Class Teacher Of",
+      minWidth: 150,
+      align: "center",
+      format: (_, row) => (
+        <Chip
+          label={row.classTeacherLabel || "N/A"}
+          size="small"
+          color={row.classTeacherLabel ? "primary" : "default"}
+          variant={row.classTeacherLabel ? "filled" : "outlined"}
+        />
+      ),
     },
     {
-            id: 'actions',
-            label: 'Actions',
+      id: "status",
+      label: "Status",
+      minWidth: 100,
+      align: "center",
+      format: (value) => (
+        <StatusChip status={(value as "active" | "inactive") || "active"} />
+      ),
+    },
+    {
+      id: "actions",
+      label: "Actions",
       minWidth: 120,
-            align: 'center',
+      align: "center",
       format: (_, row) => (
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
           <Tooltip title="Edit">
-                        <IconButton size="small" color="primary" onClick={(e) => { e.stopPropagation(); handleEdit(row); }}>
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(row);
+              }}
+            >
               <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-                    <Tooltip title={row.status === 'active' ? 'Deactivate' : 'Activate'}>
+          <Tooltip title={row.status === "active" ? "Deactivate" : "Activate"}>
             <IconButton
               size="small"
-                            color={row.status === 'active' ? 'error' : 'success'}
-                            onClick={(e) => { e.stopPropagation(); handleToggleStatus(row); }}
+              color={row.status === "active" ? "error" : "success"}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleStatus(row);
+              }}
               disabled={updateMutation.isPending}
             >
               <BlockIcon fontSize="small" />
@@ -99,7 +131,12 @@ const TeachersPage = () => {
         columns={columns}
         data={teachers}
         isLoading={isLoading}
-                error={error ? (error as { message?: string })?.message || 'Failed to load teachers' : null}
+        error={
+          error
+            ? (error as { message?: string })?.message ||
+              "Failed to load teachers"
+            : null
+        }
         onAddClick={handleAdd}
         addButtonLabel="Add Teacher"
         emptyMessage="No teachers found. Click 'Add Teacher' to create one."

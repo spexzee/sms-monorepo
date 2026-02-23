@@ -60,6 +60,7 @@ const createTeacher = async (req, res) => {
       classes,
       status,
       profileImage,
+      classTeacherSectionId,
     } = req.body;
 
     // Validate required fields
@@ -110,6 +111,7 @@ const createTeacher = async (req, res) => {
       classes: classes || [],
       status: status || "active",
       profileImage,
+      classTeacherSectionId: classTeacherSectionId || null,
     });
 
     const savedTeacher = await newTeacher.save();
@@ -122,6 +124,20 @@ const createTeacher = async (req, res) => {
       userId: savedTeacher.teacherId,
       status: savedTeacher.status || "active",
     });
+
+    // If assigned as class teacher, update the Class model
+    if (classTeacherSectionId && classTeacherSectionId.includes("#")) {
+      const [assignedClassId, assignedSectionId] =
+        classTeacherSectionId.split("#");
+      const schoolDb = getSchoolDbConnection(schoolDbName);
+      const { ClassSchema: classSchema } = require("@sms/shared");
+      const Class = schoolDb.model("Class", classSchema);
+
+      await Class.findOneAndUpdate(
+        { classId: assignedClassId, "sections.sectionId": assignedSectionId },
+        { $set: { "sections.$.classTeacherId": savedTeacher.teacherId } },
+      );
+    }
 
     return res.status(201).json({
       success: true,
@@ -137,6 +153,7 @@ const createTeacher = async (req, res) => {
         subjects: savedTeacher.subjects,
         classes: savedTeacher.classes,
         status: savedTeacher.status,
+        classTeacherSectionId: savedTeacher.classTeacherSectionId,
       },
     });
   } catch (error) {
@@ -207,6 +224,32 @@ const getTeacherById = async (req, res) => {
       teacherObj.classNames = classes.map((c) => c.name);
     }
 
+    // Fetch class teacher label if applicable
+    if (
+      teacher.classTeacherSectionId &&
+      teacher.classTeacherSectionId.includes("#")
+    ) {
+      const [assignedClassId, assignedSectionId] =
+        teacher.classTeacherSectionId.split("#");
+      const schoolDb = getSchoolDbConnection(schoolDbName);
+      const { ClassSchema: classSchema } = require("@sms/shared");
+      const Class = schoolDb.model("Class", classSchema);
+
+      const classDoc = await Class.findOne({
+        classId: assignedClassId,
+        "sections.sectionId": assignedSectionId,
+      }).select("name sections");
+
+      if (classDoc) {
+        const section = classDoc.sections.find(
+          (s) => s.sectionId === assignedSectionId,
+        );
+        if (section) {
+          teacherObj.classTeacherLabel = `${classDoc.name} - ${section.name}`;
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: "Teacher fetched successfully",
@@ -253,7 +296,52 @@ const getAllTeachers = async (req, res) => {
       Teacher.countDocuments(query),
     ]);
 
-    const response = formatPaginationResponse(teachers, total, page, limit);
+    // Populate class teacher labels
+    const classSectionPairs = teachers
+      .filter(
+        (t) => t.classTeacherSectionId && t.classTeacherSectionId.includes("#"),
+      )
+      .map((t) => t.classTeacherSectionId);
+
+    const sectionMap = {};
+    if (classSectionPairs.length > 0) {
+      const schoolDb = getSchoolDbConnection(schoolDbName);
+      const { ClassSchema: classSchema } = require("@sms/shared");
+      const Class = schoolDb.model("Class", classSchema);
+
+      // Get unique classIds to optimize query
+      const uniqueClassIds = [
+        ...new Set(classSectionPairs.map((p) => p.split("#")[0])),
+      ];
+
+      const classesDocs = await Class.find({
+        classId: { $in: uniqueClassIds },
+      }).select("classId name sections");
+
+      classSectionPairs.forEach((pair) => {
+        const [cId, sId] = pair.split("#");
+        const classDoc = classesDocs.find((c) => c.classId === cId);
+        if (classDoc) {
+          const section = classDoc.sections.find((s) => s.sectionId === sId);
+          if (section) {
+            sectionMap[pair] = `${classDoc.name} - ${section.name}`;
+          }
+        }
+      });
+    }
+
+    const teachersWithLabels = teachers.map((t) => {
+      const obj = t.toObject();
+      obj.classTeacherLabel = sectionMap[t.classTeacherSectionId] || null;
+      return obj;
+    });
+
+    const response = formatPaginationResponse(
+      teachersWithLabels,
+      total,
+      page,
+      limit,
+    );
 
     return res.status(200).json({
       success: true,
@@ -323,13 +411,48 @@ const updateTeacherById = async (req, res) => {
 
       updateData.email = normalizedEmail;
     }
-
     // If status is being updated, update EmailRegistry too
     if (updateData.status) {
       await EmailRegistry.findOneAndUpdate(
         { email: currentTeacher.email.toLowerCase() },
         { status: updateData.status },
       );
+    }
+
+    // If classTeacherSectionId is being updated
+    if (
+      updateData.classTeacherSectionId !== undefined &&
+      updateData.classTeacherSectionId !== currentTeacher.classTeacherSectionId
+    ) {
+      const schoolDb = getSchoolDbConnection(schoolDbName);
+      const { ClassSchema: classSchema } = require("@sms/shared");
+      const Class = schoolDb.model("Class", classSchema);
+
+      // 1. Clear previous section if any
+      if (
+        currentTeacher.classTeacherSectionId &&
+        currentTeacher.classTeacherSectionId.includes("#")
+      ) {
+        const [oldClassId, oldSectionId] =
+          currentTeacher.classTeacherSectionId.split("#");
+        await Class.findOneAndUpdate(
+          { classId: oldClassId, "sections.sectionId": oldSectionId },
+          { $set: { "sections.$.classTeacherId": null } },
+        );
+      }
+
+      // 2. Set new section if any
+      if (
+        updateData.classTeacherSectionId &&
+        updateData.classTeacherSectionId.includes("#")
+      ) {
+        const [newClassId, newSectionId] =
+          updateData.classTeacherSectionId.split("#");
+        await Class.findOneAndUpdate(
+          { classId: newClassId, "sections.sectionId": newSectionId },
+          { $set: { "sections.$.classTeacherId": currentTeacher.teacherId } },
+        );
+      }
     }
 
     const updatedTeacher = await Teacher.findOneAndUpdate(
@@ -391,6 +514,23 @@ const deleteTeacherById = async (req, res) => {
       { email: teacher.email.toLowerCase() },
       { status: "inactive" },
     );
+
+    // If teacher was a class teacher, clear the reference in Class model
+    if (
+      teacher.classTeacherSectionId &&
+      teacher.classTeacherSectionId.includes("#")
+    ) {
+      const [assignedClassId, assignedSectionId] =
+        teacher.classTeacherSectionId.split("#");
+      const schoolDb = getSchoolDbConnection(schoolDbName);
+      const { ClassSchema: classSchema } = require("@sms/shared");
+      const Class = schoolDb.model("Class", classSchema);
+
+      await Class.findOneAndUpdate(
+        { classId: assignedClassId, "sections.sectionId": assignedSectionId },
+        { $set: { "sections.$.classTeacherId": null } },
+      );
+    }
 
     return res.status(200).json({
       success: true,
