@@ -10,6 +10,7 @@ const {
     getLeaveStats,
     getStudentLeavesForTeacher,
     getTeachersOnLeaveForDate,
+    getParentChildrenLeaves,
 } = require("../controllers/leave.controller");
 const { checkAuth, checkRole } = require("@sms/shared/middlewares");
 
@@ -31,10 +32,13 @@ router.get("/class-leaves", checkRole(["teacher"]), getStudentLeavesForTeacher);
 
 // Student/Teacher routes
 // Apply for leave
-router.post("/apply", checkRole(["student", "teacher"]), applyLeave);
+router.post("/apply", checkRole(["student", "teacher", "parent"]), applyLeave);
 
 // Get my leave requests
 router.get("/my", checkRole(["student", "teacher", "parent"]), getMyLeaves);
+
+// Get leave requests for parent's children
+router.get("/parent", checkRole(["parent"]), getParentChildrenLeaves);
 
 // Get specific leave by ID
 router.get("/:leaveId", checkRole(["student", "teacher", "sch_admin"]), getLeaveById);

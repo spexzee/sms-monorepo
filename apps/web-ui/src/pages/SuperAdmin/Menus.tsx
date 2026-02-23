@@ -179,6 +179,7 @@ const Menus = () => {
     "menuIcon",
     "schoolId",
     "defaultMenu",
+    "showInSidebar",
     "status",
   ];
 
@@ -259,8 +260,18 @@ const Menus = () => {
           error: "Please select true or false",
         };
 
-        // status: active, inactive
+        // showInSidebar: true, false
         (sheet.getCell(`K${i}`) as any).dataValidation = {
+          type: "list",
+          allowBlank: true,
+          formulae: ['"true,false"'],
+          showErrorMessage: true,
+          errorTitle: "Invalid Value",
+          error: "Please select true or false",
+        };
+
+        // status: active, inactive
+        (sheet.getCell(`L${i}`) as any).dataValidation = {
           type: "list",
           allowBlank: true,
           formulae: ['"active,inactive"'],
@@ -405,6 +416,7 @@ const Menus = () => {
           menuIcon: String(rowData.menuIcon || "").trim() || null,
           schoolId: parseArrayField(rowData.schoolId),
           defaultMenu: parseBool(rowData.defaultMenu),
+          showInSidebar: parseBool(rowData.showInSidebar),
           status: String(rowData.status || "").trim(),
         };
 
@@ -771,6 +783,17 @@ const Menus = () => {
         </Typography>
       </TableCell>
 
+      {/* Sidebar */}
+      <TableCell>
+        <Chip
+          label={menu.showInSidebar !== false ? "Visible" : "Hidden"}
+          size="small"
+          color={menu.showInSidebar !== false ? "success" : "default"}
+          variant={menu.showInSidebar !== false ? "filled" : "outlined"}
+          sx={{ fontSize: "0.75rem" }}
+        />
+      </TableCell>
+
       {/* Roles */}
       <TableCell>{renderRoles(menu)}</TableCell>
 
@@ -946,9 +969,10 @@ const Menus = () => {
                 <TableCell sx={{ width: "22%" }}>Menu Name</TableCell>
                 <TableCell sx={{ width: "15%" }}>Order</TableCell>
                 <TableCell sx={{ width: "18%" }}>Path</TableCell>
-                <TableCell sx={{ width: "15%" }}>Roles</TableCell>
-                <TableCell sx={{ width: "15%" }}>Schools</TableCell>
-                <TableCell sx={{ width: "15%" }} align="center">
+                <TableCell sx={{ width: "10%" }}>Sidebar</TableCell>
+                <TableCell sx={{ width: "13%" }}>Roles</TableCell>
+                <TableCell sx={{ width: "13%" }}>Schools</TableCell>
+                <TableCell sx={{ width: "13%" }} align="center">
                   Action
                 </TableCell>
               </TableRow>
@@ -956,7 +980,7 @@ const Menus = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                     <CircularProgress size={40} />
                     <Typography variant="body2" sx={{ mt: 2 }}>
                       Loading...
@@ -965,7 +989,7 @@ const Menus = () => {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                     <Typography color="error">
                       {(error as any).message || "Failed to load menus"}
                     </Typography>
@@ -973,7 +997,7 @@ const Menus = () => {
                 </TableRow>
               ) : groupedMenus.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">No menus found</Typography>
                   </TableCell>
                 </TableRow>

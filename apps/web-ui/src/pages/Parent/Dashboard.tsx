@@ -117,7 +117,7 @@ const ParentDashboard = () => {
                                                 {child.name}
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                                Class {child.class} • {child.section} • Roll No: {child.rollNumber}
+                                                Class {child.className} • {child.sectionName} • Roll No: {child.rollNumber}
                                             </Typography>
 
                                             {/* Attendance Progress */}

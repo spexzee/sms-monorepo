@@ -700,6 +700,7 @@ export interface ApplyLeavePayload {
   reason: string;
   classId?: string;
   sectionId?: string;
+  studentIds?: string[];
 }
 
 export interface ProcessLeavePayload {
@@ -731,6 +732,7 @@ export interface Menu {
   deactivatedRoles?: string[];
   deactivatedSchools?: string[];
   defaultMenu?: boolean;
+  showInSidebar?: boolean;
   menuType: "main" | "sub";
   hasSubmenu: boolean;
   parentMenuId?: string;
@@ -753,6 +755,7 @@ export interface CreateMenuPayload {
   deactivatedRoles?: string[];
   deactivatedSchools?: string[];
   defaultMenu?: boolean;
+  showInSidebar?: boolean;
   status: "active" | "inactive";
 }
 
@@ -767,6 +770,7 @@ export interface UpdateMenuPayload {
   deactivatedRoles?: string[];
   deactivatedSchools?: string[];
   defaultMenu?: boolean;
+  showInSidebar?: boolean;
   schoolId?: string | string[];
 }
 
@@ -950,6 +954,8 @@ export interface ChildStats {
   lastName: string;
   class: string;
   section?: string;
+  sectionName?: string;
+  className?: string;
   rollNumber?: string;
   profileImage?: string;
   attendancePercentage: number;

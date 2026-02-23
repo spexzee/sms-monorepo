@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
 const { getSchoolDbConnection } = require("../configs/db");
 const { getSchoolDbName } = require("../utils/schoolDbHelper");
-const { LeaveRequestSchema: leaveRequestSchema } = require("@sms/shared");
+const {
+    LeaveRequestSchema: leaveRequestSchema,
+    ParentSchema: parentSchema,
+    StudentSchema: studentSchema,
+} = require("@sms/shared");
 
 // Helper to get the model for a specific school
 const getLeaveModel = async (schoolId) => {
@@ -37,6 +41,7 @@ const applyLeave = async (req, res) => {
             reason,
             classId,
             sectionId,
+            studentIds,
         } = req.body;
 
         // Get applicant info from token
@@ -63,6 +68,36 @@ const applyLeave = async (req, res) => {
 
         const LeaveModel = await getLeaveModel(schoolId);
 
+        // Parent applying for multiple children
+        if (req.user?.role === "parent" && Array.isArray(studentIds) && studentIds.length > 0) {
+            const createdLeaves = [];
+            for (const studentId of studentIds) {
+                const newLeave = new LeaveModel({
+                    leaveId: generateLeaveId(),
+                    schoolId,
+                    applicantId: studentId,
+                    applicantType: "student",
+                    applicantName: applicantName + " (applied by parent)",
+                    classId,
+                    sectionId,
+                    leaveType,
+                    startDate: start,
+                    endDate: end,
+                    reason,
+                    status: "pending",
+                });
+                await newLeave.save();
+                createdLeaves.push(newLeave);
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: `Leave application submitted successfully for ${createdLeaves.length} student(s)`,
+                data: createdLeaves,
+            });
+        }
+
+        // Single leave (student/teacher self-apply)
         const newLeave = new LeaveModel({
             leaveId: generateLeaveId(),
             schoolId,
@@ -489,6 +524,106 @@ const getTeachersOnLeaveForDate = async (req, res) => {
     }
 };
 
+/**
+ * Get leave requests for parent's children
+ * GET /api/school/:schoolId/leave/parent
+ */
+const getParentChildrenLeaves = async (req, res) => {
+    try {
+        const { schoolId } = req.params;
+        const { status } = req.query;
+        const { userId, parentId } = req.user;
+        const actualParentId = parentId || userId;
+
+        const schoolDbName = await getSchoolDbName(schoolId);
+        const schoolDb = getSchoolDbConnection(schoolDbName);
+
+        // Get Parent model
+        let Parent;
+        try {
+            Parent = schoolDb.model("Parent");
+        } catch (e) {
+            Parent = schoolDb.model("Parent", parentSchema);
+        }
+
+        // Get Student model
+        let Student;
+        try {
+            Student = schoolDb.model("Student");
+        } catch (e) {
+            Student = schoolDb.model("Student", studentSchema);
+        }
+
+        // Find parent and their children
+        const parent = await Parent.findOne({ parentId: actualParentId });
+        if (!parent) {
+            return res.status(404).json({
+                success: false,
+                message: "Parent not found",
+            });
+        }
+
+        // Get children studentIds
+        const children = await Student.find({
+            $or: [
+                { studentId: { $in: parent.studentIds || [] } },
+                { parentId: actualParentId },
+            ],
+        }).lean();
+
+        const childStudentIds = children.map((c) => c.studentId);
+
+        if (childStudentIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: { leaves: [], summary: { total: 0, pending: 0, approved: 0, rejected: 0 } },
+            });
+        }
+
+        const LeaveModel = await getLeaveModel(schoolId);
+
+        // Find all leaves for these children
+        const query = { applicantId: { $in: childStudentIds } };
+        if (status) query.status = status;
+
+        const leaves = await LeaveModel.find(query)
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Build a studentId -> name map for display
+        const childMap = {};
+        children.forEach((c) => {
+            childMap[c.studentId] = `${c.firstName} ${c.lastName}`;
+        });
+
+        // Enrich leaves with child name
+        const enrichedLeaves = leaves.map((leave) => ({
+            ...leave,
+            childName: childMap[leave.applicantId] || leave.applicantName,
+        }));
+
+        // Summary
+        const summary = {
+            total: leaves.length,
+            pending: leaves.filter((l) => l.status === "pending").length,
+            approved: leaves.filter((l) => l.status === "approved").length,
+            rejected: leaves.filter((l) => l.status === "rejected").length,
+        };
+
+        res.status(200).json({
+            success: true,
+            data: { leaves: enrichedLeaves, summary },
+        });
+    } catch (error) {
+        console.error("Error getting parent children leaves:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to get leave requests",
+            error: error.message,
+        });
+    }
+};
+
 module.exports = {
     applyLeave,
     getMyLeaves,
@@ -499,5 +634,6 @@ module.exports = {
     getLeaveStats,
     getStudentLeavesForTeacher,
     getTeachersOnLeaveForDate,
+    getParentChildrenLeaves,
 };
 

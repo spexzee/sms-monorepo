@@ -43,6 +43,26 @@ export const useApplyLeave = (schoolId: string) => {
 };
 
 /**
+ * Get leave requests for parent's children
+ */
+export const useGetParentLeaves = (
+    schoolId: string,
+    options?: { status?: string }
+) => {
+    return useQuery({
+        queryKey: ["leave", "parent", schoolId, options],
+        queryFn: () =>
+            useApi<ApiResponse<{ leaves: (LeaveRequest & { childName?: string })[]; summary: LeaveSummary }>>(
+                "GET",
+                `/api/school/${schoolId}/leave/parent`,
+                undefined,
+                options
+            ),
+        enabled: !!schoolId,
+    });
+};
+
+/**
  * Get my leave requests (Student/Teacher)
  */
 export const useGetMyLeaves = (

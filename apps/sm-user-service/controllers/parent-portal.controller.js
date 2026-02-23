@@ -37,7 +37,7 @@ const getDashboardStats = async (req, res) => {
         const actualParentId = parentId || userId;
 
         const schoolDbName = await getSchoolDbName(schoolId);
-        const { Student, Parent, Attendance, LeaveRequest } = getModels(schoolDbName);
+        const { Student, Parent, Class, Attendance, LeaveRequest } = getModels(schoolDbName);
 
         // Get parent and their children
         const parent = await Parent.findOne({ parentId: actualParentId });
@@ -55,6 +55,17 @@ const getDashboardStats = async (req, res) => {
                 { parentId: actualParentId }
             ],
             status: 'active'
+        });
+
+        // Build class lookup map for className/sectionName resolution
+        const classIds = [...new Set(children.map(c => c.class))];
+        const classes = await Class.find({ classId: { $in: classIds } }, 'classId name sections');
+        const classMap = {};
+        classes.forEach(c => {
+            classMap[c.classId] = {
+                name: c.name,
+                sections: c.sections
+            };
         });
 
         // Get attendance stats for last 30 days for each child
@@ -78,6 +89,9 @@ const getDashboardStats = async (req, res) => {
                 status: 'pending'
             });
 
+            const classInfo = classMap[child.class] || {};
+            const sectionInfo = classInfo.sections?.find(s => s.sectionId === child.section);
+
             return {
                 studentId: child.studentId,
                 name: `${child.firstName} ${child.lastName}`,
@@ -85,6 +99,8 @@ const getDashboardStats = async (req, res) => {
                 lastName: child.lastName,
                 class: child.class,
                 section: child.section,
+                className: classInfo?.name || child.class,
+                sectionName: sectionInfo?.name || child.section,
                 rollNumber: child.rollNumber,
                 profileImage: child.profileImage,
                 attendancePercentage: parseFloat(percentage),

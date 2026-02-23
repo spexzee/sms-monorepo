@@ -138,6 +138,7 @@ const createMenu = async (req, res) => {
       schoolId,
       status,
       defaultMenu,
+      showInSidebar,
     } = req.body;
 
     // Normalize menuAccessRoles to array if it is a string
@@ -218,6 +219,7 @@ const createMenu = async (req, res) => {
       menuIcon: menuIcon || null,
       schoolId: roles.includes("super_admin") && schoolIds.length === 0 ? [] : schoolIds,
       defaultMenu: defaultMenu || false,
+      showInSidebar: showInSidebar !== undefined ? showInSidebar : true,
       status: status || "active",
     });
 
@@ -586,6 +588,7 @@ const bulkUpdateMenus = async (req, res) => {
         "menuIcon",
         "schoolId",
         "defaultMenu",
+        "showInSidebar",
         "status",
       ];
 

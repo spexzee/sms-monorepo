@@ -36,6 +36,9 @@ export const transformMenuData = (
 ): SideBarMenuItemType[] => {
   if (!menus || !Array.isArray(menus)) return [];
 
+  // Filter out menus that should not appear in the sidebar
+  const sidebarMenus = menus.filter((m) => m.showInSidebar !== false);
+
   const getBasePath = (userRole?: string) => {
     switch (userRole) {
       case "super_admin":
@@ -56,7 +59,7 @@ export const transformMenuData = (
   const basePath = getBasePath(role);
 
   // Group menus: Main menus are those with type "main" OR no parentMenuId OR parentMenuId of "0"
-  const mainMenus = menus.filter(
+  const mainMenus = sidebarMenus.filter(
     (m) =>
       (m.menuType && m.menuType.trim() === "main") ||
       !m.parentMenuId ||
@@ -65,7 +68,7 @@ export const transformMenuData = (
   );
 
   // Sub menus are everything else (those with a parentMenuId)
-  const subMenus = menus.filter(
+  const subMenus = sidebarMenus.filter(
     (m) =>
       m.menuType &&
       m.menuType.trim() === "sub" &&
@@ -132,16 +135,15 @@ export const transformMenuData = (
       isExpandable: hasChildren,
       subItems: hasChildren
         ? children.map((sub: any) => ({
-            name: sub.menuName,
-            icon: sub.menuIcon ? (
-              <DynamicIcon icon={sub.menuIcon} />
-            ) : (
-              <MuiIcons.Circle sx={{ fontSize: "6px", color: "white" }} />
-            ),
-            path: `${basePath}${sub.menuUrl.startsWith("/") ? "" : "/"}${
-              sub.menuUrl
+          name: sub.menuName,
+          icon: sub.menuIcon ? (
+            <DynamicIcon icon={sub.menuIcon} />
+          ) : (
+            <MuiIcons.Circle sx={{ fontSize: "6px", color: "white" }} />
+          ),
+          path: `${basePath}${sub.menuUrl.startsWith("/") ? "" : "/"}${sub.menuUrl
             }`,
-          }))
+        }))
         : undefined,
     };
   });
