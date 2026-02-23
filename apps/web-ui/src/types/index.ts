@@ -161,6 +161,8 @@ export interface Teacher {
   status: "active" | "inactive";
   profileImage?: string;
   signature?: string;
+  classTeacherSectionId?: string | null;
+  classTeacherLabel?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -177,6 +179,7 @@ export interface CreateTeacherPayload {
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
+  classTeacherSectionId?: string | null;
 }
 
 export interface UpdateTeacherPayload {
@@ -191,6 +194,7 @@ export interface UpdateTeacherPayload {
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
+  classTeacherSectionId?: string | null;
 }
 
 // Student Types
