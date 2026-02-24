@@ -109,6 +109,7 @@ export interface ExamSchedule {
 }
 
 export interface CreateScheduleRequest {
+    _id?: string; // Present when editing an existing schedule
     examId: string;
     classId: string;
     subjectId: string;

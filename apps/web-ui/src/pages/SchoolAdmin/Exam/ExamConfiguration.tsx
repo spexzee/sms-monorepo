@@ -22,12 +22,16 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Paper
+    Paper,
+    Chip,
+    Tooltip,
+    Grid
 } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CancelIcon from '@mui/icons-material/Cancel';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { useAuth } from '../../../context/AuthContext';
 import {
     useCreateExamTerm,
@@ -41,7 +45,10 @@ import {
     useGetGradingSystems,
     useDeleteGradingSystem
 } from '../../../queries/Exam';
+import { useCreateRoom, useDeleteRoom, useGetAllRooms, useUpdateRoom } from '../../../queries/Timetable';
+import { useGetClasses } from '../../../queries/Class';
 import type { CreateExamTermRequest, CreateExamTypeRequest, GradeRange } from '../../../types/exam.types';
+import type { CreateRoomRequest } from '../../../types/timetable.types';
 
 // ==========================================
 // EXAM CONFIGURATION PAGE
@@ -63,10 +70,11 @@ const ExamConfiguration = () => {
             </Box>
 
             <Card sx={{ mb: 3 }}>
-                <Tabs value={activeTab} onChange={handleTabChange} aria-label="exam configuration tabs">
+                <Tabs value={activeTab} onChange={handleTabChange} aria-label="exam configuration tabs" variant="scrollable" scrollButtons="auto">
                     <Tab label="Exam Terms" />
                     <Tab label="Exam Types" />
                     <Tab label="Grading Systems" />
+                    <Tab label="Rooms" />
                 </Tabs>
             </Card>
 
@@ -78,6 +86,9 @@ const ExamConfiguration = () => {
             </Box>
             <Box role="tabpanel" hidden={activeTab !== 2}>
                 {activeTab === 2 && <GradingSystemsTab schoolId={schoolId} />}
+            </Box>
+            <Box role="tabpanel" hidden={activeTab !== 3}>
+                {activeTab === 3 && <RoomsTab schoolId={schoolId} />}
             </Box>
         </Box>
     );
@@ -519,6 +530,345 @@ const GradingSystemsTab = ({ schoolId }: { schoolId: string }) => {
                     <Button onClick={() => setOpen(false)}>Cancel</Button>
                     <Button variant="contained" onClick={handleSubmit} disabled={createSystem.isPending}>
                         {createSystem.isPending ? 'Saving...' : 'Save'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Card>
+    );
+};
+
+// ==========================================
+// TAB 4: ROOMS
+// ==========================================
+
+const ROOM_TYPES = [
+    { value: 'classroom', label: 'Classroom' },
+    { value: 'lab', label: 'Lab' },
+    { value: 'hall', label: 'Hall' },
+    { value: 'playground', label: 'Playground' },
+    { value: 'library', label: 'Library' },
+    { value: 'auditorium', label: 'Auditorium' },
+    { value: 'other', label: 'Other' },
+];
+
+const RoomsTab = ({ schoolId }: { schoolId: string }) => {
+    const [open, setOpen] = useState(false);
+    const [editingRoom, setEditingRoom] = useState<any>(null);
+    const { data: rooms, isLoading } = useGetAllRooms(schoolId);
+    const { data: classes } = useGetClasses(schoolId);
+    const createRoom = useCreateRoom(schoolId);
+    const updateRoom = useUpdateRoom(schoolId);
+    const deleteRoom = useDeleteRoom(schoolId);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const [formData, setFormData] = useState<CreateRoomRequest & { classRef?: string }>({
+        name: '',
+        code: '',
+        type: 'classroom',
+        capacity: 40,
+        floor: '',
+        building: '',
+        classRef: ''
+    });
+
+    // Helper to get class-section label
+    const getClassLabel = (ref: string) => {
+        // ref format: "classId:sectionId" or just "classId"
+        const [classId, sectionId] = ref.split(':');
+        const cls = (classes as any)?.data?.find((c: any) => c.classId === classId);
+        if (!cls) return ref;
+        if (sectionId) {
+            const section = cls.sections?.find((s: any) => s.sectionId === sectionId || s._id === sectionId);
+            return `${cls.name} - ${section?.name || sectionId}`;
+        }
+        return cls.name;
+    };
+
+    const handleEdit = (room: any) => {
+        setEditingRoom(room);
+        setFormData({
+            name: room.name,
+            code: room.code,
+            type: room.type || 'classroom',
+            capacity: room.capacity || 40,
+            floor: room.floor || '',
+            building: room.building || '',
+            classRef: room.equipment?.find((e: string) => e.startsWith('CLASS_REF:'))?.replace('CLASS_REF:', '') || ''
+        });
+        setErrors({});
+        setOpen(true);
+    };
+
+    const handleDelete = (roomId: string) => {
+        if (window.confirm('Are you sure you want to delete this room?')) {
+            deleteRoom.mutate(roomId);
+        }
+    };
+
+    const validate = (): boolean => {
+        const newErrors: Record<string, string> = {};
+        if (!formData.name?.trim()) newErrors.name = 'Room name is required';
+        if (!formData.code?.trim()) newErrors.code = 'Room code is required';
+        if (!formData.capacity || formData.capacity < 1) newErrors.capacity = 'Capacity must be at least 1';
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleFieldChange = (field: string, value: any) => {
+        setFormData({ ...formData, [field]: value });
+        if (errors[field]) setErrors({ ...errors, [field]: '' });
+    };
+
+    const handleSubmit = () => {
+        if (!validate()) return;
+
+        // Store class reference in equipment array as a tag
+        const equipment = formData.classRef
+            ? [`CLASS_REF:${formData.classRef}`]
+            : [];
+
+        const payload: CreateRoomRequest = {
+            name: formData.name,
+            code: formData.code,
+            type: formData.type,
+            capacity: formData.capacity,
+            floor: formData.floor,
+            building: formData.building,
+            equipment
+        };
+
+        if (editingRoom) {
+            updateRoom.mutate({ roomId: editingRoom.roomId, data: payload }, {
+                onSuccess: () => {
+                    handleClose();
+                }
+            });
+        } else {
+            createRoom.mutate(payload, {
+                onSuccess: () => {
+                    handleClose();
+                }
+            });
+        }
+    };
+
+    const handleClose = () => {
+        setOpen(false);
+        setEditingRoom(null);
+        setFormData({ name: '', code: '', type: 'classroom', capacity: 40, floor: '', building: '', classRef: '' });
+        setErrors({});
+    };
+
+    // Extract class reference from equipment array
+    const getRoomClassRef = (room: any) => {
+        const ref = room.equipment?.find((e: string) => e.startsWith('CLASS_REF:'));
+        return ref ? ref.replace('CLASS_REF:', '') : null;
+    };
+
+    return (
+        <Card sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box>
+                    <Typography variant="h6" fontWeight={600}>Exam Rooms</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Manage rooms for exam scheduling. Assign each room to a class for reference.
+                    </Typography>
+                </Box>
+                <Button variant="contained" startIcon={<AddCircleIcon />} onClick={() => setOpen(true)}>
+                    Add Room
+                </Button>
+            </Box>
+
+            <TableContainer component={Paper} elevation={0} variant="outlined">
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Room Name</TableCell>
+                            <TableCell>Code</TableCell>
+                            <TableCell>Type</TableCell>
+                            <TableCell>Capacity</TableCell>
+                            <TableCell>Class Reference</TableCell>
+                            <TableCell>Floor / Building</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {isLoading ? (
+                            <TableRow><TableCell colSpan={8} align="center">Loading...</TableCell></TableRow>
+                        ) : rooms?.data?.map((room: any) => {
+                            const classRef = getRoomClassRef(room);
+                            return (
+                                <TableRow key={room._id}>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <MeetingRoomIcon fontSize="small" color="primary" />
+                                            <Typography fontWeight={500}>{room.name}</Typography>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip label={room.code} size="small" variant="outlined" />
+                                    </TableCell>
+                                    <TableCell sx={{ textTransform: 'capitalize' }}>{room.type}</TableCell>
+                                    <TableCell>{room.capacity} seats</TableCell>
+                                    <TableCell>
+                                        {classRef ? (
+                                            <Chip
+                                                label={getClassLabel(classRef)}
+                                                size="small"
+                                                color="primary"
+                                                variant="outlined"
+                                            />
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary">—</Typography>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {[room.floor, room.building].filter(Boolean).join(', ') || '—'}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={room.status}
+                                            size="small"
+                                            color={room.status === 'active' ? 'success' : room.status === 'maintenance' ? 'warning' : 'default'}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Tooltip title="Edit">
+                                            <IconButton size="small" color="primary" onClick={() => handleEdit(room)}>
+                                                <EditIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Delete">
+                                            <IconButton size="small" color="error" onClick={() => handleDelete(room.roomId)}>
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                        {!isLoading && (!rooms?.data || rooms.data.length === 0) && (
+                            <TableRow>
+                                <TableCell colSpan={8} align="center">
+                                    <Box sx={{ py: 4 }}>
+                                        <MeetingRoomIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                                        <Typography color="text.secondary">No rooms created yet</Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Click "Add Room" to create your first room (e.g., Room 101 for Class 8-A)
+                                        </Typography>
+                                    </Box>
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
+            {/* Add / Edit Room Dialog */}
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+                <DialogTitle>{editingRoom ? 'Edit Room' : 'Add New Room'}</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <TextField
+                                    label="Room Name"
+                                    fullWidth
+                                    placeholder="e.g., Room 101"
+                                    value={formData.name}
+                                    onChange={(e) => handleFieldChange('name', e.target.value)}
+                                    error={!!errors.name}
+                                    helperText={errors.name || 'Example: Room 101, Science Lab 1'}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <TextField
+                                    label="Room Code"
+                                    fullWidth
+                                    placeholder="e.g., R101"
+                                    value={formData.code}
+                                    onChange={(e) => handleFieldChange('code', e.target.value)}
+                                    error={!!errors.code}
+                                    helperText={errors.code || 'Unique code for this room'}
+                                />
+                            </Grid>
+                        </Grid>
+
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Room Type</InputLabel>
+                                    <Select
+                                        value={formData.type}
+                                        label="Room Type"
+                                        onChange={(e) => handleFieldChange('type', e.target.value)}
+                                    >
+                                        {ROOM_TYPES.map(rt => (
+                                            <MenuItem key={rt.value} value={rt.value}>{rt.label}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <TextField
+                                    label="Capacity (seats)"
+                                    type="number"
+                                    fullWidth
+                                    value={formData.capacity}
+                                    onChange={(e) => handleFieldChange('capacity', parseInt(e.target.value) || 0)}
+                                    error={!!errors.capacity}
+                                    helperText={errors.capacity}
+                                />
+                            </Grid>
+                        </Grid>
+
+                        <FormControl fullWidth>
+                            <InputLabel>Class Reference (Optional)</InputLabel>
+                            <Select
+                                value={formData.classRef || ''}
+                                label="Class Reference (Optional)"
+                                onChange={(e) => handleFieldChange('classRef', e.target.value)}
+                            >
+                                <MenuItem value="">None</MenuItem>
+                                {(classes as any)?.data?.flatMap((c: any) =>
+                                    c.sections?.length > 0
+                                        ? c.sections.map((s: any) => (
+                                            <MenuItem key={`${c.classId}:${s.sectionId || s._id}`} value={`${c.classId}:${s.sectionId || s._id}`}>
+                                                {c.name} - {s.name}
+                                            </MenuItem>
+                                        ))
+                                        : [<MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>]
+                                )}
+                            </Select>
+                        </FormControl>
+
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <TextField
+                                    label="Floor (Optional)"
+                                    fullWidth
+                                    placeholder="e.g., Ground Floor, 1st Floor"
+                                    value={formData.floor}
+                                    onChange={(e) => handleFieldChange('floor', e.target.value)}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <TextField
+                                    label="Building (Optional)"
+                                    fullWidth
+                                    placeholder="e.g., Main Block, East Wing"
+                                    value={formData.building}
+                                    onChange={(e) => handleFieldChange('building', e.target.value)}
+                                />
+                            </Grid>
+                        </Grid>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button variant="contained" onClick={handleSubmit} disabled={createRoom.isPending || updateRoom.isPending}>
+                        {(createRoom.isPending || updateRoom.isPending) ? 'Saving...' : 'Save'}
                     </Button>
                 </DialogActions>
             </Dialog>

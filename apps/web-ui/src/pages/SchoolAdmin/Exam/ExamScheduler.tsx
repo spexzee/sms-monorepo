@@ -498,6 +498,7 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
 const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Exam, onBack: () => void }) => {
     const [tabValue, setTabValue] = useState(0);
     const [open, setOpen] = useState(false);
+    const [editingSchedule, setEditingSchedule] = useState<any>(null);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [admitCardDialogOpen, setAdmitCardDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
@@ -578,16 +579,39 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
 
     const handleSubmit = () => {
         setErrorMsg('');
-        scheduleExam.mutate(formData, {
+        const payload = editingSchedule
+            ? { ...formData, _id: editingSchedule._id }
+            : formData;
+        scheduleExam.mutate(payload, {
             onSuccess: () => {
                 setOpen(false);
-                setSnackbar({ open: true, message: 'Exam scheduled successfully!', severity: 'success' });
-                setFormData(prev => ({ ...prev, subjectId: '', startTime: '', endTime: '' }));
+                setEditingSchedule(null);
+                setSnackbar({ open: true, message: editingSchedule ? 'Schedule updated successfully!' : 'Exam scheduled successfully!', severity: 'success' });
+                setFormData(prev => ({ ...prev, _id: undefined, subjectId: '', startTime: '', endTime: '' }));
             },
             onError: (err: any) => {
                 setErrorMsg(err?.message || "Failed to schedule exam. Check conflicts.");
             }
         });
+    };
+
+    const handleEditSchedule = (sch: any) => {
+        setEditingSchedule(sch);
+        setFormData({
+            examId: exam.examId,
+            classId: sch.classId || '',
+            subjectId: sch.subjectId || '',
+            date: sch.date ? new Date(sch.date).toISOString().split('T')[0] : '',
+            startTime: sch.startTime || '',
+            endTime: sch.endTime || '',
+            roomId: typeof sch.roomId === 'object' ? sch.roomId?._id || '' : sch.roomId || '',
+            invigilators: sch.invigilators?.map((inv: any) => typeof inv === 'object' ? inv.teacherId || inv._id : inv) || [],
+            passingMarks: sch.passingMarks ?? 35,
+            maxMarksTheory: sch.maxMarksTheory ?? 80,
+            maxMarksPractical: sch.maxMarksPractical ?? 0
+        });
+        setErrorMsg('');
+        setOpen(true);
     };
 
     const handleGenerateAdmitCards = () => {
@@ -740,7 +764,8 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                                         {sch.invigilators?.map((inv: any) => `${inv.firstName} ${inv.lastName}`).join(', ')}
                                     </TableCell>
                                     <TableCell>
-                                        <IconButton size="small"><DeleteIcon /></IconButton>
+                                        <IconButton size="small" color="primary" onClick={() => handleEditSchedule(sch)}><EditIcon /></IconButton>
+                                        <IconButton size="small" color="error"><DeleteIcon /></IconButton>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -879,8 +904,8 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
             )}
 
             {/* Schedule Dialog */}
-            <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-                <DialogTitle>Schedule Exam Subject</DialogTitle>
+            <Dialog open={open} onClose={() => { setOpen(false); setEditingSchedule(null); }} maxWidth="md" fullWidth>
+                <DialogTitle>{editingSchedule ? 'Edit Exam Schedule' : 'Schedule Exam Subject'}</DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
                         {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
@@ -955,7 +980,7 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                                         onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
                                     >
                                         <MenuItem value="">None</MenuItem>
-                                        {rooms?.data?.map((r: any) => <MenuItem key={r._id} value={r._id}>{r.name} (Cap: {r.capacity})</MenuItem>)}
+                                        {rooms?.data?.map((r: any) => <MenuItem key={r._id} value={r._id}>{r.name} ({r.code}) — Cap: {r.capacity}</MenuItem>)}
                                     </Select>
                                 </FormControl>
                             </Grid>
