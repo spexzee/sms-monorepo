@@ -419,6 +419,8 @@ export interface Subject {
   code: string;
   description?: string;
   status: "active" | "inactive";
+  assignedTeacherName?: string;
+  assignedTeacherId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -438,6 +440,8 @@ export interface UpdateSubjectPayload {
 
 export interface SubjectFilters {
   status?: "active" | "inactive";
+  classId?: string;
+  sectionId?: string;
 }
 
 // ==========================================
