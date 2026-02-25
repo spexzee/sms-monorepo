@@ -49,6 +49,7 @@ const TeacherProfile = () => {
   // Use aggregated data directly from store
   const schoolName = teacher?.schoolName || school?.schoolName || schoolId;
   const subjectNames = teacher?.subjectNames || teacher?.subjects || [];
+  const classNames = teacher?.classNames || [];
 
   // User details from store
   const userName = teacher?.firstName
@@ -308,9 +309,7 @@ const TeacherProfile = () => {
                       <Typography variant="caption" color="text.secondary">
                         Class Teacher
                       </Typography>
-                      <Typography
-                       variant="body1" fontWeight={500}
-                      >
+                      <Typography variant="body1" fontWeight={500}>
                         {teacher.classTeacherLabel}
                       </Typography>
                     </Box>
@@ -358,6 +357,52 @@ const TeacherProfile = () => {
                     ) : (
                       <Typography variant="body2" color="text.secondary">
                         No subjects assigned
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+                <Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        bgcolor: "secondary.50",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <SchoolIcon color="secondary" fontSize="small" />
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Classes Assigned
+                    </Typography>
+                  </Box>
+                  <Box sx={{ pl: 7 }}>
+                    {classNames.length > 0 ? (
+                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                        {classNames.map((name: string, idx: number) => (
+                          <Chip
+                            key={idx}
+                            label={name}
+                            size="small"
+                            variant="outlined"
+                            color="secondary"
+                          />
+                        ))}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No classes assigned
                       </Typography>
                     )}
                   </Box>

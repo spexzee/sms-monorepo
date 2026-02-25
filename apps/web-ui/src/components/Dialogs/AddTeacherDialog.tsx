@@ -57,7 +57,6 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
     phone: "",
     subjects: [],
     classes: [],
-    sections: [],
     status: "active",
     profileImage: "",
     signature: "",
@@ -79,11 +78,12 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
   // Get class options for Autocomplete - format: "Class Name - Section A, B"
   const classOptions = classes
     .filter((c: Class) => c.status === "active")
-    .map((c: Class) => ({
-      id: c.classId,
-      label: c.name,
-      sections: c.sections.map((s) => s.name).join(", "),
-    }));
+    .flatMap((c: Class) =>
+      c.sections.map((s) => ({
+        id: `${c.classId}#${s.sectionId}`,
+        label: `${c.name} - ${s.name}`,
+      })),
+    );
 
   // Get subject options for Autocomplete
   const subjectOptions = subjects
@@ -117,7 +117,6 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
         phone: editData.phone || "",
         subjects: editData.subjects || [],
         classes: editData.classes || [],
-        sections: editData.sections || [],
         status: editData.status || "active",
         profileImage: editData.profileImage || "",
         signature: editData.signature || "",
@@ -132,7 +131,6 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
         phone: "",
         subjects: [],
         classes: [],
-        sections: [],
         status: "active",
         profileImage: "",
         signature: "",
@@ -202,7 +200,6 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
       phone: "",
       subjects: [],
       classes: [],
-      sections: [],
       status: "active",
       profileImage: "",
       signature: "",
@@ -315,28 +312,17 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                   formData.classes?.includes(opt.id),
                 )}
                 onChange={(_, newValue) => {
-                  const newClassIds = newValue.map((v) => v.id);
-                  // Clear sections that are no longer valid when classes change
-                  const validSections =
-                    formData.sections?.filter((sId) => {
-                      return classes.some(
-                        (c) =>
-                          newClassIds.includes(c.classId) &&
-                          c.sections.some((s) => s.sectionId === sId),
-                      );
-                    }) || [];
                   setFormData((prev) => ({
                     ...prev,
-                    classes: newClassIds,
-                    sections: validSections,
+                    classes: newValue.map((v) => v.id),
                   }));
                 }}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Assigned Classes"
-                    placeholder="Select classes"
+                    label="Assigned Class Sections"
+                    placeholder="Select classes and sections"
                   />
                 )}
                 renderTags={(value, getTagProps) =>
@@ -350,80 +336,8 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                     />
                   ))
                 }
-                renderOption={(props, option) => (
-                  <li {...props} key={option.id}>
-                    <div>
-                      <strong>{option.label}</strong>
-                      {option.sections && (
-                        <span style={{ color: "gray", marginLeft: 8 }}>
-                          Sections: {option.sections}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                )}
               />
             </Grid>
-
-            {/* Sections Multi-Select - Only show if classes are selected */}
-            {formData.classes && formData.classes.length > 0 && (
-              <Grid size={{ xs: 12 }}>
-                <Autocomplete
-                  multiple
-                  options={classes
-                    .filter((c) => formData.classes?.includes(c.classId))
-                    .flatMap((c) =>
-                      c.sections.map((s) => ({
-                        id: s.sectionId,
-                        label: `${c.name} - ${s.name}`,
-                        className: c.name,
-                        sectionName: s.name,
-                      })),
-                    )}
-                  getOptionLabel={(option) => option.label}
-                  value={classes
-                    .filter((c) => formData.classes?.includes(c.classId))
-                    .flatMap((c) =>
-                      c.sections
-                        .filter((s) => formData.sections?.includes(s.sectionId))
-                        .map((s) => ({
-                          id: s.sectionId,
-                          label: `${c.name} - ${s.name}`,
-                          className: c.name,
-                          sectionName: s.name,
-                        })),
-                    )}
-                  onChange={(_, newValue) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      sections: newValue.map((v) => v.id),
-                    }));
-                  }}
-                  isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
-                  }
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Assigned Sections (Optional)"
-                      placeholder="Select specific sections"
-                      helperText="Leave empty to assign to entire class"
-                    />
-                  )}
-                  renderTags={(value, getTagProps) =>
-                    value.map((option, index) => (
-                      <Chip
-                        label={option.label}
-                        {...getTagProps({ index })}
-                        key={option.id}
-                        color="secondary"
-                        variant="outlined"
-                      />
-                    ))
-                  }
-                />
-              </Grid>
-            )}
 
             {/* Subjects Multi-Select */}
             <Grid size={{ xs: 12 }}>
