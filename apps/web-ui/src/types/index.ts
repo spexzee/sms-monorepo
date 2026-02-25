@@ -156,7 +156,6 @@ export interface Teacher {
   subjectNames?: string[];
   classes: string[];
   classNames?: string[];
-  sections?: string[];
   department?: string;
   status: "active" | "inactive";
   profileImage?: string;
@@ -175,7 +174,6 @@ export interface CreateTeacherPayload {
   phone?: string;
   subjects?: string[];
   classes?: string[];
-  sections?: string[];
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
@@ -190,7 +188,6 @@ export interface UpdateTeacherPayload {
   phone?: string;
   subjects?: string[];
   classes?: string[];
-  sections?: string[];
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
