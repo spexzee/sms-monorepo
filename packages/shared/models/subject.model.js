@@ -1,36 +1,36 @@
 const mongoose = require("mongoose");
 
 const subjectSchema = new mongoose.Schema(
-    {
-        subjectId: {
-            type: String,
-            required: true,
-            unique: true,
-        },
-        schoolId: {
-            type: String,
-            required: true,
-        },
-        name: {
-            type: String,
-            required: true,
-        },
-        code: {
-            type: String,
-            required: true,
-        },
-        description: {
-            type: String,
-        },
-        status: {
-            type: String,
-            enum: ["active", "inactive"],
-            default: "active",
-        },
+  {
+    subjectId: {
+      type: String,
+      required: true,
+      unique: true,
     },
-    {
-        timestamps: true,
-    }
+    schoolId: {
+      type: String,
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    code: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
+  },
+  {
+    timestamps: true,
+  },
 );
 
 // Create compound index for subject name and code uniqueness per school
