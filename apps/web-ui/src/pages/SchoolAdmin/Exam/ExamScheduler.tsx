@@ -931,7 +931,7 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                                         label="Subject"
                                         onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
                                     >
-                                        {subjects?.data?.map((s: any) => <MenuItem key={s._id} value={s._id}>{s.name}</MenuItem>)}
+                                        {subjects?.data?.map((s: any) => <MenuItem key={s.subjectId} value={s.subjectId}>{s.name}</MenuItem>)}
                                     </Select>
                                 </FormControl>
                             </Grid>
