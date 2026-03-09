@@ -12,7 +12,7 @@ const {
 } = require('../controllers/exam-config.controller');
 
 const {
-    createExam, getExams, scheduleExamSubject, getExamSchedule
+    createExam, getExams, updateExam, deleteExam, scheduleExamSubject, getExamSchedule
 } = require('../controllers/exam.controller');
 
 const {
@@ -110,6 +110,18 @@ router.get(
     '/exams',
     Authenticated,
     getExams
+);
+router.put(
+    '/exams/:examId',
+    Authenticated,
+    authorizeRoles('sch_admin'),
+    updateExam
+);
+router.delete(
+    '/exams/:examId',
+    Authenticated,
+    authorizeRoles('sch_admin'),
+    deleteExam
 );
 
 // ==========================================

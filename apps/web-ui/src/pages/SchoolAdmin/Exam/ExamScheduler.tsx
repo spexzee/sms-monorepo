@@ -430,12 +430,12 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                         {selected.map((value: string) => {
                                             const cls = classes?.data?.find((c: any) => c.classId === value);
-                                            return <Chip key={value} label={cls ? `${cls.name}${cls.sections?.[0]?.name ? ` ${cls.sections[0].name}` : ''}` : value} />;
+                                            return <Chip key={value} label={cls?.name || value} />;
                                         })}
                                     </Box>
                                 )}
                             >
-                                {classes?.data?.map((c: any) => <MenuItem key={c.classId} value={c.classId}>{c.name}{c.sections?.[0]?.name ? ` ${c.sections[0].name}` : ''}</MenuItem>)}
+                                {classes?.data?.map((c: any) => <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>)}
                             </Select>
                         </FormControl>
 
@@ -528,8 +528,15 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
     const { data: subjects } = useGetSubjects(schoolId);
     const { data: teachers } = useGetTeachers(schoolId);
     const { data: rooms } = useGetAllRooms(schoolId);
-    const { data: allClasses } = useGetClasses(schoolId);
-    const examClasses = allClasses?.data?.filter((c: any) => exam.classes.includes(c.classId)) || [];
+    const { data: allClasses, isLoading: classesLoading } = useGetClasses(schoolId);
+
+    // Robust filtering for exam classes - check both classId and mongo _id
+    const examClasses = React.useMemo(() => {
+        if (!allClasses?.data || !exam.classes) return [];
+        return allClasses.data.filter((c: any) =>
+            exam.classes.includes(c.classId) || exam.classes.includes(c._id)
+        );
+    }, [allClasses, exam.classes]);
 
     // School details
     const school = schoolData?.data;
@@ -910,16 +917,29 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
                         {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
 
+                        {examClasses.length === 0 && !classesLoading && (
+                            <Alert severity="warning">
+                                No participating classes found for this exam. Please edit the Exam details to add participating classes first.
+                            </Alert>
+                        )}
+
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <FormControl fullWidth>
+                                <FormControl fullWidth required error={examClasses.length === 0}>
                                     <InputLabel>Class</InputLabel>
                                     <Select
                                         value={formData.classId}
                                         label="Class"
                                         onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+                                        disabled={examClasses.length === 0 || classesLoading}
                                     >
-                                        {examClasses.map((c: any) => <MenuItem key={c.classId} value={c.classId}>{c.name}{c.sections?.[0]?.name ? ` ${c.sections[0].name}` : ''}</MenuItem>)}
+                                        {classesLoading ? (
+                                            <MenuItem disabled value=""><CircularProgress size={20} sx={{ mr: 1, verticalAlign: 'middle' }} /> Loading Classes...</MenuItem>
+                                        ) : examClasses.map((c: any) => (
+                                            <MenuItem key={c.classId} value={c.classId}>
+                                                {c.name}
+                                            </MenuItem>
+                                        ))}
                                     </Select>
                                 </FormControl>
                             </Grid>
