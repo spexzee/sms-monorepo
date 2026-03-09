@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import {
     Box,
     Typography,
@@ -11,15 +10,10 @@ import {
     TableCell,
     TableHead,
     TableRow,
-    CircularProgress,
     Alert,
     Paper,
     Skeleton,
     TableContainer,
-    Tabs,
-    Tab,
-    Divider,
-    LinearProgress,
 } from '@mui/material';
 import {
     EmojiEvents as TrophyIcon,
@@ -29,7 +23,7 @@ import {
     School as SchoolIcon,
 } from '@mui/icons-material';
 import TokenService from '../../queries/token/tokenService';
-import { useGetExams, useGetStudentReportCard, useGetExamSchedule } from '../../queries/Exam';
+import { useGetExams, useGetStudentReportCard } from '../../queries/Exam';
 import { useGetSubjects } from '../../queries/Subject';
 
 const StudentResults = () => {
