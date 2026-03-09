@@ -44,7 +44,7 @@ const TeacherClasses = () => {
     const { data: teacherData, isLoading: loadingTeacher } = useGetTeacherById(schoolId, teacherId);
     const teacher = teacherData?.data;
     const teacherClasses = teacher?.classes || [];
-    const teacherSections = teacher?.sections || [];
+    const teacherSections = (teacher as any)?.sections || [];
     const classTeacherSectionId = teacher?.classTeacherSectionId;
 
     // Fetch all classes and students
