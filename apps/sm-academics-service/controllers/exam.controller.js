@@ -94,6 +94,56 @@ const getExams = async (req, res) => {
     }
 };
 
+const updateExam = async (req, res) => {
+    try {
+        const { schoolId, examId } = req.params;
+        const updateData = req.body;
+
+        const schoolDbName = await getSchoolDbName(schoolId);
+        const { Exam } = getModels(schoolDbName);
+
+        const updatedExam = await Exam.findOneAndUpdate(
+            { schoolId, examId },
+            { $set: updateData },
+            { new: true }
+        );
+
+        if (!updatedExam) {
+            return res.status(404).json({ success: false, message: "Exam not found" });
+        }
+
+        res.status(200).json({ success: true, data: updatedExam, message: "Exam updated successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const deleteExam = async (req, res) => {
+    try {
+        const { schoolId, examId } = req.params;
+
+        const schoolDbName = await getSchoolDbName(schoolId);
+        const { Exam, ExamSchedule } = getModels(schoolDbName);
+
+        const exam = await Exam.findOneAndUpdate(
+            { schoolId, examId },
+            { $set: { isActive: false } },
+            { new: true }
+        );
+
+        if (!exam) {
+            return res.status(404).json({ success: false, message: "Exam not found" });
+        }
+
+        // Also deactivate all related schedules
+        await ExamSchedule.updateMany({ schoolId, examId }, { $set: { isActive: false } });
+
+        res.status(200).json({ success: true, message: "Exam deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // ==========================================
 // Schedule Controllers & Conflict Detection
 // ==========================================
@@ -325,6 +375,8 @@ const getExamSchedule = async (req, res) => {
 module.exports = {
     createExam,
     getExams,
+    updateExam,
+    deleteExam,
     scheduleExamSubject,
     getExamSchedule
 };

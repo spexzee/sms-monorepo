@@ -170,24 +170,41 @@ const getTeacherDashboardStats = async (req, res) => {
     const schoolDbName = await getSchoolDbName(schoolId);
     const schoolDb = await getSchoolDbConnection(schoolDbName);
 
-    // Get teacher's classes
     const Class =
       schoolDb.models.Class ||
       schoolDb.model("Class", require("@sms/shared").ClassSchema);
-    const myClasses = await Class.find({ classTeacher: teacherId });
-    const totalClasses = myClasses.length;
+
+    // Get teacher record to access their assigned classes
+    const Teacher =
+      schoolDb.models.Teacher || schoolDb.model("Teacher", teacherSchema);
+    const teacher = await Teacher.findOne({ teacherId }).select(
+      "classes sections",
+    );
+
+    // Get classes from teacher's assigned classes array
+    const assignedClassIds = teacher?.classes || [];
+
+    // Also find classes where teacher is class teacher of a section
+    const classTeacherClasses = await Class.find({
+      "sections.classTeacherId": teacherId,
+    }).select("classId");
+    const classTeacherClassIds = classTeacherClasses.map((c) => c.classId);
+
+    // Merge unique class IDs
+    const allClassIds = [
+      ...new Set([...assignedClassIds, ...classTeacherClassIds]),
+    ];
+    const totalClasses = allClassIds.length;
 
     // Get total students across all classes
     const Student =
       schoolDb.models.Student || schoolDb.model("Student", studentSchema);
-    const classIds = myClasses.map((c) => c.classId);
     const totalStudents = await Student.countDocuments({
-      classId: { $in: classIds },
+      class: { $in: allClassIds },
       status: "active",
     });
 
     // Get today's schedule (simplified - you can enhance this with actual timetable data)
-    const today = new Date().getDay(); // 0-6
     const periodsToday = totalClasses > 0 ? 5 : 0; // Simplified assumption
 
     // Get pending leave requests (if teacher has approval rights)

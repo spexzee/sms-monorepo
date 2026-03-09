@@ -52,7 +52,7 @@ const ExamSchema = new Schema({
     },
     status: {
         type: String,
-        enum: ['draft', 'scheduled', 'ongoing', 'completed', 'results_processing', 'published'],
+        enum: ['draft', 'scheduled', 'ongoing', 'completed', 'results_processing', 'published', 'closed'],
         default: 'draft'
     },
     isActive: {
