@@ -1,29 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  TextField,
-  Button,
   IconButton,
   InputAdornment,
   Alert,
-  CircularProgress,
   Fade,
+  Checkbox,
+  FormControlLabel,
+  // Avatar,
+  // AvatarGroup,
+  Divider,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   Email,
   Lock,
+  School as SchoolIcon,
 } from '@mui/icons-material';
-import '../style/Varaible.scss'
 import { useLogin } from '../queries/Auth';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import TokenService from '../queries/token/tokenService';
 import { useUserStore } from '../stores/userStore';
+import { AppInput } from '../components/ui/AppInput';
+import { AppButton } from '../components/ui/AppButton';
 
-// Define TypeScript interfaces for props
 interface LoginForm {
   email: string;
   password: string;
@@ -35,7 +38,6 @@ interface LoginErrors {
 }
 
 const LoginPage: React.FC = () => {
-  // State management
   const [formData, setFormData] = useState<LoginForm>({
     email: '',
     password: '',
@@ -44,60 +46,50 @@ const LoginPage: React.FC = () => {
   const [errors, setErrors] = useState<LoginErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+
   const loginMutation = useLogin();
   const isLoading = loginMutation.isPending;
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { fetchProfile } = useUserStore();
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const userRole = TokenService.getRole();
+      if (userRole) {
+        navigate(getRedirectPath(userRole));
+      }
+    }
+  }, [isAuthenticated, navigate]);
 
-  // Event handlers
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Clear error for this field
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name as keyof LoginErrors]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: undefined,
-      }));
+      setErrors(prev => ({ ...prev, [name]: undefined }));
     }
-
     if (loginError) setLoginError('');
   };
 
-  // Get redirect path based on role
-  const getRedirectPath = (role: string): string => {
-    switch (role) {
-      case 'super_admin':
-        return '/super-admin/dashboard';
-      case 'sch_admin':
-        return '/school-admin/dashboard';
-      case 'teacher':
-        return '/teacher/dashboard';
-      case 'student':
-        return '/student/dashboard';
-      case 'parent':
-        return '/parent/dashboard';
-      default:
-        return '/';
+  const getRedirectPath = (userRole: string): string => {
+    switch (userRole) {
+      case 'super_admin': return '/super-admin/dashboard';
+      case 'sch_admin': return '/school-admin/dashboard';
+      case 'teacher': return '/teacher/dashboard';
+      case 'student': return '/student/dashboard';
+      case 'parent': return '/parent/dashboard';
+      default: return '/';
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validation
     const newErrors: LoginErrors = {};
 
     if (!formData.email) {
       newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
     }
 
     if (!formData.password) {
@@ -113,239 +105,261 @@ const LoginPage: React.FC = () => {
       onSuccess: async (res: any) => {
         if (res?.data?.token) {
           login(res.data.token);
-
-          // Fetch profile data immediately after login to populate Zustand store
           await fetchProfile();
-
-          // Get role from token and redirect accordingly
-          const role = TokenService.getRole();
-          const redirectPath = getRedirectPath(role || 'super_admin');
+          const userRole = TokenService.getRole();
+          const redirectPath = getRedirectPath(userRole || 'super_admin');
           navigate(redirectPath);
         } else {
           setLoginError("Invalid server response - no token received");
         }
       },
       onError: (err: any) => {
-        console.error("Login error:", err);
-        setLoginError(
-          err?.message ||
-          err?.response?.data?.message ||
-          "Login failed. Please check credentials."
-        );
+        setLoginError(err?.response?.data?.message || "Login failed. Please check credentials.");
       },
     });
   };
 
-
   return (
-    <Box sx={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      padding: '20px',
-    }}>
-      <div style={{
-        maxWidth: '450px',
-        width: '100%',
-        borderRadius: 'var(--border-radius-xl, 16px)',
-        overflow: 'hidden',
-        boxShadow: '0 20px 40px var(--shadow-dark, rgba(0, 0, 0, 0.2))',
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Left Side: Branding & Social Proof */}
+      <Box sx={{
+        flex: 1,
+        display: { xs: 'none', md: 'flex' },
+        bgcolor: '#EEF2FF',
+        position: 'relative',
+        flexDirection: 'column',
+        p: 8,
+        backgroundImage: `radial-gradient(#C7D2FE 1px, transparent 1px)`,
+        backgroundSize: '32px 32px',
+        overflow: 'hidden'
       }}>
-        <div style={{
-          background: 'var(--gradient-primary, linear-gradient(45deg, var(--primary-color), var(--primary-light)))',
-          color: 'white',
-          padding: 'var(--spacing-xl, 32px)',
-          textAlign: 'center',
-        }}>
-          <Fade in={true} timeout={1000}>
-            <Box>
-              <Typography
-                variant="h3"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: {
-                    xs: 'var(--font-size-xl, 24px)',
-                    sm: 'var(--font-size-xxl, 32px)',
-                  },
-                  marginBottom: 'var(--spacing-sm, 8px)',
-                }}
-              >
-                SMS Platform
-              </Typography>
+        {/* Background Image Layer */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: 'url(/bg_singin.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.4,
+            zIndex: 0,
+          }}
+        />
 
-              <Typography
-                variant="body1"
-                sx={{
-                  opacity: 0.9,
-                  fontSize: {
-                    xs: 'var(--font-size-sm, 14px)',
-                    md: 'var(--font-size-md, 16px)'
-                  },
-                }}
-              >
-                Sign in to your account
-              </Typography>
+        <Box sx={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* Logo */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 10 }}>
+            <Box sx={{
+              bgcolor: 'primary.main',
+              p: 1,
+              borderRadius: 2,
+              display: 'flex',
+              boxShadow: '0 8px 16px -4px rgba(99, 102, 241, 0.3)'
+            }}>
+              <SchoolIcon sx={{ color: 'white', fontSize: 28 }} />
+            </Box>
+            <Typography variant="h5" fontWeight={800} color="text.primary" sx={{ letterSpacing: -0.5 }}>
+              SMS Edu Solution
+            </Typography>
+          </Box>
+
+          {/* Content */}
+          <Box sx={{ maxWidth: 500, my: 'auto' }}>
+            <Typography variant="h1" sx={{
+              fontSize: '3.5rem',
+              fontWeight: 800,
+              lineHeight: 1.1,
+              mb: 3,
+              color: '#1E293B'
+            }}>
+              Elevate Your School's Potential.
+            </Typography>
+            <Typography variant="h6" sx={{ color: '#64748B', fontWeight: 400, mb: 6, lineHeight: 1.6 }}>
+              The all-in-one solution for modern school management. Streamline your administrative tasks, track student progress, and engage parents effortlessly.
+            </Typography>
+          </Box>
+
+          {/* Social Proof Card */}
+          {/* <Box sx={{
+            bgcolor: 'white',
+            p: 2.5,
+            borderRadius: 4,
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+            width: 'fit-content',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            mt: 'auto'
+          }}>
+            <AvatarGroup max={4}>
+              <Avatar src="https://i.pravatar.cc/150?u=1" />
+              <Avatar src="https://i.pravatar.cc/150?u=2" />
+              <Avatar src="https://i.pravatar.cc/150?u=3" />
+              <Avatar sx={{ bgcolor: 'secondary.main', fontSize: 13 }}>+12k</Avatar>
+            </AvatarGroup>
+            <Typography variant="body2" fontWeight={600} color="text.primary">
+              Joined by over 12,000 educators worldwide.
+            </Typography>
+          </Box> */}
+        </Box>
+      </Box>
+
+      {/* Right Side: Login Form */}
+      <Box sx={{
+        width: { xs: '100%', md: '550px', lg: '650px' },
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'white'
+      }}>
+        <Box sx={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: { xs: 4, sm: 8 }
+        }}>
+          <Fade in timeout={1000}>
+            <Box sx={{ maxWidth: 450, width: '100%' }}>
+              <Box sx={{ mb: 6 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, color: '#1E293B' }}>
+                  Welcome Back
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#64748B' }}>
+                  Enter your credentials to access your dashboard
+                </Typography>
+              </Box>
+
+              <form onSubmit={handleSubmit}>
+                {loginError && <Alert severity="error" sx={{ mb: 4, borderRadius: 2 }}>{loginError}</Alert>}
+
+                <AppInput
+                  label="Email Address"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                  placeholder="name@school.edu"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Email sx={{ fontSize: 20, color: '#94A3B8' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ mb: 3 }}
+                />
+
+                <Box sx={{ position: 'relative' }}>
+                  <Typography
+                    variant="caption"
+                    color="primary"
+                    sx={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 4,
+                      zIndex: 1,
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      '&:hover': { opacity: 0.8 }
+                    }}
+                    onClick={() => navigate('/forgot-password')}
+                  >
+                    Forgot Password?
+                  </Typography>
+                  <AppInput
+                    label="Password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    error={!!errors.password}
+                    helperText={errors.password}
+                    placeholder="••••••••"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Lock sx={{ fontSize: 20, color: '#94A3B8' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: '#94A3B8' }}>
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ color: '#64748B' }}>
+                      Remember me for 30 days
+                    </Typography>
+                  }
+                  sx={{ mb: 4, mt: 1 }}
+                />
+
+                <AppButton
+                  fullWidth
+                  type="submit"
+                  variant="contained"
+                  loading={isLoading}
+                  size="large"
+                  sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, textTransform: 'none', borderRadius: 3 }}
+                >
+                  Sign In
+                </AppButton>
+
+                <Divider sx={{ my: 4 }}>
+                  <Typography variant="caption" sx={{ px: 2, color: '#94A3B8', fontWeight: 600 }}>
+                    Other Access
+                  </Typography>
+                </Divider>
+
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" sx={{ color: '#64748B' }}>
+                    Don't have an account? <Typography
+                      variant="body2"
+                      component="span"
+                      color="primary"
+                      sx={{ fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Contact Admin
+                    </Typography>
+                  </Typography>
+                </Box>
+              </form>
             </Box>
           </Fade>
-        </div>
+        </Box>
 
-        {/* Form Section */}
-        <div style={{
-          padding: 'var(--spacing-xxl, 48px)',
-          backgroundColor: 'var(--surface-color, #ffffff)',
-        }}>
-          <form onSubmit={handleSubmit} style={{
-            width: '100%',
-          }}>
-            {loginError && (
-              <Alert
-                severity="error"
-                sx={{
-                  marginBottom: 'var(--spacing-lg, 24px)',
-                  borderRadius: 'var(--border-radius-md, 8px)',
-                  backgroundColor: 'var(--error-light, #ef5350)',
-                  color: 'white',
-                  '& .MuiAlert-icon': {
-                    color: 'white',
-                  },
-                }}
-              >
-                {loginError}
-              </Alert>
-            )}
-
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              error={!!errors.email}
-              helperText={errors.email}
-              variant="outlined"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Email sx={{ color: 'var(--text-secondary, rgba(0, 0, 0, 0.6))' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                marginBottom: 'var(--spacing-lg, 24px)',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 'var(--border-radius-md, 8px)',
-                  backgroundColor: 'var(--input-background, rgba(0, 0, 0, 0.04))',
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--primary-light, #42a5f5)',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--primary-color, #1976d2)',
-                    borderWidth: '2px',
-                  },
-                },
-                '& .MuiInputLabel-root': {
-                  color: 'var(--text-secondary, rgba(0, 0, 0, 0.6))',
-                  '&.Mui-focused': {
-                    color: 'var(--primary-color, #1976d2)',
-                  },
-                },
-              }}
-              placeholder="your.email@example.com"
-            />
-
-            <TextField
-              fullWidth
-              label="Password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={handleInputChange}
-              error={!!errors.password}
-              helperText={errors.password}
-              variant="outlined"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock sx={{ color: 'var(--text-secondary, rgba(0, 0, 0, 0.6))' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      aria-label="toggle password visibility"
-                      sx={{
-                        color: 'var(--text-secondary, rgba(0, 0, 0, 0.6))',
-                        '&:hover': {
-                          backgroundColor: 'var(--hover-overlay, rgba(0, 0, 0, 0.04))',
-                        }
-                      }}
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                marginBottom: 'var(--spacing-lg, 24px)',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 'var(--border-radius-md, 8px)',
-                  backgroundColor: 'var(--input-background, rgba(0, 0, 0, 0.04))',
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--primary-light, #42a5f5)',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--primary-color, #1976d2)',
-                    borderWidth: '2px',
-                  },
-                },
-                '& .MuiInputLabel-root': {
-                  color: 'var(--text-secondary, rgba(0, 0, 0, 0.6))',
-                  '&.Mui-focused': {
-                    color: 'var(--primary-color, #1976d2)',
-                  },
-                },
-              }}
-            />
-
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              disabled={isLoading}
-              sx={{
-                marginTop: 'var(--spacing-xl, 32px)',
-                padding: 'var(--spacing-md, 16px)',
-                background: 'var(--gradient-primary, linear-gradient(45deg, var(--primary-color), var(--primary-light)))',
-                color: 'white',
-                fontWeight: 600,
-                fontSize: 'var(--font-size-md, 16px)',
-                borderRadius: 'var(--border-radius-md, 8px)',
-                textTransform: 'none',
-                '&:hover': {
-                  background: 'var(--primary-dark, #1565c0)',
-                  boxShadow: '0 4px 12px var(--shadow-color, rgba(0, 0, 0, 0.1))',
-                },
-                '&:disabled': {
-                  background: 'var(--text-disabled, rgba(0, 0, 0, 0.38))',
-                },
-              }}
-              startIcon={isLoading ?
-                <CircularProgress
-                  size={20}
-                  color="inherit"
-                  sx={{ color: 'white' }}
-                /> : null
-              }
-            >
-              {isLoading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
-        </div>
-      </div>
+        {/* Footer */}
+        <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', gap: 4 }}>
+          <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>
+            SUPPORT
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>
+            PRIVACY
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>
+            TERMS
+          </Typography>
+        </Box>
+      </Box>
     </Box>
   );
 };

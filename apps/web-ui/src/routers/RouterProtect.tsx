@@ -16,12 +16,12 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const token = TokenService.getToken();
 
   if (!token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (TokenService.isTokenExpired()) {
     TokenService.removeToken();
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   const userRole = TokenService.getRole();

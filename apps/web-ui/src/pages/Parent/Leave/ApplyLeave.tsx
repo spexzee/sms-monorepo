@@ -4,11 +4,8 @@ import {
     Typography,
     Card,
     CardContent,
-    TextField,
     Button,
-    MenuItem,
     Alert,
-    CircularProgress,
     Grid,
     Autocomplete,
     Checkbox,
@@ -20,91 +17,19 @@ import {
     CheckBoxOutlineBlank,
     CheckBox as CheckBoxIcon,
 } from '@mui/icons-material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import type { LeaveType, Student } from '../../../types';
+import { AppInput } from '../../../components/ui/AppInput';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { AppButton } from '../../../components/ui/AppButton';
 import { useNavigate } from 'react-router-dom';
+import TokenService from '../../../queries/token/tokenService';
 import { useChildSelector } from '../../../context/ChildSelectorContext';
 import { useApplyLeave } from '../../../queries/Leave';
-import TokenService from '../../../queries/token/tokenService';
-import type { LeaveType, Student } from '../../../types';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 type ChildOption = Student & { className?: string; sectionName?: string };
-
-const leaveTypes: { value: LeaveType; label: string }[] = [
-    { value: 'sick', label: 'Sick Leave' },
-    { value: 'casual', label: 'Casual Leave' },
-    { value: 'emergency', label: 'Emergency Leave' },
-    { value: 'personal', label: 'Personal Leave' },
-    { value: 'other', label: 'Other' },
-];
-
-// Custom styling for date pickers
-const datePickerSlotProps = {
-    textField: {
-        fullWidth: true,
-        variant: 'outlined' as const,
-        sx: {
-            '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                backgroundColor: 'background.paper',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                    backgroundColor: 'action.hover',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'primary.main',
-                    },
-                },
-                '&.Mui-focused': {
-                    backgroundColor: 'background.paper',
-                    boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
-                },
-            },
-            '& .MuiInputLabel-root': {
-                fontWeight: 500,
-            },
-        },
-    },
-    actionBar: {
-        actions: ['clear', 'today'] as ('clear' | 'today' | 'cancel' | 'accept')[],
-    },
-    popper: {
-        sx: {
-            '& .MuiPaper-root': {
-                borderRadius: 3,
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-            },
-            '& .MuiDateCalendar-root': {
-                height: 300,
-            },
-            '& .MuiDayCalendar-slideTransition': {
-                minHeight: 180,
-            },
-            '& .MuiDayCalendar-weekContainer': {
-                margin: '1px 0',
-            },
-            '& .MuiDialogActions-root': {
-                padding: '4px 8px',
-            },
-            '& .MuiDayCalendar-weekDayLabel': {
-                fontWeight: 600,
-                color: 'primary.main',
-            },
-            '& .MuiPickersDay-root': {
-                borderRadius: 2,
-                '&:hover': {
-                    backgroundColor: 'primary.light',
-                },
-                '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    '&:hover': {
-                        backgroundColor: 'primary.dark',
-                    },
-                },
-            },
-        },
-    },
-};
 
 const ParentApplyLeave: React.FC = () => {
     const navigate = useNavigate();
@@ -206,8 +131,8 @@ const ParentApplyLeave: React.FC = () => {
                     </Alert>
                 )}
 
-                <Card>
-                    <CardContent>
+                <Card sx={{ borderRadius: 4, elevation: 0, border: '1px solid', borderColor: 'divider' }}>
+                    <CardContent sx={{ p: 4 }}>
                         <form onSubmit={handleSubmit}>
                             <Grid container spacing={3}>
                                 <Grid size={{ xs: 12 }}>
@@ -218,7 +143,7 @@ const ParentApplyLeave: React.FC = () => {
                                             options={children}
                                             value={selectedStudents}
                                             onChange={(_event, newValue) => {
-                                                setSelectedStudents(newValue as ChildOption[]);
+                                                setSelectedStudents(newValue as any);
                                             }}
                                             disableCloseOnSelect
                                             getOptionLabel={getChildLabel}
@@ -255,89 +180,91 @@ const ParentApplyLeave: React.FC = () => {
                                                 })
                                             }
                                             renderInput={(params) => (
-                                                <TextField
+                                                <AppInput
                                                     {...params}
-                                                    label="Select Children *"
+                                                    label="Select Children"
                                                     placeholder={selectedStudents.length === 0 ? 'Select one or more children' : ''}
+                                                    required
                                                 />
                                             )}
                                             loading={loadingChildren}
                                         />
                                     ) : (
-                                        <TextField
+                                        <AppInput
                                             fullWidth
-                                            label="Child *"
+                                            label="Selected Child"
                                             value={selectedStudents.length > 0 ? getChildLabel(selectedStudents[0]) : ''}
                                             disabled
-                                            InputProps={{ readOnly: true }}
                                         />
                                     )}
                                 </Grid>
 
                                 <Grid size={{ xs: 12 }}>
-                                    <TextField
-                                        select
-                                        fullWidth
-                                        label="Leave Type *"
+                                    <AppSelect
+                                        label="Reason for Leave"
                                         value={formData.leaveType}
-                                        onChange={handleChange('leaveType')}
-                                    >
-                                        {leaveTypes.map((type) => (
-                                            <MenuItem key={type.value} value={type.value}>
-                                                {type.label}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
+                                        onChange={(e) => setFormData(prev => ({ ...prev, leaveType: e.target.value as LeaveType }))}
+                                        options={[
+                                            { value: 'sick', label: 'Sick Leave' },
+                                            { value: 'casual', label: 'Casual Leave' },
+                                            { value: 'emergency', label: 'Emergency Leave' },
+                                            { value: 'personal', label: 'Personal Leave' },
+                                            { value: 'other', label: 'Other' },
+                                        ]}
+                                        required
+                                    />
                                 </Grid>
 
                                 <Grid size={{ xs: 12, md: 6 }}>
-                                    <DatePicker
-                                        label="Start Date *"
+                                    <AppDatePicker
+                                        label="Start Date"
                                         value={startDate}
                                         onChange={(date: Date | null) => setStartDate(date)}
                                         minDate={new Date()}
-                                        slotProps={datePickerSlotProps}
+                                        required
                                     />
                                 </Grid>
 
                                 <Grid size={{ xs: 12, md: 6 }}>
-                                    <DatePicker
-                                        label="End Date *"
+                                    <AppDatePicker
+                                        label="End Date"
                                         value={endDate}
                                         onChange={(date: Date | null) => setEndDate(date)}
                                         minDate={startDate || new Date()}
-                                        slotProps={datePickerSlotProps}
+                                        required
                                     />
                                 </Grid>
 
                                 <Grid size={{ xs: 12 }}>
-                                    <TextField
+                                    <AppInput
                                         fullWidth
                                         multiline
                                         rows={4}
-                                        label="Reason *"
+                                        label="Detailed Explanation"
                                         value={formData.reason}
                                         onChange={handleChange('reason')}
-                                        placeholder="Please provide a detailed reason for the leave..."
+                                        placeholder="Please provide details about your leave request..."
+                                        required
                                     />
                                 </Grid>
 
                                 <Grid size={{ xs: 12 }}>
-                                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                                        <Button
-                                            variant="outlined"
+                                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
+                                        <AppButton
+                                            variant="text"
+                                            color="inherit"
                                             onClick={() => navigate('/parent/dashboard')}
                                         >
-                                            Cancel
-                                        </Button>
-                                        <Button
+                                            Discard
+                                        </AppButton>
+                                        <AppButton
                                             type="submit"
                                             variant="contained"
-                                            startIcon={applyLeave.isPending ? <CircularProgress size={20} /> : <SendIcon />}
-                                            disabled={applyLeave.isPending}
+                                            startIcon={<SendIcon />}
+                                            loading={applyLeave.isPending}
                                         >
-                                            Submit Request
-                                        </Button>
+                                            Submit Application
+                                        </AppButton>
                                     </Box>
                                 </Grid>
                             </Grid>

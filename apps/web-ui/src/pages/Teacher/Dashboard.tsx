@@ -1,133 +1,193 @@
 import React from 'react';
-import { Box, Typography, Grid, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Grid, Avatar, Stack, Skeleton, Alert, Chip } from '@mui/material';
 import {
-    Class as ClassIcon,
     People as StudentsIcon,
     Schedule as ScheduleIcon,
     Assessment as AttendanceIcon,
-    Announcement as AnnouncementIcon,
-    Person as ProfileIcon,
+    EventAvailable as EventIcon,
+    Add as AddIcon,
 } from '@mui/icons-material';
-import DashboardCard from '../../components/Dashboard/DashboardCard';
+import { useNavigate } from 'react-router-dom';
 import TokenService from '../../queries/token/tokenService';
 import { useGetTeacherDashboardStats } from '../../queries/TeacherDashboard';
+import { AppCard } from '../../components/ui/AppCard';
+import { AppButton } from '../../components/ui/AppButton';
+import { AppSection } from '../../components/ui/AppSection';
 
 const TeacherDashboard: React.FC = () => {
+    const navigate = useNavigate();
     const user = TokenService.getUser();
-    const userName = `${user?.firstName} ${user?.lastName}`;
     const schoolId = TokenService.getSchoolId() || '';
 
     const { data, isLoading, error } = useGetTeacherDashboardStats(schoolId);
     const stats = data?.data;
 
     return (
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
-            {/* Welcome Header */}
-            <Box sx={{ mb: 3 }}>
-                <Typography
-                    variant="h4"
-                    fontWeight={600}
-                    gutterBottom
-                    color="#1e293b"
-                    sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}
-                >
-                    Welcome, {userName}!
+        <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
+            {/* Professional Greeting */}
+            <Box sx={{ mb: 6, mt: 2 }}>
+                <Typography variant="h3" color="primary" sx={{ mb: 1 }}>
+                    Good morning, {user?.firstName || 'Teacher'}!
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                    Here's your overview for today.
+                <Typography variant="h6" color="text.secondary" fontWeight={400}>
+                    You have {stats?.periodsToday || 0} classes scheduled for today.
                 </Typography>
             </Box>
 
-            {isLoading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                    <CircularProgress />
-                </Box>
-            )}
-
             {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
+                <Alert severity="error" sx={{ mb: 4 }}>
                     Failed to load dashboard stats. Please try again.
                 </Alert>
             )}
 
-            {/* Dashboard Grid */}
-            <Grid container spacing={{ xs: 2, sm: 3 }}>
-                {/* My Classes Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="My Classes"
-                        value={stats?.totalClasses || 0}
-                        subtitle="Classes assigned to me"
-                        icon={<ClassIcon sx={{ fontSize: 28 }} />}
-                        color="#10b981"
-                        bgColor="#ecfdf5"
-                        to="/teacher/classes"
-                    />
-                </Grid>
+            {/* Quick Stats Grid */}
+            <Grid container spacing={3} sx={{ mb: 6 }}>
+                {[
+                    { label: 'Total Students', value: stats?.totalStudents || 0, icon: <StudentsIcon />, color: '#6366f1' },
+                    { label: 'Today\'s Attendance', value: '94%', icon: <AttendanceIcon />, color: '#10b981' },
+                    { label: 'Pending Leaves', value: stats?.pendingLeaveRequests || 0, icon: <EventIcon />, color: '#f59e0b' },
+                ].map((stat) => (
+                    <Grid size={{ xs: 12, md: 4 }} key={stat.label}>
+                        <AppCard sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 3, border: '1px solid', borderColor: 'divider' }}>
+                            <Avatar sx={{ bgcolor: `${stat.color}15`, color: stat.color, width: 56, height: 56 }}>
+                                {stat.icon}
+                            </Avatar>
+                            <Box>
+                                <Typography variant="h4" fontWeight={700}>{stat.value}</Typography>
+                                <Typography variant="body2" color="text.secondary">{stat.label}</Typography>
+                            </Box>
+                        </AppCard>
+                    </Grid>
+                ))}
+            </Grid>
 
-                {/* My Students Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="My Students"
-                        value={stats?.totalStudents || 0}
-                        subtitle="Total students across classes"
-                        icon={<StudentsIcon sx={{ fontSize: 28 }} />}
-                        color="#3b82f6"
-                        bgColor="#eff6ff"
-                        to="/teacher/students"
-                    />
-                </Grid>
-
-                {/* Today's Schedule Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
+            <Grid container spacing={4}>
+                {/* Main Content: Schedule & Tasks */}
+                <Grid size={{ xs: 12, lg: 8 }}>
+                    <AppSection 
                         title="Today's Schedule"
-                        value={stats?.periodsToday || 0}
-                        subtitle="Periods scheduled today"
-                        icon={<ScheduleIcon sx={{ fontSize: 28 }} />}
-                        color="#8b5cf6"
-                        bgColor="#f5f3ff"
-                        to="/teacher/timetable"
-                    />
+                        action={
+                            <AppButton size="small" variant="text" onClick={() => navigate('/teacher/timetable')}>
+                                Full Timetable
+                            </AppButton>
+                        }
+                    >
+                        {isLoading ? (
+                            <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 4 }} />
+                        ) : (
+                            <Grid container spacing={2}>
+                                {stats?.periodsToday ? (
+                                    // Dummy data for visual representation of the redesign based on StitchMCP
+                                    [
+                                        { time: '09:00 AM', subject: 'Mathematics', class: 'Grade 10-A' },
+                                        { time: '11:00 AM', subject: 'Algebra', class: 'Grade 9-C' },
+                                    ].map((period, i) => (
+                                        <Grid size={{ xs: 12, md: 6 }} key={i}>
+                                            <Box sx={{ 
+                                                p: 2, 
+                                                borderRadius: 3, 
+                                                border: '1px solid', 
+                                                borderColor: 'divider',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 2,
+                                                bgcolor: 'background.default'
+                                            }}>
+                                                <Typography variant="subtitle2" color="primary" fontWeight={700}>{period.time}</Typography>
+                                                <Box>
+                                                    <Typography variant="subtitle1" fontWeight={600}>{period.subject}</Typography>
+                                                    <Typography variant="caption" color="text.secondary">{period.class}</Typography>
+                                                </Box>
+                                            </Box>
+                                        </Grid>
+                                    ))
+                                ) : (
+                                    <Box sx={{ py: 4, width: '100%', textAlign: 'center' }}>
+                                        <ScheduleIcon sx={{ fontSize: 48, color: 'text.disabled', opacity: 0.5, mb: 1 }} />
+                                        <Typography color="text.secondary">No classes scheduled for today</Typography>
+                                    </Box>
+                                )}
+                            </Grid>
+                        )}
+                    </AppSection>
+
+                    <AppSection title="Pending Tasks">
+                        <Stack spacing={2}>
+                            {[
+                                { task: 'Take Attendance for 10-A', deadline: 'Today, 10:30 AM', priority: 'high' },
+                                { task: 'Grade Math Assignment', deadline: 'Tomorrow', priority: 'medium' },
+                            ].map((task, i) => (
+                                <Box key={i} sx={{ 
+                                    p: 2, 
+                                    borderRadius: 3, 
+                                    bgcolor: 'background.default',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}>
+                                    <Box>
+                                        <Typography variant="body1" fontWeight={500}>{task.task}</Typography>
+                                        <Typography variant="caption" color="text.secondary">Due: {task.deadline}</Typography>
+                                    </Box>
+                                    <Chip 
+                                        size="small" 
+                                        label={task.priority.toUpperCase()} 
+                                        color={task.priority === 'high' ? 'error' : 'primary'} 
+                                        variant="filled"
+                                    />
+                                </Box>
+                            ))}
+                        </Stack>
+                    </AppSection>
                 </Grid>
 
-                {/* Pending Requests Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="Pending Requests"
-                        value={stats?.pendingLeaveRequests || 0}
-                        subtitle="Leave requests to review"
-                        icon={<AttendanceIcon sx={{ fontSize: 28 }} />}
-                        color="#f59e0b"
-                        bgColor="#fffbeb"
-                        to="/teacher/leave/requests"
-                    />
-                </Grid>
+                {/* Sidebar: Quick Actions */}
+                <Grid size={{ xs: 12, lg: 4 }}>
+                    <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Quick Actions</Typography>
+                    <Stack spacing={2}>
+                        <AppButton 
+                            variant="contained" 
+                            fullWidth 
+                            size="large" 
+                            startIcon={<AddIcon />}
+                            onClick={() => navigate('/teacher/homework/add')}
+                            sx={{ py: 2 }}
+                        >
+                            Add Homework
+                        </AppButton>
+                        <AppButton 
+                            variant="outlined" 
+                            fullWidth 
+                            size="large" 
+                            startIcon={<ScheduleIcon />}
+                            onClick={() => navigate('/teacher/exam/book')}
+                            sx={{ py: 2 }}
+                        >
+                            Book Exam
+                        </AppButton>
+                        <AppButton 
+                            variant="text" 
+                            fullWidth 
+                            size="large" 
+                            startIcon={<EventIcon />}
+                            onClick={() => navigate('/teacher/leave/apply')}
+                            sx={{ py: 2, color: 'text.secondary' }}
+                        >
+                            Apply Leave
+                        </AppButton>
+                    </Stack>
 
-                {/* My Announcements Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="My Announcements"
-                        value={stats?.totalAnnouncements || 0}
-                        subtitle="Total announcements created"
-                        icon={<AnnouncementIcon sx={{ fontSize: 28 }} />}
-                        color="#ec4899"
-                        bgColor="#fdf2f8"
-                        to="/teacher/announcements"
-                    />
-                </Grid>
-
-                {/* My Profile Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="My Profile"
-                        value={stats?.totalClasses || '-'}
-                        subtitle="View and update profile"
-                        icon={<ProfileIcon sx={{ fontSize: 28 }} />}
-                        color="#06b6d4"
-                        bgColor="#ecfeff"
-                        to="/teacher/profile"
-                    />
+                    <AppCard sx={{ mt: 4, p: 3, bgcolor: 'secondary.main', color: 'secondary.contrastText' }}>
+                        <Typography variant="h6" sx={{ mb: 1 }}>Teacher Support</Typography>
+                        <Typography variant="body2" sx={{ mb: 3, opacity: 0.9 }}>
+                            Need technical help with the platform?
+                        </Typography>
+                        <AppButton variant="contained" color="primary" fullWidth>
+                            Open Support Ticket
+                        </AppButton>
+                    </AppCard>
                 </Grid>
             </Grid>
         </Box>

@@ -4,19 +4,14 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Button,
-    TextField,
-    CircularProgress,
     Alert,
     IconButton,
     Grid,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Autocomplete,
     Typography,
     Divider,
+    Box,
+    TextField,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateStudent, useUpdateStudent } from '../../queries/Student';
@@ -25,6 +20,9 @@ import { useGetClasses } from '../../queries/Class';
 import type { CreateStudentPayload, Student, Parent, Class, Section } from '../../types';
 import { ImageUpload } from '../ImageUpload';
 import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
+import { AppInput } from '../ui/AppInput';
+import { AppSelect } from '../ui/AppSelect';
+import { AppButton } from '../ui/AppButton';
 
 interface StudentDialogProps {
     open: boolean;
@@ -33,7 +31,6 @@ interface StudentDialogProps {
     editData?: Student | null;
 }
 
-// Debounce hook
 const useDebounce = <T,>(value: T, delay: number): T => {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
     useEffect(() => {
@@ -65,8 +62,6 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
-
-    // Parent search state
     const [parentSearchQuery, setParentSearchQuery] = useState('');
     const [parentOptions, setParentOptions] = useState<Parent[]>([]);
     const [selectedParent, setSelectedParent] = useState<Parent | null>(null);
@@ -77,15 +72,12 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
     const createMutation = useCreateStudent(schoolId);
     const updateMutation = useUpdateStudent(schoolId);
 
-    // Fetch classes from backend
     const { data: classesData } = useGetClasses(schoolId);
     const classes = classesData?.data || [];
 
-    // Get sections for selected class
     const selectedClassData = classes.find((c: Class) => c.classId === formData.class);
     const selectedClassSections = selectedClassData?.sections || [];
 
-    // Fetch parents when search query changes
     useEffect(() => {
         const fetchParents = async () => {
             if (debouncedParentQuery.length >= 2) {
@@ -124,38 +116,22 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                 profileImage: editData.profileImage || '',
                 signature: editData.signature || '',
             });
-            // Set placeholder parent for edit mode
             if (editData.parentId) {
-                // Use parentName from editData if available, otherwise just ID
                 const nameParts = (editData.parentName || '').split(' ');
-                const firstName = nameParts[0] || '';
-                const lastName = nameParts.slice(1).join(' ') || '';
-
                 setSelectedParent({
                     parentId: editData.parentId,
-                    firstName: firstName || 'Parent',
-                    lastName: lastName || '(Linked)',
+                    firstName: nameParts[0] || 'Parent',
+                    lastName: nameParts.slice(1).join(' ') || '(Linked)',
                     email: '',
                     phone: ''
                 } as Parent);
             }
         } else {
             setFormData({
-                firstName: '',
-                lastName: '',
-                email: '',
-                password: '',
-                phone: '',
-                class: '',
-                section: '',
-                rollNumber: '',
-                gender: undefined,
-                dateOfBirth: '',
-                address: '',
-                parentId: '',
-                status: 'active',
-                profileImage: '',
-                signature: '',
+                firstName: '', lastName: '', email: '', password: '', phone: '',
+                class: '', section: '', rollNumber: '', gender: undefined,
+                dateOfBirth: '', address: '', parentId: '', status: 'active',
+                profileImage: '', signature: '',
             });
             setSelectedParent(null);
         }
@@ -164,9 +140,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
-        if (errors[name]) {
-            setErrors((prev) => ({ ...prev, [name]: '' }));
-        }
+        if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     };
 
     const handleParentSelect = useCallback((_: unknown, value: Parent | null) => {
@@ -176,19 +150,10 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
 
     const validate = (): boolean => {
         const newErrors: Record<string, string> = {};
-
         if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
         if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
         if (!formData.class.trim()) newErrors.class = 'Class is required';
-        if (!isEditMode && !formData.password.trim()) {
-            newErrors.password = 'Password is required';
-        } else if (formData.password && formData.password.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
-        }
-        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = 'Invalid email format';
-        }
-
+        if (!isEditMode && !formData.password.trim()) newErrors.password = 'Password is required';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -196,41 +161,24 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) return;
-
         try {
             if (isEditMode && editData) {
                 const updatePayload: Record<string, unknown> = { ...formData };
                 if (!formData.password) delete updatePayload.password;
-                await updateMutation.mutateAsync({
-                    studentId: editData.studentId,
-                    data: updatePayload,
-                });
+                await updateMutation.mutateAsync({ studentId: editData.studentId, data: updatePayload });
             } else {
                 await createMutation.mutateAsync(formData);
             }
             handleClose();
-        } catch {
-            // Error handled by mutation
-        }
+        } catch {}
     };
 
     const handleClose = () => {
         setFormData({
-            firstName: '',
-            lastName: '',
-            email: '',
-            password: '',
-            phone: '',
-            class: '',
-            section: '',
-            rollNumber: '',
-            gender: undefined,
-            dateOfBirth: '',
-            address: '',
-            parentId: '',
-            status: 'active',
-            profileImage: '',
-            signature: '',
+            firstName: '', lastName: '', email: '', password: '', phone: '',
+            class: '', section: '', rollNumber: '', gender: undefined,
+            dateOfBirth: '', address: '', parentId: '', status: 'active',
+            profileImage: '', signature: '',
         });
         setErrors({});
         setSelectedParent(null);
@@ -241,202 +189,129 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
     };
 
     const isPending = createMutation.isPending || updateMutation.isPending;
-    const isError = createMutation.isError || updateMutation.isError;
-    const errorMessage = (createMutation.error as { message?: string })?.message ||
-        (updateMutation.error as { message?: string })?.message ||
-        'Operation failed';
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {isEditMode ? 'Edit Student' : 'Add Student'}
-                <IconButton onClick={handleClose} size="small">
+        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3 }}>
+                <Typography variant="h5" fontWeight={700}>
+                    {isEditMode ? 'Edit Student Profile' : 'Register New Student'}
+                </Typography>
+                <IconButton onClick={handleClose} size="small" sx={{ bgcolor: 'background.default' }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
 
             <form onSubmit={handleSubmit}>
-                <DialogContent>
-                    {isError && <Alert severity="error" sx={{ mb: 2 }}>{errorMessage}</Alert>}
+                <DialogContent sx={{ p: 3, pt: 1 }}>
+                    {createMutation.isError && <Alert severity="error" sx={{ mb: 3 }}>{ (createMutation.error as any)?.message || 'Failed to save' }</Alert>}
 
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField name="firstName" label="First Name" value={formData.firstName}
-                                onChange={handleChange} error={!!errors.firstName} helperText={errors.firstName}
-                                required fullWidth />
+                            <AppInput name="firstName" label="First Name" value={formData.firstName} onChange={handleChange} error={!!errors.firstName} helperText={errors.firstName} required />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField name="lastName" label="Last Name" value={formData.lastName}
-                                onChange={handleChange} error={!!errors.lastName} helperText={errors.lastName}
-                                required fullWidth />
+                            <AppInput name="lastName" label="Last Name" value={formData.lastName} onChange={handleChange} error={!!errors.lastName} helperText={errors.lastName} required />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField name="email" label="Email" type="email" value={formData.email}
-                                onChange={handleChange} error={!!errors.email} helperText={errors.email} fullWidth />
+                            <AppInput name="email" label="Email Address" type="email" value={formData.email} onChange={handleChange} error={!!errors.email} helperText={errors.email} labelHint="Optional" />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField name="password" label={"Password"}
-                                type="password" value={formData.password} onChange={handleChange}
-                                error={!!errors.password} helperText={errors.password} required={!isEditMode} fullWidth />
+                            <AppInput name="password" label="Portal Password" type="password" value={formData.password} onChange={handleChange} error={!!errors.password} helperText={errors.password} required={!isEditMode} labelHint={isEditMode ? 'Leave blank to keep current' : ''} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <FormControl fullWidth required error={!!errors.class}>
-                                <InputLabel>Class</InputLabel>
-                                <Select
-                                    value={formData.class}
-                                    label="Class"
-                                    onChange={(e) => {
-                                        setFormData(prev => ({ ...prev, class: e.target.value, section: '' }));
-                                        if (errors.class) setErrors(prev => ({ ...prev, class: '' }));
-                                    }}
-                                >
-                                    {classes.filter((c: Class) => c.status === 'active').map((c: Class) => (
-                                        <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>
-                                    ))}
-                                </Select>
-                                {errors.class && <span style={{ color: '#d32f2f', fontSize: '0.75rem', marginTop: 3 }}>{errors.class}</span>}
-                            </FormControl>
+                            <AppSelect 
+                                label="Assign Class" 
+                                value={formData.class} 
+                                error={!!errors.class} 
+                                helperText={errors.class} 
+                                options={classes.filter((c: Class) => c.status === 'active').map((c: Class) => ({ value: c.classId, label: c.name }))} 
+                                onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value as string, section: '' }))} 
+                            />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <FormControl fullWidth disabled={!formData.class}>
-                                <InputLabel>Section</InputLabel>
-                                <Select
-                                    value={formData.section}
-                                    label="Section"
-                                    onChange={(e) => setFormData(prev => ({ ...prev, section: e.target.value }))}
-                                >
-                                    <MenuItem value="">None</MenuItem>
-                                    {selectedClassSections.map((s: Section) => (
-                                        <MenuItem key={s.sectionId} value={s.sectionId}>{s.name}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                            <AppSelect 
+                                label="Select Section" 
+                                value={formData.section} 
+                                disabled={!formData.class} 
+                                options={[{ value: '', label: 'None' }, ...selectedClassSections.map((s: Section) => ({ value: s.sectionId, label: s.name }))]} 
+                                onChange={(e) => setFormData(prev => ({ ...prev, section: e.target.value as string }))} 
+                            />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <TextField name="rollNumber" label="Roll Number" value={formData.rollNumber}
-                                onChange={handleChange} fullWidth />
+                            <AppInput name="rollNumber" label="Roll Number" value={formData.rollNumber} onChange={handleChange} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <TextField name="phone" label="Phone" value={formData.phone}
-                                onChange={handleChange} fullWidth />
+                            <AppInput name="phone" label="Phone Number" value={formData.phone} onChange={handleChange} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Gender</InputLabel>
-                                <Select value={formData.gender || ''} label="Gender"
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, gender: e.target.value as 'male' | 'female' | 'other' }))}>
-                                    <MenuItem value="male">Male</MenuItem>
-                                    <MenuItem value="female">Female</MenuItem>
-                                    <MenuItem value="other">Other</MenuItem>
-                                </Select>
-                            </FormControl>
+                            <AppSelect 
+                                label="Gender" 
+                                value={formData.gender || ''} 
+                                options={[
+                                    { value: 'male', label: 'Male' },
+                                    { value: 'female', label: 'Female' },
+                                    { value: 'other', label: 'Other' }
+                                ]} 
+                                onChange={(e) => setFormData((prev) => ({ ...prev, gender: e.target.value as any }))} 
+                            />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <TextField name="dateOfBirth" label="Date of Birth" type="date"
-                                value={formData.dateOfBirth} onChange={handleChange} fullWidth
-                                slotProps={{ inputLabel: { shrink: true } }} />
+                            <AppInput name="dateOfBirth" label="Date of Birth" type="date" value={formData.dateOfBirth} onChange={handleChange} slotProps={{ inputLabel: { shrink: true } }} />
                         </Grid>
 
-                        {/* Parent Search Autocomplete */}
                         <Grid size={{ xs: 12 }}>
                             <Autocomplete
                                 options={parentOptions}
                                 value={selectedParent}
                                 onChange={handleParentSelect}
                                 loading={parentLoading}
-                                getOptionLabel={(option) =>
-                                    `${option.parentId} - ${option.firstName} ${option.lastName} (${option.phone || option.email || 'N/A'})`
-                                }
-                                isOptionEqualToValue={(option, value) => option.parentId === value.parentId}
+                                getOptionLabel={(option) => `${option.firstName} ${option.lastName} (${option.phone || option.email || 'N/A'})`}
                                 onInputChange={(_, value) => setParentSearchQuery(value)}
                                 renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Search & Link Parent"
-                                        placeholder="Search by ID, name, email, or phone..."
-                                        helperText="Type at least 2 characters to search"
-                                        slotProps={{
-                                            input: {
-                                                ...params.InputProps,
-                                                endAdornment: (
-                                                    <>
-                                                        {parentLoading && <CircularProgress size={20} />}
-                                                        {params.InputProps.endAdornment}
-                                                    </>
-                                                ),
-                                            },
-                                        }}
-                                    />
+                                    <TextField {...params} label="Link to Parent Account" placeholder="Search by name, email, or phone..." variant="outlined" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
                                 )}
                             />
                         </Grid>
 
                         <Grid size={{ xs: 12 }}>
-                            <TextField name="address" label="Address" value={formData.address}
-                                onChange={handleChange} multiline rows={2} fullWidth />
+                            <AppInput name="address" label="Home Address" value={formData.address} onChange={handleChange} multiline rows={2} />
                         </Grid>
+
                         <Grid size={{ xs: 12 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Status</InputLabel>
-                                <Select value={formData.status} label="Status"
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value as 'active' | 'inactive' }))}>
-                                    <MenuItem value="active">Active</MenuItem>
-                                    <MenuItem value="inactive">Inactive</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-
-                        {/* Profile Image and Signature */}
-                        <Grid size={{ xs: 12 }}>
-                            <Divider sx={{ my: 1 }} />
-                            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                                Images
-                            </Typography>
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <ImageUpload
-                                folder={IMAGEKIT_FOLDERS.PROFILE_IMAGES}
-                                fileName={isEditMode && editData ? `${editData.studentId}_profile` : `new_student_profile_${Date.now()}`}
-                                currentImage={formData.profileImage}
-                                label="Profile Image"
-                                authEndpoint="school"
-                                variant="avatar"
-                                size="medium"
-                                onUploadSuccess={(result) => {
-                                    setFormData(prev => ({ ...prev, profileImage: result.url }));
-                                }}
-                                onRemove={() => {
-                                    setFormData(prev => ({ ...prev, profileImage: '' }));
-                                }}
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <ImageUpload
-                                folder={IMAGEKIT_FOLDERS.SIGNATURES}
-                                fileName={isEditMode && editData ? `${editData.studentId}_signature` : `new_student_signature_${Date.now()}`}
-                                currentImage={formData.signature}
-                                label="Signature"
-                                authEndpoint="school"
-                                size="small"
-                                onUploadSuccess={(result) => {
-                                    setFormData(prev => ({ ...prev, signature: result.url }));
-                                }}
-                                onRemove={() => {
-                                    setFormData(prev => ({ ...prev, signature: '' }));
-                                }}
-                            />
+                            <Divider sx={{ my: 2 }} />
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>Profile Media</Typography>
+                            <Box sx={{ display: 'flex', gap: 4 }}>
+                                <ImageUpload
+                                    folder={IMAGEKIT_FOLDERS.PROFILE_IMAGES}
+                                    fileName={isEditMode && editData ? `${editData.studentId}_profile` : `new_student_profile_${Date.now()}`}
+                                    currentImage={formData.profileImage}
+                                    label="Student Photo"
+                                    authEndpoint="school"
+                                    variant="avatar"
+                                    size="medium"
+                                    onUploadSuccess={(result) => setFormData(prev => ({ ...prev, profileImage: result.url }))}
+                                    onRemove={() => setFormData(prev => ({ ...prev, profileImage: '' }))}
+                                />
+                                <ImageUpload
+                                    folder={IMAGEKIT_FOLDERS.SIGNATURES}
+                                    fileName={isEditMode && editData ? `${editData.studentId}_signature` : `new_student_signature_${Date.now()}`}
+                                    currentImage={formData.signature}
+                                    label="Signature"
+                                    authEndpoint="school"
+                                    size="small"
+                                    onUploadSuccess={(result) => setFormData(prev => ({ ...prev, signature: result.url }))}
+                                    onRemove={() => setFormData(prev => ({ ...prev, signature: '' }))}
+                                />
+                            </Box>
                         </Grid>
                     </Grid>
                 </DialogContent>
 
-                <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={handleClose} color="inherit">Cancel</Button>
-                    <Button type="submit" variant="contained" disabled={isPending}
-                        startIcon={isPending ? <CircularProgress size={20} /> : null}>
-                        {isPending ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Create')}
-                    </Button>
+                <DialogActions sx={{ p: 3, pt: 1 }}>
+                    <AppButton onClick={handleClose} variant="text" color="inherit">Discard</AppButton>
+                    <AppButton type="submit" variant="contained" loading={isPending}>
+                        {isEditMode ? 'Update Profile' : 'Confirm Registration'}
+                    </AppButton>
                 </DialogActions>
             </form>
         </Dialog>

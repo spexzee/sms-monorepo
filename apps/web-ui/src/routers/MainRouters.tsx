@@ -1,244 +1,243 @@
-import { Route, Routes } from "react-router-dom";
-import LoginPage from "../pages/LoginPage";
-import HomePage from "../pages/HomePage";
-import NotFoundPage from "../pages/NotFoundPage";
-import UnauthorizedPage from "../pages/UnauthorizedPage";
+import { lazy, Suspense } from "react";
+import { Route, Routes, Navigate } from "react-router-dom";
 import ProtectedRoute from "./RouterProtect";
+import PageSkeleton from "../components/ui/PageSkeleton";
+
+// Public Pages
+const LoginPage = lazy(() => import("../pages/LoginPage"));
+const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
+const UnauthorizedPage = lazy(() => import("../pages/UnauthorizedPage"));
 
 // Super Admin Pages
-import SuperAdminDashboard from "../pages/SuperAdmin/Dashboard";
-import Schools from "../pages/SuperAdmin/Schools";
-import Users from "../pages/SuperAdmin/Users";
+const SuperAdminDashboard = lazy(() => import("../pages/SuperAdmin/Dashboard"));
+const Schools = lazy(() => import("../pages/SuperAdmin/Schools"));
+const Users = lazy(() => import("../pages/SuperAdmin/Users"));
+const Menus = lazy(() => import("../pages/SuperAdmin/Menus"));
 
 // School Admin Pages
-import SchoolAdminDashboard from "../pages/SchoolAdmin/Dashboard";
-import School from "../pages/SchoolAdmin/School";
-import Teachers from "../pages/SchoolAdmin/Teachers";
-import SchoolAdminStudents from "../pages/SchoolAdmin/Students";
-import Parents from "../pages/SchoolAdmin/Parents";
-import SchoolAdminProfile from "../pages/SchoolAdmin/Profile";
-import Requests from "../pages/SchoolAdmin/Requests";
-import SchoolAdminClasses from "../pages/SchoolAdmin/Classes";
-import SchoolAdminSubjects from "../pages/SchoolAdmin/Subjects";
-import SchoolAdminAttendance from "../pages/SchoolAdmin/Attendance";
-import SchoolAdminLeaveRequests from "../pages/SchoolAdmin/Leave/Requests";
-import SchoolLocation from "../pages/SchoolAdmin/SchoolLocation";
-import {
-  TimetableConfig,
-  TimetableMaster,
-  ConflictManagement,
-  SubstituteManagement,
-} from "../pages/SchoolAdmin/Timetable";
-import SchoolAdminAnnouncements from "../pages/SchoolAdmin/Announcements";
-import EmailTemplateList from "../pages/SchoolAdmin/EmailTemplates";
-import EmailTemplateEditor from "../pages/SchoolAdmin/EmailTemplates/Editor";
+const SchoolAdminDashboard = lazy(() => import("../pages/SchoolAdmin/Dashboard"));
+const School = lazy(() => import("../pages/SchoolAdmin/School"));
+const Teachers = lazy(() => import("../pages/SchoolAdmin/Teachers"));
+const SchoolAdminStudents = lazy(() => import("../pages/SchoolAdmin/Students"));
+const Parents = lazy(() => import("../pages/SchoolAdmin/Parents"));
+const SchoolAdminProfile = lazy(() => import("../pages/SchoolAdmin/Profile"));
+const Requests = lazy(() => import("../pages/SchoolAdmin/Requests"));
+const SchoolAdminClasses = lazy(() => import("../pages/SchoolAdmin/Classes"));
+const SchoolAdminSubjects = lazy(() => import("../pages/SchoolAdmin/Subjects"));
+const SchoolAdminAttendance = lazy(() => import("../pages/SchoolAdmin/Attendance"));
+const SchoolAdminLeaveRequests = lazy(() => import("../pages/SchoolAdmin/Leave/Requests"));
+const SchoolLocation = lazy(() => import("../pages/SchoolAdmin/SchoolLocation"));
+
+const TimetableConfig = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableConfig"));
+const TimetableMaster = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableMaster"));
+const ConflictManagement = lazy(() => import("../pages/SchoolAdmin/Timetable/ConflictManagement"));
+const SubstituteManagement = lazy(() => import("../pages/SchoolAdmin/Timetable/SubstituteManagement"));
+
+const SchoolAdminAnnouncements = lazy(() => import("../pages/SchoolAdmin/Announcements"));
+const EmailTemplateList = lazy(() => import("../pages/SchoolAdmin/EmailTemplates"));
+const EmailTemplateEditor = lazy(() => import("../pages/SchoolAdmin/EmailTemplates/Editor"));
+const ExamConfiguration = lazy(() => import("../pages/SchoolAdmin/Exam/ExamConfiguration"));
+const ExamScheduler = lazy(() => import("../pages/SchoolAdmin/Exam/ExamScheduler"));
 
 // Teacher Pages
-import TeacherDashboard from "../pages/Teacher/Dashboard";
-import TeacherClasses from "../pages/Teacher/Classes";
-import TeacherStudents from "../pages/Teacher/Students";
-import TeacherParents from "../pages/Teacher/Parents";
-import TeacherAttendance from "../pages/Teacher/Attendance";
-import TeacherProfile from "../pages/Teacher/Profile";
-import TeacherMyRequests from "../pages/Teacher/MyRequests";
-import TeacherHomework from "../pages/Teacher/Homework";
-import CreateHomework from "../pages/Teacher/Homework/CreateHomework";
-import TeacherAnnouncements from "../pages/Teacher/Announcements";
+const TeacherDashboard = lazy(() => import("../pages/Teacher/Dashboard"));
+const TeacherClasses = lazy(() => import("../pages/Teacher/Classes"));
+const TeacherStudents = lazy(() => import("../pages/Teacher/Students"));
+const TeacherParents = lazy(() => import("../pages/Teacher/Parents"));
+const TeacherAttendance = lazy(() => import("../pages/Teacher/Attendance"));
+const TeacherProfile = lazy(() => import("../pages/Teacher/Profile"));
+const TeacherMyRequests = lazy(() => import("../pages/Teacher/MyRequests"));
+const TeacherHomework = lazy(() => import("../pages/Teacher/Homework"));
+const CreateHomework = lazy(() => import("../pages/Teacher/Homework/CreateHomework"));
+const TeacherAnnouncements = lazy(() => import("../pages/Teacher/Announcements"));
+const TeacherApplyLeave = lazy(() => import("../pages/Teacher/Leave/ApplyLeave"));
+const TeacherMyLeaves = lazy(() => import("../pages/Teacher/Leave/MyLeaves"));
+const TeacherStudentLeaves = lazy(() => import("../pages/Teacher/Leave/StudentLeaves"));
+const TeacherTimetable = lazy(() => import("../pages/Teacher/Timetable/MyTimetable"));
+const MarksEntry = lazy(() => import("../pages/Teacher/Exam/MarksEntry"));
 
 // Student Pages
-import StudentDashboard from "../pages/Student/Dashboard";
-import StudentClasses from "../pages/Student/Classes";
-import StudentAttendance from "../pages/Student/Attendance";
-import StudentAttendanceHistory from "../pages/Student/Attendance/History";
-import StudentResults from "../pages/Student/Results";
-import StudentProfile from "../pages/Student/Profile";
-import StudentMyRequests from "../pages/Student/MyRequests";
-import StudentApplyLeave from "../pages/Student/Leave/ApplyLeave";
-import StudentMyLeaves from "../pages/Student/Leave/MyLeaves";
-import StudentHomework from "../pages/Student/Homework";
-import StudentAnnouncements from "../pages/Student/Announcements";
-
-// Teacher Leave Pages
-import TeacherApplyLeave from "../pages/Teacher/Leave/ApplyLeave";
-import TeacherMyLeaves from "../pages/Teacher/Leave/MyLeaves";
-import TeacherStudentLeaves from "../pages/Teacher/Leave/StudentLeaves";
-import { MyTimetable as TeacherTimetable } from "../pages/Teacher/Timetable";
+const StudentDashboard = lazy(() => import("../pages/Student/Dashboard"));
+const StudentClasses = lazy(() => import("../pages/Student/Classes"));
+const StudentAttendance = lazy(() => import("../pages/Student/Attendance"));
+const StudentAttendanceHistory = lazy(() => import("../pages/Student/Attendance/History"));
+const StudentResults = lazy(() => import("../pages/Student/Results"));
+const StudentProfile = lazy(() => import("../pages/Student/Profile"));
+const StudentMyRequests = lazy(() => import("../pages/Student/MyRequests"));
+const StudentApplyLeave = lazy(() => import("../pages/Student/Leave/ApplyLeave"));
+const StudentMyLeaves = lazy(() => import("../pages/Student/Leave/MyLeaves"));
+const StudentHomework = lazy(() => import("../pages/Student/Homework"));
+const StudentAnnouncements = lazy(() => import("../pages/Student/Announcements"));
+const StudentTimetable = lazy(() => import("../pages/Student/Timetable/MyTimetable"));
+const MyExams = lazy(() => import("../pages/Student/Exam/MyExams"));
 
 // Parent Pages
-import ParentDashboard from "../pages/Parent/Dashboard";
-import ParentChildren from "../pages/Parent/Children";
-import ChildProfile from "../pages/Parent/Children/Profile";
-import ParentAnnouncements from "../pages/Parent/Announcements";
-import ParentHomework from "../pages/Parent/Homework";
-import ParentAttendance from "../pages/Parent/Attendance";
-import ParentTeachers from "../pages/Parent/Teachers";
-import ParentTimetable from "../pages/Parent/Timetable";
-import ParentApplyLeave from "../pages/Parent/Leave/ApplyLeave";
-import ParentLeaveHistory from "../pages/Parent/Leave/History";
-import ParentExamSchedule from "../pages/Parent/Exam/Schedule";
-import ParentExamResults from "../pages/Parent/Exam/Results";
+const ParentDashboard = lazy(() => import("../pages/Parent/Dashboard"));
+const ParentChildren = lazy(() => import("../pages/Parent/Children"));
+const ChildProfile = lazy(() => import("../pages/Parent/Children/Profile"));
+const ParentAnnouncements = lazy(() => import("../pages/Parent/Announcements"));
+const ParentHomework = lazy(() => import("../pages/Parent/Homework"));
+const ParentAttendance = lazy(() => import("../pages/Parent/Attendance"));
+const ParentTeachers = lazy(() => import("../pages/Parent/Teachers"));
+const ParentTimetable = lazy(() => import("../pages/Parent/Timetable"));
+const ParentApplyLeave = lazy(() => import("../pages/Parent/Leave/ApplyLeave"));
+const ParentLeaveHistory = lazy(() => import("../pages/Parent/Leave/History"));
+const ParentExamSchedule = lazy(() => import("../pages/Parent/Exam/Schedule"));
+const ParentExamResults = lazy(() => import("../pages/Parent/Exam/Results"));
 
 // Shared Pages
-import NotificationsPage from "../pages/Shared/Notifications";
-
-// Student Timetable
-import { MyTimetable as StudentTimetable } from "../pages/Student/Timetable";
-import Menus from "../pages/SuperAdmin/Menus";
-
-// Exam Management Pages
-import ExamConfiguration from "../pages/SchoolAdmin/Exam/ExamConfiguration";
-import ExamScheduler from "../pages/SchoolAdmin/Exam/ExamScheduler";
-import MarksEntry from "../pages/Teacher/Exam/MarksEntry";
-import MyExams from "../pages/Student/Exam/MyExams";
+const NotificationsPage = lazy(() => import("../pages/Shared/Notifications"));
 
 const MainRouters = () => {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+    <Suspense fallback={<PageSkeleton />}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Super Admin Routes */}
-      <Route element={<ProtectedRoute allowedRoles={["super_admin"]} />}>
-        <Route
-          path="/super-admin/dashboard"
-          element={<SuperAdminDashboard />}
-        />
-        <Route path="/super-admin/schools" element={<Schools />} />
-        <Route path="/super-admin/users" element={<Users />} />
-        <Route path="/super-admin/menus" element={<Menus />} />
-      </Route>
+        {/* Super Admin Routes */}
+        <Route element={<ProtectedRoute allowedRoles={["super_admin"]} />}>
+          <Route
+            path="/super-admin/dashboard"
+            element={<SuperAdminDashboard />}
+          />
+          <Route path="/super-admin/schools" element={<Schools />} />
+          <Route path="/super-admin/users" element={<Users />} />
+          <Route path="/super-admin/menus" element={<Menus />} />
+        </Route>
 
-      {/* School Admin Routes */}
-      <Route element={<ProtectedRoute allowedRoles={["sch_admin"]} />}>
-        <Route
-          path="/school-admin/dashboard"
-          element={<SchoolAdminDashboard />}
-        />
-        <Route path="/school-admin/school" element={<School />} />
-        <Route path="/school-admin/classes" element={<SchoolAdminClasses />} />
-        <Route
-          path="/school-admin/subjects"
-          element={<SchoolAdminSubjects />}
-        />
-        <Route path="/school-admin/teachers" element={<Teachers />} />
-        <Route
-          path="/school-admin/students"
-          element={<SchoolAdminStudents />}
-        />
-        <Route path="/school-admin/parents" element={<Parents />} />
-        <Route path="/school-admin/requests" element={<Requests />} />
-        <Route
-          path="/school-admin/attendance"
-          element={<SchoolAdminAttendance />}
-        />
-        <Route
-          path="/school-admin/leaverequest"
-          element={<SchoolAdminLeaveRequests />}
-        />
-        <Route
-          path="/school-admin/timetable/config"
-          element={<TimetableConfig />}
-        />
-        <Route
-          path="/school-admin/timetable/master"
-          element={<TimetableMaster />}
-        />
-        <Route
-          path="/school-admin/timetable/conflicts"
-          element={<ConflictManagement />}
-        />
-        <Route
-          path="/school-admin/timetable/substitutes"
-          element={<SubstituteManagement />}
-        />
+        {/* School Admin Routes */}
+        <Route element={<ProtectedRoute allowedRoles={["sch_admin"]} />}>
+          <Route
+            path="/school-admin/dashboard"
+            element={<SchoolAdminDashboard />}
+          />
+          <Route path="/school-admin/school" element={<School />} />
+          <Route path="/school-admin/classes" element={<SchoolAdminClasses />} />
+          <Route
+            path="/school-admin/subjects"
+            element={<SchoolAdminSubjects />}
+          />
+          <Route path="/school-admin/teachers" element={<Teachers />} />
+          <Route
+            path="/school-admin/students"
+            element={<SchoolAdminStudents />}
+          />
+          <Route path="/school-admin/parents" element={<Parents />} />
+          <Route path="/school-admin/requests" element={<Requests />} />
+          <Route
+            path="/school-admin/attendance"
+            element={<SchoolAdminAttendance />}
+          />
+          <Route
+            path="/school-admin/leaverequest"
+            element={<SchoolAdminLeaveRequests />}
+          />
+          <Route
+            path="/school-admin/timetable/config"
+            element={<TimetableConfig />}
+          />
+          <Route
+            path="/school-admin/timetable/master"
+            element={<TimetableMaster />}
+          />
+          <Route
+            path="/school-admin/timetable/conflicts"
+            element={<ConflictManagement />}
+          />
+          <Route
+            path="/school-admin/timetable/substitutes"
+            element={<SubstituteManagement />}
+          />
 
-        {/* Exam Management Routes (Admin) */}
-        <Route path="/school-admin/exam/config" element={<ExamConfiguration />} />
-        <Route path="/school-admin/exam/scheduler" element={<ExamScheduler />} />
+          {/* Exam Management Routes (Admin) */}
+          <Route path="/school-admin/exam/config" element={<ExamConfiguration />} />
+          <Route path="/school-admin/exam/scheduler" element={<ExamScheduler />} />
 
-        {/* Announcements Routes (Admin) */}
-        <Route path="/school-admin/announcements" element={<SchoolAdminAnnouncements />} />
+          {/* Announcements Routes (Admin) */}
+          <Route path="/school-admin/announcements" element={<SchoolAdminAnnouncements />} />
 
-        {/* Email Templates Routes (Admin) */}
-        <Route path="/school-admin/email-templates" element={<EmailTemplateList />} />
-        <Route path="/school-admin/email-templates/:id" element={<EmailTemplateEditor />} />
+          {/* Email Templates Routes (Admin) */}
+          <Route path="/school-admin/email-templates" element={<EmailTemplateList />} />
+          <Route path="/school-admin/email-templates/:id" element={<EmailTemplateEditor />} />
 
-        {/* Notifications */}
-        <Route path="/school-admin/notifications" element={<NotificationsPage />} />
+          {/* Notifications */}
+          <Route path="/school-admin/notifications" element={<NotificationsPage />} />
 
-        <Route path="/school-admin/location" element={<SchoolLocation />} />
-        <Route path="/school-admin/profile" element={<SchoolAdminProfile />} />
-      </Route>
+          <Route path="/school-admin/location" element={<SchoolLocation />} />
+          <Route path="/school-admin/profile" element={<SchoolAdminProfile />} />
+        </Route>
 
-      {/* Teacher Routes */}
-      <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
-        <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-        <Route path="/teacher/classes" element={<TeacherClasses />} />
-        <Route path="/teacher/students" element={<TeacherStudents />} />
-        <Route path="/teacher/parents" element={<TeacherParents />} />
-        <Route path="/teacher/attendance" element={<TeacherAttendance />} />
-        <Route path="/teacher/my-requests" element={<TeacherMyRequests />} />
-        <Route path="/teacher/leave/apply" element={<TeacherApplyLeave />} />
-        <Route path="/teacher/leave/my" element={<TeacherMyLeaves />} />
-        <Route path="/teacher/leave/students" element={<TeacherStudentLeaves />} />
-        <Route path="/teacher/timetable" element={<TeacherTimetable />} />
-        <Route path="/teacher/exam/marks" element={<MarksEntry />} />
+        {/* Teacher Routes */}
+        <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
+          <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+          <Route path="/teacher/classes" element={<TeacherClasses />} />
+          <Route path="/teacher/students" element={<TeacherStudents />} />
+          <Route path="/teacher/parents" element={<TeacherParents />} />
+          <Route path="/teacher/attendance" element={<TeacherAttendance />} />
+          <Route path="/teacher/my-requests" element={<TeacherMyRequests />} />
+          <Route path="/teacher/leave/apply" element={<TeacherApplyLeave />} />
+          <Route path="/teacher/leave/my" element={<TeacherMyLeaves />} />
+          <Route path="/teacher/leave/students" element={<TeacherStudentLeaves />} />
+          <Route path="/teacher/timetable" element={<TeacherTimetable />} />
+          <Route path="/teacher/exam/marks" element={<MarksEntry />} />
 
-        {/* Homework Routes (Teacher) */}
-        <Route path="/teacher/homework" element={<TeacherHomework />} />
-        <Route path="/teacher/homework/create" element={<CreateHomework />} />
+          {/* Homework Routes (Teacher) */}
+          <Route path="/teacher/homework" element={<TeacherHomework />} />
+          <Route path="/teacher/homework/create" element={<CreateHomework />} />
 
-        {/* Announcements Routes (Teacher) */}
-        <Route path="/teacher/announcements" element={<TeacherAnnouncements />} />
+          {/* Announcements Routes (Teacher) */}
+          <Route path="/teacher/announcements" element={<TeacherAnnouncements />} />
 
-        {/* Notifications */}
-        <Route path="/teacher/notifications" element={<NotificationsPage />} />
+          {/* Notifications */}
+          <Route path="/teacher/notifications" element={<NotificationsPage />} />
 
-        <Route path="/teacher/profile" element={<TeacherProfile />} />
-      </Route>
+          <Route path="/teacher/profile" element={<TeacherProfile />} />
+        </Route>
 
-      {/* Student Routes */}
-      <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
-        <Route path="/student/classes" element={<StudentClasses />} />
-        <Route path="/student/attendance" element={<StudentAttendance />} />
-        <Route
-          path="/student/attendance/history"
-          element={<StudentAttendanceHistory />}
-        />
-        <Route path="/student/results" element={<StudentResults />} />
-        <Route path="/student/my-requests" element={<StudentMyRequests />} />
-        <Route path="/student/leave/apply" element={<StudentApplyLeave />} />
-        <Route path="/student/leave/my" element={<StudentMyLeaves />} />
-        <Route path="/student/timetable" element={<StudentTimetable />} />
-        <Route path="/student/exam/my-exams" element={<MyExams />} />
-        <Route path="/student/homework" element={<StudentHomework />} />
-        <Route path="/student/announcements" element={<StudentAnnouncements />} />
-        <Route path="/student/notifications" element={<NotificationsPage />} />
-        <Route path="/student/profile" element={<StudentProfile />} />
-      </Route>
+        {/* Student Routes */}
+        <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/classes" element={<StudentClasses />} />
+          <Route path="/student/attendance" element={<StudentAttendance />} />
+          <Route
+            path="/student/attendance/history"
+            element={<StudentAttendanceHistory />}
+          />
+          <Route path="/student/results" element={<StudentResults />} />
+          <Route path="/student/my-requests" element={<StudentMyRequests />} />
+          <Route path="/student/leave/apply" element={<StudentApplyLeave />} />
+          <Route path="/student/leave/my" element={<StudentMyLeaves />} />
+          <Route path="/student/timetable" element={<StudentTimetable />} />
+          <Route path="/student/exam/my-exams" element={<MyExams />} />
+          <Route path="/student/homework" element={<StudentHomework />} />
+          <Route path="/student/announcements" element={<StudentAnnouncements />} />
+          <Route path="/student/notifications" element={<NotificationsPage />} />
+          <Route path="/student/profile" element={<StudentProfile />} />
+        </Route>
 
-      {/* Parent Routes */}
-      <Route element={<ProtectedRoute allowedRoles={["parent"]} />}>
-        <Route path="/parent/dashboard" element={<ParentDashboard />} />
-        <Route path="/parent/children" element={<ParentChildren />} />
-        <Route path="/parent/children/:studentId" element={<ChildProfile />} />
-        <Route path="/parent/announcements" element={<ParentAnnouncements />} />
-        <Route path="/parent/homework" element={<ParentHomework />} />
-        <Route path="/parent/attendance" element={<ParentAttendance />} />
-        <Route path="/parent/teachers" element={<ParentTeachers />} />
-        <Route path="/parent/timetable" element={<ParentTimetable />} />
-        <Route path="/parent/leave/apply" element={<ParentApplyLeave />} />
-        <Route path="/parent/leave/history" element={<ParentLeaveHistory />} />
-        <Route path="/parent/exam/scheduler" element={<ParentExamSchedule />} />
-        <Route path="/parent/exam/results" element={<ParentExamResults />} />
-        <Route path="/parent/notifications" element={<NotificationsPage />} />
-      </Route>
+        {/* Parent Routes */}
+        <Route element={<ProtectedRoute allowedRoles={["parent"]} />}>
+          <Route path="/parent/dashboard" element={<ParentDashboard />} />
+          <Route path="/parent/children" element={<ParentChildren />} />
+          <Route path="/parent/children/:studentId" element={<ChildProfile />} />
+          <Route path="/parent/announcements" element={<ParentAnnouncements />} />
+          <Route path="/parent/homework" element={<ParentHomework />} />
+          <Route path="/parent/attendance" element={<ParentAttendance />} />
+          <Route path="/parent/teachers" element={<ParentTeachers />} />
+          <Route path="/parent/timetable" element={<ParentTimetable />} />
+          <Route path="/parent/leave/apply" element={<ParentApplyLeave />} />
+          <Route path="/parent/leave/history" element={<ParentLeaveHistory />} />
+          <Route path="/parent/exam/scheduler" element={<ParentExamSchedule />} />
+          <Route path="/parent/exam/results" element={<ParentExamResults />} />
+          <Route path="/parent/notifications" element={<NotificationsPage />} />
+        </Route>
 
-      {/* 404 Not Found - Catch All */}
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        {/* 404 Not Found - Catch All */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Suspense>
   );
 };
 
