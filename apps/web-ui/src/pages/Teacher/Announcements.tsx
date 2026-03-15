@@ -33,12 +33,12 @@ import { AppDatePicker } from '../../components/ui/AppDatePicker';
 import { AppButton } from '../../components/ui/AppButton';
 import { AppExpandableTable } from '../../components/ui/AppExpandableTable';
 import TokenService from '../../queries/token/tokenService';
-import { 
-    useGetAnnouncements, 
-    useMarkAnnouncementSeen, 
-    useDeleteAnnouncement, 
-    useCreateAnnouncement, 
-    useUpdateAnnouncement 
+import {
+    useGetAnnouncements,
+    useMarkAnnouncementSeen,
+    useDeleteAnnouncement,
+    useCreateAnnouncement,
+    useUpdateAnnouncement
 } from '../../queries/Announcement';
 import { useGetClasses } from '../../queries/Class';
 import FileUpload from '../../components/FileUpload/FileUpload';
@@ -295,11 +295,11 @@ const Announcements: React.FC = () => {
                             name: 'Category',
                             width: '150px',
                             cell: (row) => (
-                                <Chip 
-                                    size="small" 
-                                    label={row.category.toUpperCase()} 
-                                    color={categoryColors[row.category]} 
-                                    variant="outlined" 
+                                <Chip
+                                    size="small"
+                                    label={row.category.toUpperCase()}
+                                    color={categoryColors[row.category]}
+                                    variant="outlined"
                                 />
                             )
                         },
@@ -320,7 +320,7 @@ const Announcements: React.FC = () => {
                             <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', mb: 3, maxWidth: 800 }}>
                                 {row.content}
                             </Typography>
-                            
+
                             {row.attachments && row.attachments.length > 0 && (
                                 <Box sx={{ mt: 3 }}>
                                     <Divider sx={{ mb: 2 }} />
@@ -457,7 +457,7 @@ const Announcements: React.FC = () => {
             </Dialog>
 
             {/* Create/Edit Form Dialog */}
-            <Dialog open={formDialogOpen} onClose={handleCloseFormDialog} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+            <Dialog open={formDialogOpen} onClose={handleCloseFormDialog} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
                 <DialogTitle sx={{ fontWeight: 700 }}>{editMode ? 'Edit Announcement' : 'Create New Announcement'}</DialogTitle>
                 <DialogContent dividers sx={{ p: 3 }}>
                     <Stack spacing={3}>
@@ -542,9 +542,9 @@ const Announcements: React.FC = () => {
                 </DialogContent>
                 <DialogActions sx={{ p: 3 }}>
                     <AppButton onClick={handleCloseFormDialog} variant="text" color="inherit">Cancel</AppButton>
-                    <AppButton 
-                        variant="contained" 
-                        onClick={handleFormSubmit} 
+                    <AppButton
+                        variant="contained"
+                        onClick={handleFormSubmit}
                         loading={createAnnouncement.isPending || updateAnnouncement.isPending}
                     >
                         {editMode ? 'Update Announcement' : 'Publish Announcement'}
