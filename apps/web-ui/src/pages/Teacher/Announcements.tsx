@@ -2,14 +2,9 @@ import React, { useState } from 'react';
 import {
     Box,
     Typography,
-    Card,
-    CardContent,
     Chip,
     Alert,
     Skeleton,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
     Button,
     Divider,
     Tabs,
@@ -19,35 +14,36 @@ import {
     DialogContent,
     DialogActions,
     IconButton,
-    TextField,
-    MenuItem,
-    FormControlLabel,
-    Checkbox,
     Stack,
-    Paper,
+    Grid,
 } from '@mui/material';
 import {
     Announcement as AnnouncementIcon,
-    ExpandMore as ExpandMoreIcon,
     AttachFile as AttachFileIcon,
-    Warning as WarningIcon,
-    Event as EventIcon,
-    School as SchoolIcon,
     Add as AddIcon,
     Close as CloseIcon,
     Download as DownloadIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { useGetAnnouncements, useMarkAnnouncementSeen, useDeleteAnnouncement, useCreateAnnouncement, useUpdateAnnouncement } from '../../queries/Announcement';
-import { useGetClasses } from '../../queries/Class';
+import type { Announcement, AnnouncementCategory, AnnouncementAttachment, AnnouncementPriority, AnnouncementTargetAudience, Class } from '../../types';
+import { AppInput } from '../../components/ui/AppInput';
+import { AppSelect } from '../../components/ui/AppSelect';
+import { AppDatePicker } from '../../components/ui/AppDatePicker';
+import { AppButton } from '../../components/ui/AppButton';
+import { AppExpandableTable } from '../../components/ui/AppExpandableTable';
 import TokenService from '../../queries/token/tokenService';
+import { 
+    useGetAnnouncements, 
+    useMarkAnnouncementSeen, 
+    useDeleteAnnouncement, 
+    useCreateAnnouncement, 
+    useUpdateAnnouncement 
+} from '../../queries/Announcement';
+import { useGetClasses } from '../../queries/Class';
 import FileUpload from '../../components/FileUpload/FileUpload';
 import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import type { Announcement, AnnouncementCategory, AnnouncementAttachment, AnnouncementPriority, AnnouncementTargetAudience } from '../../types';
+
 
 const categoryColors: Record<AnnouncementCategory, 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'> = {
     general: 'default',
@@ -59,19 +55,6 @@ const categoryColors: Record<AnnouncementCategory, 'default' | 'primary' | 'seco
     emergency: 'error',
 };
 
-const getCategoryIcon = (category: AnnouncementCategory) => {
-    switch (category) {
-        case 'exam':
-            return <SchoolIcon fontSize="small" />;
-        case 'holiday':
-        case 'event':
-            return <EventIcon fontSize="small" />;
-        case 'emergency':
-            return <WarningIcon fontSize="small" />;
-        default:
-            return <AnnouncementIcon fontSize="small" />;
-    }
-};
 
 const Announcements: React.FC = () => {
     const schoolId = TokenService.getSchoolId() || '';
@@ -281,182 +264,86 @@ const Announcements: React.FC = () => {
             </Tabs>
 
             {isLoading ? (
-                <Box>
-                    {[1, 2, 3].map((i) => (
-                        <Card key={i} sx={{ mb: 2 }}>
-                            <CardContent>
-                                <Skeleton variant="text" width="60%" height={30} />
-                                <Skeleton variant="text" width="30%" />
-                                <Skeleton variant="text" width="100%" />
-                                <Skeleton variant="text" width="80%" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </Box>
-            ) : announcements.length === 0 ? (
-                <Card>
-                    <CardContent sx={{ textAlign: 'center', py: 6 }}>
-                        <AnnouncementIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-                        <Typography variant="h6" color="text.secondary">
-                            {tabValue === 1 ? "You haven't created any announcements yet" : "No announcements yet"}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            {tabValue === 1 ? "Click 'Create Announcement' to get started" : "New announcements will appear here"}
-                        </Typography>
-                    </CardContent>
-                </Card>
+                <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 4 }} />
             ) : (
-                announcements.map((announcement: Announcement) => (
-                    <Accordion
-                        key={announcement.announcementId}
-                        sx={{ mb: 1 }}
-                        onChange={(_, expanded) => {
-                            if (expanded) {
-                                handleExpand(announcement.announcementId, announcement.isSeen || false);
-                            }
-                        }}
-                    >
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                    {!announcement.isSeen && (
-                                        <Box
-                                            sx={{
-                                                width: 8,
-                                                height: 8,
-                                                borderRadius: '50%',
-                                                bgcolor: 'primary.main',
-                                                flexShrink: 0
-                                            }}
-                                        />
-                                    )}
-                                    <Typography
-                                        variant="subtitle1"
-                                        fontWeight={announcement.isSeen ? 500 : 700}
-                                    >
-                                        {announcement.title}
+                <AppExpandableTable<Announcement>
+                    columns={[
+                        {
+                            name: 'Status',
+                            width: '80px',
+                            cell: (row) => !row.isSeen ? (
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
+                            ) : null
+                        },
+                        {
+                            name: 'Title',
+                            selector: (row) => row.title,
+                            sortable: true,
+                            cell: (row) => (
+                                <Stack spacing={0.5}>
+                                    <Typography variant="body2" fontWeight={row.isSeen ? 500 : 700}>
+                                        {row.title}
                                     </Typography>
-                                    {announcement.priority === 'urgent' && (
-                                        <Chip
-                                            size="small"
-                                            label="URGENT"
-                                            color="error"
-                                            icon={<WarningIcon />}
-                                            sx={{ height: 24 }}
-                                        />
-                                    )}
-                                    {announcement.priority === 'high' && (
-                                        <Chip
-                                            size="small"
-                                            label="Important"
-                                            color="warning"
-                                            sx={{ height: 24 }}
-                                        />
-                                    )}
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Chip
-                                        size="small"
-                                        icon={getCategoryIcon(announcement.category)}
-                                        label={announcement.category.charAt(0).toUpperCase() + announcement.category.slice(1)}
-                                        color={categoryColors[announcement.category]}
-                                        variant="outlined"
-                                        sx={{ height: 22 }}
-                                    />
-                                    <Typography variant="caption" color="text.secondary">
-                                        {formatDate(announcement.publishDate)}
-                                    </Typography>
-                                    {announcement.createdByName && (
-                                        <Typography variant="caption" color="text.secondary">
-                                            • By {announcement.createdByName}
-                                        </Typography>
-                                    )}
-                                </Box>
-                            </Box>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Typography
-                                variant="body1"
-                                sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}
-                            >
-                                {announcement.content}
-                            </Typography>
-
-                            {/* Display multiple attachments */}
-                            {(announcement.attachments && announcement.attachments.length > 0) && (
-                                <Box sx={{ mt: 2 }}>
-                                    <Divider sx={{ mb: 2 }} />
-                                    <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>Attachments</Typography>
-                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                        {announcement.attachments.map((attachment: AnnouncementAttachment, index: number) => (
-                                            <Button
-                                                key={index}
-                                                variant="outlined"
-                                                size="small"
-                                                startIcon={<AttachFileIcon />}
-                                                onClick={() => handleViewFile(attachment)}
-                                                sx={{ textTransform: 'none' }}
-                                            >
-                                                {attachment.fileName || `Attachment ${index + 1}`}
-                                            </Button>
-                                        ))}
-                                    </Box>
-                                </Box>
-                            )}
-
-                            {/* Backwards compatibility: single attachmentUrl */}
-                            {announcement.attachmentUrl && (!announcement.attachments || announcement.attachments.length === 0) && (
-                                <Box sx={{ mt: 2 }}>
-                                    <Divider sx={{ mb: 2 }} />
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        startIcon={<AttachFileIcon />}
-                                        href={announcement.attachmentUrl}
-                                        target="_blank"
-                                    >
-                                        View Attachment
-                                    </Button>
-                                </Box>
-                            )}
-
-                            {announcement.expiryDate && (
-                                <Box sx={{ mt: 2 }}>
-                                    <Typography variant="caption" color="text.secondary">
-                                        Valid until: {formatDate(announcement.expiryDate)}
-                                    </Typography>
-                                </Box>
-                            )}
-
-                            {/* Edit and Archive buttons for teacher's own announcements */}
-                            {announcement.createdBy === userId && (
-                                <>
-                                    <Divider sx={{ mt: 2, mb: 2 }} />
                                     <Box sx={{ display: 'flex', gap: 1 }}>
-                                        <Button
-                                            size="small"
-                                            startIcon={<EditIcon />}
-                                            onClick={() => handleOpenEditDialog(announcement)}
-                                        >
-                                            Edit
-                                        </Button>
-                                        <Button
-                                            size="small"
-                                            color="error"
-                                            startIcon={<DeleteIcon />}
-                                            onClick={() => {
-                                                setSelectedAnnouncement(announcement);
-                                                setDeleteDialogOpen(true);
-                                            }}
-                                        >
-                                            Archive
-                                        </Button>
+                                        {row.priority === 'urgent' && <Chip size="small" label="Urgent" color="error" variant="filled" />}
+                                        {row.priority === 'high' && <Chip size="small" label="High" color="warning" variant="filled" />}
                                     </Box>
-                                </>
+                                </Stack>
+                            )
+                        },
+                        {
+                            name: 'Category',
+                            width: '150px',
+                            cell: (row) => (
+                                <Chip 
+                                    size="small" 
+                                    label={row.category.toUpperCase()} 
+                                    color={categoryColors[row.category]} 
+                                    variant="outlined" 
+                                />
+                            )
+                        },
+                        {
+                            name: 'Date',
+                            width: '120px',
+                            selector: (row) => formatDate(row.publishDate)
+                        },
+                        {
+                            name: 'By',
+                            width: '150px',
+                            selector: (row) => row.createdByName || 'N/A'
+                        }
+                    ]}
+                    data={announcements}
+                    expandableRowsComponent={({ data: row }) => (
+                        <Box sx={{ p: 4, bgcolor: 'background.default' }} onMouseEnter={() => !row.isSeen && handleExpand(row.announcementId, false)}>
+                            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', mb: 3, maxWidth: 800 }}>
+                                {row.content}
+                            </Typography>
+                            
+                            {row.attachments && row.attachments.length > 0 && (
+                                <Box sx={{ mt: 3 }}>
+                                    <Divider sx={{ mb: 2 }} />
+                                    <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Attachments</Typography>
+                                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                                        {row.attachments.map((att, i) => (
+                                            <AppButton key={i} size="small" variant="outlined" startIcon={<AttachFileIcon />} onClick={() => handleViewFile(att)}>
+                                                {att.fileName}
+                                            </AppButton>
+                                        ))}
+                                    </Stack>
+                                </Box>
                             )}
-                        </AccordionDetails>
-                    </Accordion>
-                ))
+
+                            {row.createdBy === userId && (
+                                <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider', display: 'flex', gap: 1 }}>
+                                    <AppButton size="small" variant="text" startIcon={<EditIcon />} onClick={() => handleOpenEditDialog(row)}>Edit</AppButton>
+                                    <AppButton size="small" variant="text" color="error" startIcon={<DeleteIcon />} onClick={() => { setSelectedAnnouncement(row); setDeleteDialogOpen(true); }}>Archive</AppButton>
+                                </Box>
+                            )}
+                        </Box>
+                    )}
+                />
             )}
 
             {/* File Viewer Dialog */}
@@ -570,150 +457,98 @@ const Announcements: React.FC = () => {
             </Dialog>
 
             {/* Create/Edit Form Dialog */}
-            <Dialog open={formDialogOpen} onClose={handleCloseFormDialog} maxWidth="md" fullWidth>
-                <DialogTitle>{editMode ? 'Edit Announcement' : 'Create Announcement'}</DialogTitle>
-                <DialogContent dividers>
-                    <LocalizationProvider dateAdapter={AdapterDateFns}>
-                        <Stack spacing={3} sx={{ mt: 1 }}>
-                            {/* Title */}
-                            <TextField
-                                fullWidth
-                                label="Announcement Title"
-                                value={formData.title}
-                                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                                required
-                                placeholder="Enter a descriptive title"
-                            />
+            <Dialog open={formDialogOpen} onClose={handleCloseFormDialog} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+                <DialogTitle sx={{ fontWeight: 700 }}>{editMode ? 'Edit Announcement' : 'Create New Announcement'}</DialogTitle>
+                <DialogContent dividers sx={{ p: 3 }}>
+                    <Stack spacing={3}>
+                        <AppInput
+                            fullWidth
+                            label="Announcement Title"
+                            value={formData.title}
+                            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                            required
+                            placeholder="e.g., Upcoming Sports Day"
+                        />
 
-                            {/* Metadata Row */}
-                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                                <TextField
-                                    select
-                                    fullWidth
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                <AppSelect
                                     label="Category"
                                     value={formData.category}
                                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as AnnouncementCategory }))}
-                                >
-                                    <MenuItem value="general">General</MenuItem>
-                                    <MenuItem value="academic">Academic</MenuItem>
-                                    <MenuItem value="exam">Exam</MenuItem>
-                                    <MenuItem value="holiday">Holiday</MenuItem>
-                                    <MenuItem value="event">Event</MenuItem>
-                                    <MenuItem value="fee">Fee</MenuItem>
-                                    <MenuItem value="emergency">Emergency</MenuItem>
-                                </TextField>
-
-                                <TextField
-                                    select
-                                    fullWidth
+                                    options={[
+                                        { value: 'general', label: 'General' },
+                                        { value: 'academic', label: 'Academic' },
+                                        { value: 'exam', label: 'Exam' },
+                                        { value: 'holiday', label: 'Holiday' },
+                                        { value: 'event', label: 'Event' },
+                                        { value: 'fee', label: 'Fee' },
+                                        { value: 'emergency', label: 'Emergency' },
+                                    ]}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                <AppSelect
                                     label="Priority"
                                     value={formData.priority}
                                     onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as AnnouncementPriority }))}
-                                >
-                                    <MenuItem value="low">Low</MenuItem>
-                                    <MenuItem value="normal">Normal</MenuItem>
-                                    <MenuItem value="high">High</MenuItem>
-                                    <MenuItem value="urgent">Urgent</MenuItem>
-                                </TextField>
+                                    options={[
+                                        { value: 'low', label: 'Low' },
+                                        { value: 'normal', label: 'Normal' },
+                                        { value: 'high', label: 'High' },
+                                        { value: 'urgent', label: 'Urgent' },
+                                    ]}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                <AppDatePicker
+                                    label="Expiry Date"
+                                    value={formData.expiryDate}
+                                    onChange={(date: Date | null) => setFormData(prev => ({ ...prev, expiryDate: date }))}
+                                    minDate={new Date()}
+                                />
+                            </Grid>
+                        </Grid>
 
-                                <Box sx={{ width: '100%' }}>
-                                    <DatePicker
-                                        label="Expiry Date (Optional)"
-                                        value={formData.expiryDate}
-                                        onChange={(date: Date | null) => setFormData(prev => ({ ...prev, expiryDate: date }))}
-                                        slotProps={{
-                                            textField: { fullWidth: true }
-                                        }}
-                                    />
-                                </Box>
-                            </Stack>
-
-                            {/* Audience */}
-                            <TextField
-                                select
-                                fullWidth
-                                label="Target Audience"
-                                value={formData.targetAudience}
-                                onChange={(e) => setFormData(prev => ({ ...prev, targetAudience: e.target.value as AnnouncementTargetAudience }))}
-                            >
-                                <MenuItem value="specific_class">Specific Classes</MenuItem>
-                            </TextField>
-
-                            {formData.targetAudience === 'specific_class' && (
-                                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                                    <Typography variant="subtitle2" gutterBottom color="primary">
-                                        Select Target Classes *
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                                        {classes.map((cls: any) => (
-                                            <FormControlLabel
-                                                key={cls.classId}
-                                                control={
-                                                    <Checkbox
-                                                        size="small"
-                                                        checked={formData.targetClasses.includes(cls.classId)}
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setFormData(prev => ({
-                                                                    ...prev,
-                                                                    targetClasses: [...prev.targetClasses, cls.classId]
-                                                                }));
-                                                            } else {
-                                                                setFormData(prev => ({
-                                                                    ...prev,
-                                                                    targetClasses: prev.targetClasses.filter(id => id !== cls.classId)
-                                                                }));
-                                                            }
-                                                        }}
-                                                    />
-                                                }
-                                                label={
-                                                    <Typography variant="body2">
-                                                        {cls.name || 'Unknown Class'}
-                                                    </Typography>
-                                                }
-                                            />
-                                        ))}
-                                    </Box>
-                                </Paper>
-                            )}
-
-                            {/* Content */}
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={5}
-                                label="Announcement Content"
-                                value={formData.content}
-                                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                                required
-                                placeholder="Write the full announcement message here..."
+                        <Grid size={{ xs: 12 }}>
+                            <AppSelect
+                                label="Target Classes"
+                                value={formData.targetClasses[0] || ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, targetClasses: [e.target.value as string] }))}
+                                options={classes.map((c: Class) => ({ value: c.classId, label: c.name }))}
                             />
+                        </Grid>
 
-                            {/* File Upload */}
-                            <FileUpload
-                                folder={IMAGEKIT_FOLDERS.ANNOUNCEMENTS}
-                                baseFileName={`announcement_${schoolId}`}
-                                currentAttachments={formData.attachments}
-                                onUploadSuccess={(attachments) => setFormData(prev => ({ ...prev, attachments }))}
-                                label="Attachments"
-                                maxFiles={5}
-                            />
-                        </Stack>
-                    </LocalizationProvider>
+                        <AppInput
+                            fullWidth
+                            multiline
+                            rows={5}
+                            label="Announcement Details"
+                            value={formData.content}
+                            onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                            required
+                            placeholder="Write your message here..."
+                        />
+
+                        <FileUpload
+                            folder={IMAGEKIT_FOLDERS.ANNOUNCEMENTS}
+                            baseFileName={`announcement_${schoolId}`}
+                            currentAttachments={formData.attachments}
+                            onUploadSuccess={(attachments: AnnouncementAttachment[]) => setFormData(prev => ({ ...prev, attachments }))}
+                            label="Add Attachments"
+                            maxFiles={5}
+                        />
+                    </Stack>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button onClick={handleCloseFormDialog} color="inherit">
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleFormSubmit}
-                        disabled={createAnnouncement.isPending || updateAnnouncement.isPending}
-                        sx={{ minWidth: 120 }}
+                <DialogActions sx={{ p: 3 }}>
+                    <AppButton onClick={handleCloseFormDialog} variant="text" color="inherit">Cancel</AppButton>
+                    <AppButton 
+                        variant="contained" 
+                        onClick={handleFormSubmit} 
+                        loading={createAnnouncement.isPending || updateAnnouncement.isPending}
                     >
-                        {createAnnouncement.isPending || updateAnnouncement.isPending ? 'Saving...' : (editMode ? 'Update' : 'Create')}
-                    </Button>
+                        {editMode ? 'Update Announcement' : 'Publish Announcement'}
+                    </AppButton>
                 </DialogActions>
             </Dialog>
         </Box>
