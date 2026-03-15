@@ -149,7 +149,7 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
           opacity: { duration: 0.25 },
         }}
         style={{
-          zIndex: 9999,
+          zIndex: 1200,
           background: "#1e293b",
           boxShadow: isOpen ? "4px 0 20px rgba(30, 41, 59, 0.3)" : "none",
           overflow: "hidden",

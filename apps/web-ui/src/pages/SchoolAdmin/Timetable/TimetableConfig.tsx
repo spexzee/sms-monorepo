@@ -39,7 +39,7 @@ import {
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { parse, format } from 'date-fns';
+import { parse, format, addMinutes, differenceInMinutes } from 'date-fns';
 import {
     useGetActiveConfig,
     useCreateConfig,
@@ -202,15 +202,20 @@ const PeriodDialog = ({ open, onClose, onSave, editData, shifts, nextPeriodNumbe
         setStartTimeDate(date);
         if (date) {
             const timeStr = formatTimeToString(date);
-            setFormData((prev) => ({ ...prev, startTime: timeStr }));
-            // Auto-calculate duration
-            if (endTimeDate) {
-                const duration = (endTimeDate.getHours() * 60 + endTimeDate.getMinutes()) -
-                    (date.getHours() * 60 + date.getMinutes());
-                if (duration > 0) {
-                    setFormData((prev) => ({ ...prev, duration }));
+            setFormData((prev) => {
+                const updated = { ...prev, startTime: timeStr };
+                // If we have a duration, auto-calculate end time
+                if (updated.duration) {
+                    const newEndTime = addMinutes(date, updated.duration);
+                    setEndTimeDate(newEndTime);
+                    updated.endTime = formatTimeToString(newEndTime);
                 }
-            }
+                return updated;
+            });
+        }
+        // Clear error when field is edited
+        if (errors.startTime) {
+            setErrors((prev) => ({ ...prev, startTime: '' }));
         }
     };
 
@@ -218,16 +223,35 @@ const PeriodDialog = ({ open, onClose, onSave, editData, shifts, nextPeriodNumbe
         setEndTimeDate(date);
         if (date) {
             const timeStr = formatTimeToString(date);
-            setFormData((prev) => ({ ...prev, endTime: timeStr }));
-            // Auto-calculate duration
-            if (startTimeDate) {
-                const duration = (date.getHours() * 60 + date.getMinutes()) -
-                    (startTimeDate.getHours() * 60 + startTimeDate.getMinutes());
-                if (duration > 0) {
-                    setFormData((prev) => ({ ...prev, duration }));
+            setFormData((prev) => {
+                const updated = { ...prev, endTime: timeStr };
+                // Auto-calculate duration if start time exists
+                if (startTimeDate) {
+                    const duration = differenceInMinutes(date, startTimeDate);
+                    if (duration > 0) {
+                        updated.duration = duration;
+                    }
                 }
-            }
+                return updated;
+            });
         }
+        // Clear error when field is edited
+        if (errors.endTime) {
+            setErrors((prev) => ({ ...prev, endTime: '' }));
+        }
+    };
+
+    const handleDurationChange = (minutes: number) => {
+        setFormData((prev) => {
+            const updated = { ...prev, duration: minutes };
+            // If we have start time, auto-calculate end time
+            if (startTimeDate && minutes > 0) {
+                const newEndTime = addMinutes(startTimeDate, minutes);
+                setEndTimeDate(newEndTime);
+                updated.endTime = formatTimeToString(newEndTime);
+            }
+            return updated;
+        });
     };
 
     const validate = (): boolean => {
@@ -304,13 +328,14 @@ const PeriodDialog = ({ open, onClose, onSave, editData, shifts, nextPeriodNumbe
                                     slotProps={timePickerSlotProps}
                                 />
                             </Grid>
-                            <Grid size={{ xs: 4 }}>
+                            <Grid size={{ xs: 4 }} sx={{ mt: 1 }}>
                                 <TextField
                                     label="Duration (min)"
                                     type="number"
                                     fullWidth
                                     value={formData.duration}
-                                    onChange={(e) => handleChange('duration', parseInt(e.target.value))}
+                                    onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
+                                    sx={timePickerSlotProps.textField.sx}
                                 />
                             </Grid>
                         </Grid>

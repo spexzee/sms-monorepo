@@ -62,7 +62,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <AppBar
                 position="fixed"
                 sx={{
-                    zIndex: 10000,
+                    zIndex: 1201,
                     backgroundColor: '#1e293b',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                 }}

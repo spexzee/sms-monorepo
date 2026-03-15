@@ -170,7 +170,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                 await createMutation.mutateAsync(formData);
             }
             handleClose();
-        } catch {}
+        } catch { }
     };
 
     const handleClose = () => {
@@ -191,7 +191,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
     const isPending = createMutation.isPending || updateMutation.isPending;
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3 }}>
                 <Typography variant="h5" fontWeight={700}>
                     {isEditMode ? 'Edit Student Profile' : 'Register New Student'}
@@ -203,7 +203,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
 
             <form onSubmit={handleSubmit}>
                 <DialogContent sx={{ p: 3, pt: 1 }}>
-                    {createMutation.isError && <Alert severity="error" sx={{ mb: 3 }}>{ (createMutation.error as any)?.message || 'Failed to save' }</Alert>}
+                    {createMutation.isError && <Alert severity="error" sx={{ mb: 3 }}>{(createMutation.error as any)?.message || 'Failed to save'}</Alert>}
 
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12, sm: 6 }}>
@@ -213,28 +213,28 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                             <AppInput name="lastName" label="Last Name" value={formData.lastName} onChange={handleChange} error={!!errors.lastName} helperText={errors.lastName} required />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <AppInput name="email" label="Email Address" type="email" value={formData.email} onChange={handleChange} error={!!errors.email} helperText={errors.email} labelHint="Optional" />
+                            <AppInput name="email" label="Email Address" type="email" value={formData.email} onChange={handleChange} error={!!errors.email} helperText={errors.email} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <AppInput name="password" label="Portal Password" type="password" value={formData.password} onChange={handleChange} error={!!errors.password} helperText={errors.password} required={!isEditMode} labelHint={isEditMode ? 'Leave blank to keep current' : ''} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <AppSelect 
-                                label="Assign Class" 
-                                value={formData.class} 
-                                error={!!errors.class} 
-                                helperText={errors.class} 
-                                options={classes.filter((c: Class) => c.status === 'active').map((c: Class) => ({ value: c.classId, label: c.name }))} 
-                                onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value as string, section: '' }))} 
+                            <AppSelect
+                                label="Assign Class"
+                                value={formData.class}
+                                error={!!errors.class}
+                                helperText={errors.class}
+                                options={classes.filter((c: Class) => c.status === 'active').map((c: Class) => ({ value: c.classId, label: c.name }))}
+                                onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value as string, section: '' }))}
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <AppSelect 
-                                label="Select Section" 
-                                value={formData.section} 
-                                disabled={!formData.class} 
-                                options={[{ value: '', label: 'None' }, ...selectedClassSections.map((s: Section) => ({ value: s.sectionId, label: s.name }))]} 
-                                onChange={(e) => setFormData(prev => ({ ...prev, section: e.target.value as string }))} 
+                            <AppSelect
+                                label="Select Section"
+                                value={formData.section}
+                                disabled={!formData.class}
+                                options={[{ value: '', label: 'None' }, ...selectedClassSections.map((s: Section) => ({ value: s.sectionId, label: s.name }))]}
+                                onChange={(e) => setFormData(prev => ({ ...prev, section: e.target.value as string }))}
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
@@ -244,15 +244,15 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                             <AppInput name="phone" label="Phone Number" value={formData.phone} onChange={handleChange} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
-                            <AppSelect 
-                                label="Gender" 
-                                value={formData.gender || ''} 
+                            <AppSelect
+                                label="Gender"
+                                value={formData.gender || ''}
                                 options={[
                                     { value: 'male', label: 'Male' },
                                     { value: 'female', label: 'Female' },
                                     { value: 'other', label: 'Other' }
-                                ]} 
-                                onChange={(e) => setFormData((prev) => ({ ...prev, gender: e.target.value as any }))} 
+                                ]}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, gender: e.target.value as any }))}
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
