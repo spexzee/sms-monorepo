@@ -356,7 +356,7 @@ export const useGetDailyReport = (schoolId: string, date: string, options?: { mo
     });
 };
 
-export const useGetMonthlyReport = (schoolId: string, year: number, month: number, options?: { mode?: string; classId?: string; type?: string }) => {
+export const useGetMonthlyReport = (schoolId: string, year: number, month: number, options?: { mode?: string; classId?: string; sectionId?: string; type?: string }) => {
     return useQuery({
         queryKey: attendanceKeys.monthlyReport(schoolId, year, month),
         queryFn: () =>
@@ -389,15 +389,15 @@ export const useGetDateRangeReport = (
     });
 };
 
-export const useGetClassWiseReport = (schoolId: string, date: string, mode?: string) => {
+export const useGetClassWiseReport = (schoolId: string, date: string, mode?: string, options?: { classId?: string; sectionId?: string }) => {
     return useQuery({
-        queryKey: attendanceKeys.classWiseReport(schoolId, date),
+        queryKey: [...attendanceKeys.classWiseReport(schoolId, date), options],
         queryFn: () =>
             useApi<ApiResponse<{ date: string; classes: ClassWiseReport[] }>>(
                 "GET",
                 `/api/school/${schoolId}/attendance/reports/classwise`,
                 undefined,
-                { date, mode } as Record<string, unknown>
+                { date, mode, ...options } as Record<string, unknown>
             ),
         enabled: !!schoolId,
     });
