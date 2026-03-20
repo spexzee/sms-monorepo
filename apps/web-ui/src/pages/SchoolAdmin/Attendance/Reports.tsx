@@ -35,6 +35,7 @@ const AttendanceReports = () => {
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedClass, setSelectedClass] = useState('');
+    const [selectedSection, setSelectedSection] = useState('');
 
     const { data: schoolData } = useGetSchoolById(schoolId);
     const mode = schoolData?.data?.attendanceSettings?.mode || 'simple';
@@ -47,7 +48,7 @@ const AttendanceReports = () => {
     const dailyReport = dailyData?.data;
 
     // Class-wise Report
-    const { data: classWiseData, isLoading: classWiseLoading } = useGetClassWiseReport(schoolId, selectedDate, mode);
+    const { data: classWiseData, isLoading: classWiseLoading } = useGetClassWiseReport(schoolId, selectedDate, mode, { classId: selectedClass || undefined, sectionId: selectedSection || undefined });
     const classWiseReport = classWiseData?.data?.classes || [];
 
     // Monthly Report
@@ -89,7 +90,14 @@ const AttendanceReports = () => {
                             />
                             <FormControl sx={{ minWidth: 150 }}>
                                 <InputLabel>Class</InputLabel>
-                                <Select value={selectedClass} label="Class" onChange={(e) => setSelectedClass(e.target.value)}>
+                                <Select
+                                    value={selectedClass}
+                                    label="Class"
+                                    onChange={(e) => {
+                                        setSelectedClass(e.target.value);
+                                        setSelectedSection('');
+                                    }}
+                                >
                                     <MenuItem value="">All Classes</MenuItem>
                                     {classes.map((c: Class) => <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>)}
                                 </Select>
@@ -155,13 +163,42 @@ const AttendanceReports = () => {
             {tab === 1 && (
                 <>
                     <Paper sx={{ p: 2, mb: 3 }}>
-                        <TextField
-                            type="date"
-                            label="Date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                        />
+                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                            <TextField
+                                type="date"
+                                label="Date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                            <FormControl sx={{ minWidth: 150 }}>
+                                <InputLabel>Class</InputLabel>
+                                <Select
+                                    value={selectedClass}
+                                    label="Class"
+                                    onChange={(e) => {
+                                        setSelectedClass(e.target.value);
+                                        setSelectedSection('');
+                                    }}
+                                >
+                                    <MenuItem value="">All Classes</MenuItem>
+                                    {classes.map((c: Class) => <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                            <FormControl sx={{ minWidth: 150 }} disabled={!selectedClass}>
+                                <InputLabel>Section</InputLabel>
+                                <Select
+                                    value={selectedSection}
+                                    label="Section"
+                                    onChange={(e) => setSelectedSection(e.target.value)}
+                                >
+                                    <MenuItem value="">All Sections</MenuItem>
+                                    {classes.find((c: Class) => c.classId === selectedClass)?.sections.map((s) => (
+                                        <MenuItem key={s.sectionId} value={s.sectionId}>{s.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
                     </Paper>
 
                     {classWiseLoading ? (
@@ -228,7 +265,14 @@ const AttendanceReports = () => {
                             </FormControl>
                             <FormControl sx={{ minWidth: 150 }}>
                                 <InputLabel>Class</InputLabel>
-                                <Select value={selectedClass} label="Class" onChange={(e) => setSelectedClass(e.target.value)}>
+                                <Select
+                                    value={selectedClass}
+                                    label="Class"
+                                    onChange={(e) => {
+                                        setSelectedClass(e.target.value);
+                                        setSelectedSection('');
+                                    }}
+                                >
                                     <MenuItem value="">All Classes</MenuItem>
                                     {classes.map((c: Class) => <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>)}
                                 </Select>
