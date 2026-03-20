@@ -69,6 +69,7 @@ const createParent = async (req, res) => {
       occupation,
       address,
       status,
+      ...rest
     } = req.body;
 
     // Validate required fields
@@ -127,6 +128,7 @@ const createParent = async (req, res) => {
       occupation,
       address,
       status: status || "active",
+      ...rest,
     });
 
     const savedParent = await newParent.save();

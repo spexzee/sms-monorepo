@@ -87,6 +87,7 @@ const createStudent = async (req, res) => {
       address,
       status,
       profileImage,
+      ...rest
     } = req.body;
 
     // Validate required fields
@@ -144,6 +145,7 @@ const createStudent = async (req, res) => {
       address,
       status: status || "active",
       profileImage,
+      ...rest,
     });
 
     const savedStudent = await newStudent.save();
