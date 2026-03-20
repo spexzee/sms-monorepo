@@ -60,6 +60,7 @@ const createTeacher = async (req, res) => {
       classes,
       status,
       profileImage,
+      signature,
       classTeacherSectionId,
     } = req.body;
 
@@ -111,6 +112,7 @@ const createTeacher = async (req, res) => {
       classes: classes || [],
       status: status || "active",
       profileImage,
+      signature,
       classTeacherSectionId: classTeacherSectionId || null,
     });
 
