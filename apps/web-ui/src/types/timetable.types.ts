@@ -5,105 +5,110 @@
 // ==========================================
 
 export interface Period {
-    periodNumber: number;
-    name: string;
-    startTime: string;
-    endTime: string;
-    duration: number;
-    type: 'regular' | 'break' | 'assembly' | 'pt' | 'lab' | 'free' | 'lunch';
-    shiftId?: string;
-    isDoublePeriod?: boolean;
+  periodNumber: number;
+  name: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  type: "regular" | "break" | "assembly" | "pt" | "lab" | "free" | "lunch";
+  shiftId?: string;
+  isDoublePeriod?: boolean;
 }
 
 export interface Shift {
-    shiftId: string;
-    name: string;
-    startTime: string;
-    endTime: string;
+  shiftId: string;
+  name: string;
+  startTime: string;
+  endTime: string;
 }
 
 export interface TimetableConfig {
-    configId: string;
-    schoolId: string;
-    academicYear: string;
-    workingDays: string[];
-    shifts: Shift[];
-    periods: Period[];
-    isActive: boolean;
-    status: 'active' | 'inactive';
-    // Temporary disable fields
-    temporarilyDisabled?: boolean;
-    disabledFrom?: string;
-    disabledTo?: string;
-    disabledReason?: string;
-    createdAt: string;
-    updatedAt: string;
+  configId: string;
+  schoolId: string;
+  academicYear: string;
+  workingDays: string[];
+  shifts: Shift[];
+  periods: Period[];
+  isActive: boolean;
+  status: "active" | "inactive";
+  // Temporary disable fields
+  temporarilyDisabled?: boolean;
+  disabledFrom?: string;
+  disabledTo?: string;
+  disabledReason?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateTimetableConfigRequest {
-    academicYear: string;
-    workingDays?: string[];
-    shifts?: Shift[];
-    periods?: Period[];
+  academicYear: string;
+  workingDays?: string[];
+  shifts?: Shift[];
+  periods?: Period[];
 }
 
 export interface UpdateTimetableConfigRequest {
-    academicYear?: string;
-    workingDays?: string[];
-    shifts?: Shift[];
-    periods?: Period[];
-    isActive?: boolean;
+  academicYear?: string;
+  workingDays?: string[];
+  shifts?: Shift[];
+  periods?: Period[];
+  isActive?: boolean;
 }
 
 // ==========================================
 // TIMETABLE SCHEDULE (Validity Periods)
 // ==========================================
 
-export type TimetableScheduleStatus = 'active' | 'disabled' | 'draft';
-export type TimetableScheduleType = 'regular' | 'exam_phase' | 'sports_week' | 'vacation' | 'special';
+export type TimetableScheduleStatus = "active" | "disabled" | "draft";
+export type TimetableScheduleType =
+  | "regular"
+  | "exam_phase"
+  | "sports_week"
+  | "vacation"
+  | "special";
 
 export interface TimetableSchedule {
-    scheduleId: string;
-    schoolId: string;
-    name: string;
-    description?: string;
-    validFrom: string;
-    validTo: string;
-    status: TimetableScheduleStatus;
-    scheduleType: TimetableScheduleType;
-    allowSpecialClasses: boolean;
-    createdBy?: string;
-    disabledBy?: string;
-    disabledAt?: string;
-    notes?: string;
-    createdAt: string;
-    updatedAt: string;
+  scheduleId: string;
+  schoolId: string;
+  name: string;
+  description?: string;
+  validFrom: string;
+  validTo: string;
+  status: TimetableScheduleStatus;
+  scheduleType: TimetableScheduleType;
+  allowSpecialClasses: boolean;
+  createdBy?: string;
+  disabledBy?: string;
+  disabledAt?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateTimetableScheduleRequest {
-    name: string;
-    description?: string;
-    validFrom: string;
-    validTo: string;
-    scheduleType?: TimetableScheduleType;
-    allowSpecialClasses?: boolean;
-    notes?: string;
+  name: string;
+  description?: string;
+  validFrom: string;
+  validTo: string;
+  scheduleType?: TimetableScheduleType;
+  allowSpecialClasses?: boolean;
+  notes?: string;
 }
 
 export interface UpdateTimetableScheduleRequest {
-    name?: string;
-    description?: string;
-    validFrom?: string;
-    validTo?: string;
-    status?: TimetableScheduleStatus;
-    scheduleType?: TimetableScheduleType;
-    allowSpecialClasses?: boolean;
-    notes?: string;
+  name?: string;
+  description?: string;
+  validFrom?: string;
+  validTo?: string;
+  status?: TimetableScheduleStatus;
+  scheduleType?: TimetableScheduleType;
+  allowSpecialClasses?: boolean;
+  notes?: string;
 }
 
 export interface ActiveScheduleResponse {
-    isActive: boolean;
-    data: TimetableSchedule | null;
+  isActive: boolean;
+  data: TimetableSchedule | null;
 }
 
 // ==========================================
@@ -111,77 +116,77 @@ export interface ActiveScheduleResponse {
 // ==========================================
 
 export interface TimetableEntry {
-    entryId: string;
-    schoolId: string;
-    classId: string;
-    sectionId: string;
-    subjectId: string;
+  entryId: string;
+  schoolId: string;
+  classId: string;
+  sectionId: string;
+  subjectId: string;
+  teacherId: string;
+  dayOfWeek: string;
+  periodNumber: number;
+  shiftId?: string;
+  roomId?: string;
+  periodType: "regular" | "lab" | "pt" | "free" | "assembly";
+  isActive: boolean;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  notes?: string;
+  status: "active" | "inactive";
+  createdAt: string;
+  updatedAt: string;
+  // Populated fields
+  teacher?: {
     teacherId: string;
-    dayOfWeek: string;
-    periodNumber: number;
-    shiftId?: string;
-    roomId?: string;
-    periodType: 'regular' | 'lab' | 'pt' | 'free' | 'assembly';
-    isActive: boolean;
-    effectiveFrom?: string;
-    effectiveTo?: string;
-    notes?: string;
-    status: 'active' | 'inactive';
-    createdAt: string;
-    updatedAt: string;
-    // Populated fields
-    teacher?: {
-        teacherId: string;
-        name: string;
-    };
-    subject?: {
-        subjectId: string;
-        name: string;
-        code: string;
-    };
-    class?: {
-        classId: string;
-        name: string;
-        section?: string;
-    };
+    name: string;
+  };
+  subject?: {
+    subjectId: string;
+    name: string;
+    code: string;
+  };
+  class?: {
+    classId: string;
+    name: string;
+    section?: string;
+  };
 }
 
 export interface CreateTimetableEntryRequest {
-    classId: string;
-    sectionId: string;
-    subjectId: string;
-    teacherId: string;
-    dayOfWeek: string;
-    periodNumber: number;
-    shiftId?: string;
-    roomId?: string;
-    periodType?: 'regular' | 'lab' | 'pt' | 'free' | 'assembly';
-    effectiveFrom?: string;
-    effectiveTo?: string;
-    notes?: string;
+  classId: string;
+  sectionId: string;
+  subjectId: string;
+  teacherId: string;
+  dayOfWeek: string;
+  periodNumber: number;
+  shiftId?: string;
+  roomId?: string;
+  periodType?: "regular" | "lab" | "pt" | "free" | "assembly";
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  notes?: string;
 }
 
 export interface UpdateTimetableEntryRequest {
-    classId?: string;
-    sectionId?: string;
-    subjectId?: string;
-    teacherId?: string;
-    dayOfWeek?: string;
-    periodNumber?: number;
-    shiftId?: string;
-    roomId?: string;
-    periodType?: string;
-    notes?: string;
+  classId?: string;
+  sectionId?: string;
+  subjectId?: string;
+  teacherId?: string;
+  dayOfWeek?: string;
+  periodNumber?: number;
+  shiftId?: string;
+  roomId?: string;
+  periodType?: string;
+  notes?: string;
 }
 
 export interface BulkCreateEntriesRequest {
-    entries: CreateTimetableEntryRequest[];
+  entries: CreateTimetableEntryRequest[];
 }
 
 export interface Conflict {
-    type: 'teacher' | 'room' | 'class';
-    message: string;
-    conflictingEntry?: TimetableEntry;
+  type: "teacher" | "room" | "class";
+  message: string;
+  conflictingEntry?: TimetableEntry;
 }
 
 // ==========================================
@@ -189,13 +194,13 @@ export interface Conflict {
 // ==========================================
 
 export interface ClassTimetableResponse {
-    config: TimetableConfig | null;
-    entries: TimetableEntry[];
+  config: TimetableConfig | null;
+  entries: TimetableEntry[];
 }
 
 export interface TeacherTimetableResponse {
-    config: TimetableConfig | null;
-    entries: TimetableEntry[];
+  config: TimetableConfig | null;
+  entries: TimetableEntry[];
 }
 
 // ==========================================
@@ -203,34 +208,34 @@ export interface TeacherTimetableResponse {
 // ==========================================
 
 export interface SubstituteAssignment {
-    substituteId: string;
-    schoolId: string;
-    originalEntryId: string;
-    originalTeacherId: string;
-    substituteTeacherId: string;
-    date: string;
-    reason?: string;
-    createdBy: string;
-    status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-    createdAt: string;
-    updatedAt: string;
-    // Populated fields
-    entry?: TimetableEntry;
-    originalTeacher?: {
-        teacherId: string;
-        name: string;
-    };
-    substituteTeacher?: {
-        teacherId: string;
-        name: string;
-    };
+  substituteId: string;
+  schoolId: string;
+  originalEntryId: string;
+  originalTeacherId: string;
+  substituteTeacherId: string;
+  date: string;
+  reason?: string;
+  createdBy: string;
+  status: "pending" | "confirmed" | "completed" | "cancelled";
+  createdAt: string;
+  updatedAt: string;
+  // Populated fields
+  entry?: TimetableEntry;
+  originalTeacher?: {
+    teacherId: string;
+    name: string;
+  };
+  substituteTeacher?: {
+    teacherId: string;
+    name: string;
+  };
 }
 
 export interface CreateSubstituteRequest {
-    originalEntryId: string;
-    substituteTeacherId: string;
-    date: string;
-    reason?: string;
+  originalEntryId: string;
+  substituteTeacherId: string;
+  date: string;
+  reason?: string;
 }
 
 // ==========================================
@@ -238,40 +243,47 @@ export interface CreateSubstituteRequest {
 // ==========================================
 
 export interface Room {
-    roomId: string;
-    schoolId: string;
-    name: string;
-    code: string;
-    type: 'classroom' | 'lab' | 'hall' | 'playground' | 'library' | 'auditorium' | 'other';
-    capacity: number;
-    floor?: string;
-    building?: string;
-    equipment?: string[];
-    isAvailable: boolean;
-    status: 'active' | 'inactive' | 'maintenance';
-    createdAt: string;
-    updatedAt: string;
+  roomId: string;
+  schoolId: string;
+  name: string;
+  code: string;
+  type:
+    | "classroom"
+    | "lab"
+    | "hall"
+    | "playground"
+    | "library"
+    | "auditorium"
+    | "other";
+  capacity: number;
+  floor?: string;
+  building?: string;
+  equipment?: string[];
+  isAvailable: boolean;
+  status: "active" | "inactive" | "maintenance";
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateRoomRequest {
-    name: string;
-    code: string;
-    type?: string;
-    capacity?: number;
-    floor?: string;
-    building?: string;
-    equipment?: string[];
+  name: string;
+  code: string;
+  type?: string;
+  capacity?: number;
+  floor?: string;
+  building?: string;
+  equipment?: string[];
 }
 
 export interface RoomAvailability {
-    room: Room;
-    dayOfWeek: string;
-    bookedPeriods: {
-        periodNumber: number;
-        classId: string;
-        sectionId: string;
-        subjectId: string;
-    }[];
+  room: Room;
+  dayOfWeek: string;
+  bookedPeriods: {
+    periodNumber: number;
+    classId: string;
+    sectionId: string;
+    subjectId: string;
+  }[];
 }
 
 // ==========================================
@@ -279,33 +291,33 @@ export interface RoomAvailability {
 // ==========================================
 
 export interface PeriodSwap {
-    swapId: string;
-    schoolId: string;
-    requestedBy: string;
-    entryId1: string;
-    entryId2: string;
-    date: string;
-    reason?: string;
-    status: 'pending' | 'approved' | 'rejected' | 'cancelled';
-    approvedBy?: string;
-    approvedAt?: string;
-    rejectionReason?: string;
-    createdAt: string;
-    updatedAt: string;
-    // Populated fields
-    entry1?: TimetableEntry;
-    entry2?: TimetableEntry;
-    requester?: {
-        teacherId: string;
-        name: string;
-    };
+  swapId: string;
+  schoolId: string;
+  requestedBy: string;
+  entryId1: string;
+  entryId2: string;
+  date: string;
+  reason?: string;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+  // Populated fields
+  entry1?: TimetableEntry;
+  entry2?: TimetableEntry;
+  requester?: {
+    teacherId: string;
+    name: string;
+  };
 }
 
 export interface CreateSwapRequest {
-    entryId1: string;
-    entryId2: string;
-    date: string;
-    reason?: string;
+  entryId1: string;
+  entryId2: string;
+  date: string;
+  reason?: string;
 }
 
 // ==========================================
@@ -313,63 +325,69 @@ export interface CreateSwapRequest {
 // ==========================================
 
 export interface TeacherWorkload {
-    teacherId: string;
-    name: string;
-    email: string;
-    totalPeriodsPerWeek: number;
-    maxPeriodsPerWeek: number;
-    workloadPercentage: number;
-    dayWiseLoad: Record<string, number>;
-    subjectsTaught: { subjectId: string; name: string }[];
-    classesCount: number;
+  teacherId: string;
+  name: string;
+  email: string;
+  totalPeriodsPerWeek: number;
+  maxPeriodsPerWeek: number;
+  workloadPercentage: number;
+  dayWiseLoad: Record<string, number>;
+  subjectsTaught: { subjectId: string; name: string }[];
+  classesCount: number;
 }
 
 export interface TeacherWorkloadReport {
-    summary: {
-        totalTeachers: number;
-        avgWorkloadPercentage: number;
-        maxPeriodsPerWeek: number;
-    };
-    teachers: TeacherWorkload[];
+  summary: {
+    totalTeachers: number;
+    avgWorkloadPercentage: number;
+    maxPeriodsPerWeek: number;
+  };
+  teachers: TeacherWorkload[];
 }
 
 export interface SubjectDistribution {
-    subjectId: string;
-    name: string;
-    code: string;
-    totalPeriodsPerWeek: number;
-    classesCount: number;
+  subjectId: string;
+  name: string;
+  code: string;
+  totalPeriodsPerWeek: number;
+  classesCount: number;
 }
 
 export interface TimetableSummary {
-    hasActiveConfig: boolean;
-    academicYear: string | null;
-    stats: {
-        totalEntries: number;
-        totalTeachers: number;
-        totalClasses: number;
-        totalSubjects: number;
-        fillRate: number;
-    };
-    workingDays: string[];
-    periodsPerDay: number;
+  hasActiveConfig: boolean;
+  academicYear: string | null;
+  stats: {
+    totalEntries: number;
+    totalTeachers: number;
+    totalClasses: number;
+    totalSubjects: number;
+    fillRate: number;
+  };
+  workingDays: string[];
+  periodsPerDay: number;
 }
 
 export interface ExportTimetableData {
-    type: 'class' | 'teacher';
-    entityName: string;
-    academicYear: string;
-    workingDays: string[];
-    periods: Period[];
-    breaks: Period[];
-    grid: Record<string, Record<number, {
+  type: "class" | "teacher";
+  entityName: string;
+  academicYear: string;
+  workingDays: string[];
+  periods: Period[];
+  breaks: Period[];
+  grid: Record<
+    string,
+    Record<
+      number,
+      {
         subject: string;
         subjectCode: string;
         teacher: string;
         class: string;
         section: string;
         room: string;
-    } | null>>;
+      } | null
+    >
+  >;
 }
 
 // ==========================================
@@ -377,21 +395,21 @@ export interface ExportTimetableData {
 // ==========================================
 
 export interface FreePeriod {
-    periodNumber: number;
-    name: string;
-    startTime: string;
-    endTime: string;
+  periodNumber: number;
+  name: string;
+  startTime: string;
+  endTime: string;
 }
 
 export interface TeacherFreePeriods {
-    teacherId: string;
-    freePeriods: Record<string, FreePeriod[]>;
+  teacherId: string;
+  freePeriods: Record<string, FreePeriod[]>;
 }
 
 export interface FreeTeacher {
-    teacherId: string;
-    name: string;
-    email: string;
+  teacherId: string;
+  name: string;
+  email: string;
 }
 
 // ==========================================
@@ -399,14 +417,14 @@ export interface FreeTeacher {
 // ==========================================
 
 export interface ConflictItem {
-    type: 'teacher' | 'room';
-    description: string;
-    entries: string[];
-    dayOfWeek: string;
-    periodNumber: number;
+  type: "teacher" | "room";
+  description: string;
+  entries: string[];
+  dayOfWeek: string;
+  periodNumber: number;
 }
 
 export interface ConflictReport {
-    totalConflicts: number;
-    conflicts: ConflictItem[];
+  totalConflicts: number;
+  conflicts: ConflictItem[];
 }

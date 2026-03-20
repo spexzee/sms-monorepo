@@ -743,6 +743,154 @@ const getConflictReport = async (req, res) => {
     }
 };
 
+// Get classes that have timetables
+const getClassesWithTimetables = async (req, res) => {
+    try {
+        const { schoolId } = req.params;
+        const schoolDbName = await getSchoolDbName(schoolId);
+        const models = getModels(schoolDbName);
+        const { TimetableEntry, Class } = models;
+
+        const activeEntries = await TimetableEntry.aggregate([
+            { $match: { schoolId, isActive: true } },
+            { $group: { _id: { classId: "$classId", sectionId: "$sectionId" } } }
+        ]);
+
+        const populatedClasses = [];
+        for (const entry of activeEntries) {
+            const classDoc = await Class.findOne({ classId: entry._id.classId });
+            if (classDoc) {
+                const section = classDoc.sections?.find((s) => s.sectionId === entry._id.sectionId);
+                populatedClasses.push({
+                    classId: entry._id.classId,
+                    className: classDoc.name,
+                    sectionId: entry._id.sectionId,
+                    sectionName: section ? section.name : entry._id.sectionId,
+                });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            data: populatedClasses,
+        });
+    } catch (error) {
+        console.error("Error fetching classes with timetables:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to fetch classes with timetables",
+        });
+    }
+};
+
+// Copy timetable from another class
+const copyClassTimetable = async (req, res) => {
+    try {
+        const { schoolId } = req.params;
+        const { targetClassId, targetSectionId, sourceClassId, sourceSectionId } = req.body;
+
+        if (!targetClassId || !targetSectionId || !sourceClassId || !sourceSectionId) {
+            return res.status(400).json({
+                success: false,
+                message: "Target and Source Class and Section IDs are required",
+            });
+        }
+
+        const schoolDbName = await getSchoolDbName(schoolId);
+        const models = getModels(schoolDbName);
+        const { TimetableEntry } = models;
+
+        // Check if target already has a timetable
+        const existingTargetEntries = await TimetableEntry.find({
+            schoolId, classId: targetClassId, sectionId: targetSectionId, isActive: true
+        });
+
+        if (existingTargetEntries.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Target class/section already has a timetable. Cannot copy.",
+            });
+        }
+
+        // Get source timetable entries
+        const sourceEntries = await TimetableEntry.find({
+            schoolId, classId: sourceClassId, sectionId: sourceSectionId, isActive: true
+        });
+
+        if (sourceEntries.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Source class/section does not have an active timetable to copy.",
+            });
+        }
+
+        const copiedEntries = [];
+        
+        for (const entry of sourceEntries) {
+            const entryId = await generateEntryId(TimetableEntry);
+            const newEntry = new TimetableEntry({
+                entryId,
+                schoolId,
+                classId: targetClassId,
+                sectionId: targetSectionId,
+                subjectId: entry.subjectId,
+                teacherId: entry.teacherId, // Copy same teacher, might cause conflict but user can resolve
+                dayOfWeek: entry.dayOfWeek,
+                periodNumber: entry.periodNumber,
+                shiftId: entry.shiftId,
+                roomId: entry.roomId,
+                periodType: entry.periodType,
+                effectiveFrom: entry.effectiveFrom,
+                effectiveTo: entry.effectiveTo,
+                notes: entry.notes,
+                isActive: true,
+                status: "active",
+            });
+            await newEntry.save();
+            copiedEntries.push(newEntry);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully copied \${copiedEntries.length} entries.`,
+            data: copiedEntries,
+        });
+    } catch (error) {
+        console.error("Error copying timetable:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to copy timetable",
+        });
+    }
+};
+
+// Delete entire timetable for a class/section
+const deleteClassTimetable = async (req, res) => {
+    try {
+        const { schoolId, classId, sectionId } = req.params;
+
+        const schoolDbName = await getSchoolDbName(schoolId);
+        const models = getModels(schoolDbName);
+        const { TimetableEntry } = models;
+
+        const result = await TimetableEntry.updateMany(
+            { schoolId, classId, sectionId, isActive: true },
+            { isActive: false, status: "inactive" }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully deleted \${result.modifiedCount} entries for this class timetable.`,
+        });
+    } catch (error) {
+        console.error("Error deleting class timetable:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to delete class timetable",
+        });
+    }
+};
+
 module.exports = {
     createEntry,
     bulkCreateEntries,
@@ -754,4 +902,7 @@ module.exports = {
     getTeacherFreePeriods,
     getFreeTeachersForPeriod,
     getConflictReport,
+    getClassesWithTimetables,
+    copyClassTimetable,
+    deleteClassTimetable,
 };
