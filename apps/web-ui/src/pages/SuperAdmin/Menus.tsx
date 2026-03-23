@@ -813,7 +813,7 @@ const Menus = () => {
           mb: 3,
           p: 2,
           bgcolor: "background.paper",
-          borderRadius: 2,
+          borderRadius: 1.5,
           boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
         }}
       >
@@ -905,7 +905,7 @@ const Menus = () => {
             variant="outlined"
             startIcon={<DownloadIcon />}
             onClick={handleDownloadTemplate}
-            sx={{ textTransform: "none", borderRadius: 2 }}
+            sx={{ textTransform: "none", borderRadius: 1 }}
           >
             Download Template
           </Button>
@@ -914,7 +914,7 @@ const Menus = () => {
             startIcon={isUploading ? <CircularProgress size={18} /> : <UploadIcon />}
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            sx={{ textTransform: "none", borderRadius: 2 }}
+            sx={{ textTransform: "none", borderRadius: 1 }}
           >
             {isUploading ? "Uploading..." : "Upload Excel"}
           </Button>
@@ -929,7 +929,7 @@ const Menus = () => {
             variant="outlined"
             startIcon={<RestoreIcon />}
             onClick={() => setIsRestoreDialogOpen(true)}
-            sx={{ textTransform: "none", borderRadius: 2 }}
+            sx={{ textTransform: "none", borderRadius: 1 }}
           >
             Restore Backup
           </Button>
@@ -937,7 +937,7 @@ const Menus = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleAddClick}
-            sx={{ textTransform: "none", borderRadius: 2, px: 3 }}
+            sx={{ textTransform: "none", borderRadius: 1, px: 3 }}
           >
             Add Menu
           </Button>
@@ -947,13 +947,13 @@ const Menus = () => {
       {/* Table */}
       <Paper
         sx={{
-          borderRadius: 2,
+          borderRadius: 1,
           overflow: "hidden",
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
-        <TableContainer>
-          <Table size="small" sx={{ tableLayout: "fixed" }}>
+        <TableContainer sx={{ overflowX: 'auto' }}>
+          <Table size="small" sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow
                 sx={{
@@ -966,13 +966,13 @@ const Menus = () => {
                   },
                 }}
               >
-                <TableCell sx={{ width: "22%" }}>Menu Name</TableCell>
-                <TableCell sx={{ width: "15%" }}>Order</TableCell>
-                <TableCell sx={{ width: "18%" }}>Path</TableCell>
-                <TableCell sx={{ width: "10%" }}>Sidebar</TableCell>
-                <TableCell sx={{ width: "13%" }}>Roles</TableCell>
-                <TableCell sx={{ width: "13%" }}>Schools</TableCell>
-                <TableCell sx={{ width: "13%" }} align="center">
+                <TableCell sx={{ minWidth: 200 }}>Menu Name</TableCell>
+                <TableCell sx={{ minWidth: 150 }}>Order</TableCell>
+                <TableCell sx={{ minWidth: 150 }}>Path</TableCell>
+                <TableCell sx={{ minWidth: 100 }}>Sidebar</TableCell>
+                <TableCell sx={{ minWidth: 120 }}>Roles</TableCell>
+                <TableCell sx={{ minWidth: 120 }}>Schools</TableCell>
+                <TableCell sx={{ minWidth: 100 }} align="center">
                   Action
                 </TableCell>
               </TableRow>
@@ -1068,7 +1068,7 @@ const Menus = () => {
         onClose={() => !restoreMutation.isPending && setIsRestoreDialogOpen(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        PaperProps={{ sx: { borderRadius: 1.5 } }}
       >
         <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>Restore Menu Backup</DialogTitle>
         <DialogContent>
@@ -1098,7 +1098,7 @@ const Menus = () => {
             variant="contained"
             onClick={handleRestoreBackup}
             disabled={restoreMutation.isPending || !restoreBatchId.trim()}
-            sx={{ textTransform: "none", borderRadius: 2 }}
+            sx={{ textTransform: "none", borderRadius: 1 }}
           >
             {restoreMutation.isPending ? <CircularProgress size={24} /> : "Restore Now"}
           </Button>

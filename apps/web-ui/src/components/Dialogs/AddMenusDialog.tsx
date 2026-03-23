@@ -4,9 +4,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  TextField,
-  CircularProgress,
   Alert,
   IconButton,
   Grid,
@@ -33,6 +30,9 @@ import { useCreateMenu, useGetMenus, useUpdateMenu } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
 import type { CreateMenuPayload, Menu } from "../../types";
 import IconPickerDialog from "./IconPickerDialog";
+import { AppInput } from "../ui/AppInput";
+import { AppSelect } from "../ui/AppSelect";
+import { AppButton } from "../ui/AppButton";
 
 interface AddMenusDialogProps {
   open: boolean;
@@ -338,7 +338,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                   }}
                   loading={isLoadingSchools}
                   renderInput={(params) => (
-                    <TextField
+                    <AppInput
                       {...params}
                       label="Schools"
                       error={!!errors.schoolId}
@@ -393,7 +393,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
 
               {/* Menu Name */}
               <Grid size={{ xs: 12 }}>
-                <TextField
+                <AppInput
                   name="menuName"
                   label="Menu Name"
                   value={formData.menuName}
@@ -401,7 +401,6 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                   error={!!errors.menuName}
                   helperText={errors.menuName}
                   required
-                  fullWidth
                 />
               </Grid>
 
@@ -450,7 +449,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       }
                     }}
                     renderInput={(params) => (
-                      <TextField
+                      <AppInput
                         {...params}
                         label="Main Menu Heading"
                         error={!!errors.parentMenuId}
@@ -469,7 +468,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
 
               {/* Menu Path */}
               <Grid size={{ xs: 12 }}>
-                <TextField
+                <AppInput
                   name="menuUrl"
                   label="Menu Path"
                   value={formData.menuUrl}
@@ -477,7 +476,6 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                   error={!!errors.menuUrl}
                   helperText={errors.menuUrl}
                   required
-                  fullWidth
                 />
               </Grid>
 
@@ -539,53 +537,23 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                   </Box>
 
                   <Box sx={{ display: "flex", gap: 1 }}>
-                    <FormControl sx={{ minWidth: 100 }}>
-                      <InputLabel>Prefix</InputLabel>
-                      <Select
-                        label="Prefix"
-                        value={activeOrderPrefix}
-                        onChange={(e) => setActiveOrderPrefix(e.target.value)}
-                        disabled={!formData.menuAccessRoles?.length}
-                      >
-                        {[
-                          {
-                            prefix: "SA",
-                            role: "super_admin",
-                            label: "SA (Super Admin)",
-                          },
-                          {
-                            prefix: "A",
-                            role: "sch_admin",
-                            label: "A (School Admin)",
-                          },
-                          {
-                            prefix: "T",
-                            role: "teacher",
-                            label: "T (Teacher)",
-                          },
-                          {
-                            prefix: "S",
-                            role: "student",
-                            label: "S (Student)",
-                          },
-                          { prefix: "P", role: "parent", label: "P (Parent)" },
-                        ]
-                          .filter((p) => {
-                            const selectedRoles = Array.isArray(
-                              formData.menuAccessRoles,
-                            )
-                              ? formData.menuAccessRoles
-                              : [formData.menuAccessRoles];
-                            return selectedRoles.includes(p.role);
-                          })
-                          .map((p) => (
-                            <MenuItem key={p.prefix} value={p.prefix}>
-                              {p.label}
-                            </MenuItem>
-                          ))}
-                      </Select>
-                    </FormControl>
-                    <TextField
+                    <AppSelect
+                      label="Prefix"
+                      value={activeOrderPrefix}
+                      options={[
+                        { value: "SA", label: "SA (Super Admin)", role: "super_admin" },
+                        { value: "A", label: "A (School Admin)", role: "sch_admin" },
+                        { value: "T", label: "T (Teacher)", role: "teacher" },
+                        { value: "S", label: "S (Student)", role: "student" },
+                        { value: "P", label: "P (Parent)", role: "parent" },
+                      ].filter(p => {
+                        const selectedRoles = Array.isArray(formData.menuAccessRoles) ? formData.menuAccessRoles : [formData.menuAccessRoles];
+                        return selectedRoles.includes(p.role);
+                      }).map(p => ({ value: p.value, label: p.label }))}
+                      onChange={(e) => setActiveOrderPrefix(e.target.value as string)}
+                      disabled={!formData.menuAccessRoles?.length}
+                    />
+                    <AppInput
                       name="menuOrderNumber"
                       label="Order No."
                       value={(() => {
@@ -602,7 +570,6 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       onChange={(e) => {
                         const newValue = e.target.value;
                         const newCode = `${activeOrderPrefix}${newValue}`;
-
                         setFormData((prev) => {
                           const currentOrders = (
                             Array.isArray(prev.menuOrder)
@@ -611,11 +578,9 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                           )
                             .filter(Boolean)
                             .map(String);
-                          // Remove any existing code with this prefix
                           const filtered = currentOrders.filter(
                             (o) => !o.startsWith(activeOrderPrefix),
                           );
-                          // Add new code if value exists
                           if (newValue) {
                             filtered.push(newCode);
                           }
@@ -626,7 +591,6 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                         });
                       }}
                       error={!!errors.menuOrder}
-                      fullWidth
                       placeholder={`No. for ${activeOrderPrefix}`}
                     />
                   </Box>
@@ -635,25 +599,27 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
 
               {/* Menu Icon */}
               <Grid size={{ xs: 12 }}>
-                <TextField
+                <AppInput
                   name="menuIcon"
                   label="Menu Icon"
                   value={formData.menuIcon}
                   onClick={() => setIconPickerOpen(true)}
-                  InputProps={{
-                    readOnly: true,
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setIconPickerOpen(true)}
-                          edge="end"
-                        >
-                          <AppsIcon />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      readOnly: true,
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setIconPickerOpen(true)}
+                            edge="end"
+                          >
+                            <AppsIcon />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                      sx: { cursor: 'pointer' }
+                    }
                   }}
-                  fullWidth
                   placeholder="Click to select an icon"
                 />
               </Grid>
@@ -779,23 +745,16 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
           </DialogContent>
 
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={handleClose} color="inherit">
+            <AppButton onClick={handleClose} variant="text" color="inherit">
               Cancel
-            </Button>
-            <Button
+            </AppButton>
+            <AppButton
               type="submit"
               variant="contained"
-              disabled={isPending}
-              startIcon={isPending ? <CircularProgress size={20} /> : null}
+              loading={isPending}
             >
-              {isPending
-                ? menuToEdit
-                  ? "Updating..."
-                  : "Creating..."
-                : menuToEdit
-                  ? "Update"
-                  : "Create"}
-            </Button>
+              {menuToEdit ? "Update" : "Create"}
+            </AppButton>
           </DialogActions>
         </form>
       </Dialog>

@@ -226,7 +226,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
     const isPending = createMutation.isPending || updateMutation.isPending;
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3 }}>
                 <Typography variant="h5" fontWeight={700}>
                     {isEditMode ? 'Edit Student Profile' : 'Register New Student'}
@@ -303,7 +303,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                                 getOptionLabel={(option) => `${option.firstName} ${option.lastName} (${option.phone || option.email || 'N/A'})`}
                                 onInputChange={(_, value) => setParentSearchQuery(value)}
                                 renderInput={(params) => (
-                                    <TextField {...params} label="Link to Parent Account" placeholder="Search by name, email, or phone..." variant="outlined" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                                    <TextField {...params} label="Link to Parent Account" placeholder="Search by name, email, or phone..." variant="outlined" />
                                 )}
                             />
                         </Grid>
