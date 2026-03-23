@@ -6,7 +6,8 @@ import {
   MenuItem, 
   FormHelperText,
   Typography,
-  Box
+  Box,
+  alpha
 } from '@mui/material';
 
 interface AppSelectOption {
@@ -49,10 +50,13 @@ export const AppSelect: React.FC<AppSelectProps> = ({
           displayEmpty
           {...props}
           sx={{
-            borderRadius: 1,
-            backgroundColor: '#ffffff',
+            backgroundColor: 'background.paper',
+            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
-              backgroundColor: '#f1f5f9',
+              backgroundColor: alpha('#f1f5f9', 0.5),
+            },
+            '&.Mui-focused': {
+              backgroundColor: 'background.paper',
             },
             ...props.sx
           }}

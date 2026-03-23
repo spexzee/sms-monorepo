@@ -34,6 +34,10 @@ import { useGetSimpleClassAttendance, useMarkSimpleAttendance } from '../../../q
 import { useGetTeacherById } from '../../../queries/Teacher';
 import type { Student, AttendanceStatus } from '../../../types';
 import TokenService from '../../../queries/token/tokenService';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppButton } from '../../../components/ui/AppButton';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { format } from 'date-fns';
 
 interface AttendanceRecord {
     studentId: string;
@@ -189,50 +193,41 @@ const SimpleAttendance = () => {
             {/* Filters */}
             <Paper sx={{ p: 2, mb: 3 }}>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-                    <TextField
-                        type="date"
-                        label="Date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                        inputProps={{ max: new Date().toLocaleDateString('en-CA') }}
-                        sx={{ minWidth: 150 }}
+                    <AppDatePicker
+                        label="Attendance Date"
+                        value={selectedDate ? new Date(selectedDate) : null}
+                        onChange={(date) => {
+                            setSelectedDate(date ? format(date, 'yyyy-MM-dd') : '');
+                            setAttendance({});
+                        }}
                     />
-                    <FormControl sx={{ minWidth: 150 }}>
-                        <InputLabel>Class</InputLabel>
-                        <Select
-                            value={selectedClass}
-                            label="Class"
-                            disabled={classes.length === 1}
+                    <AppSelect
+                        label="Class"
+                        value={selectedClass}
+                        disabled={classes.length === 1}
+                        options={classes.map(c => ({ value: c.classId, label: c.name }))}
+                        onChange={(e) => {
+                            setSelectedClass(e.target.value as string);
+                            setSelectedSection('');
+                            setAttendance({});
+                        }}
+                        sx={{ minWidth: 200 }}
+                    />
+                    {filteredSections.length > 0 && (
+                        <AppSelect
+                            label="Section"
+                            value={selectedSection}
+                            disabled={filteredSections.length === 1}
+                            options={[
+                                ...(filteredSections.length > 1 ? [{ value: '', label: 'All Sections' }] : []),
+                                ...filteredSections.map(s => ({ value: s.sectionId, label: s.name }))
+                            ]}
                             onChange={(e) => {
-                                setSelectedClass(e.target.value);
-                                setSelectedSection('');
+                                setSelectedSection(e.target.value as string);
                                 setAttendance({});
                             }}
-                        >
-                            {classes.map(c => (
-                                <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    {filteredSections.length > 0 && (
-                        <FormControl sx={{ minWidth: 120 }}>
-                            <InputLabel>Section</InputLabel>
-                            <Select
-                                value={selectedSection}
-                                label="Section"
-                                disabled={filteredSections.length === 1}
-                                onChange={(e) => {
-                                    setSelectedSection(e.target.value);
-                                    setAttendance({});
-                                }}
-                            >
-                                {filteredSections.length > 1 && <MenuItem value="">All Sections</MenuItem>}
-                                {filteredSections.map(s => (
-                                    <MenuItem key={s.sectionId} value={s.sectionId}>{s.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                            sx={{ minWidth: 150 }}
+                        />
                     )}
                 </Box>
             </Paper>
@@ -250,12 +245,12 @@ const SimpleAttendance = () => {
             {/* Quick Actions */}
             {students.length > 0 && (
                 <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Button size="small" variant="outlined" color="success" onClick={() => handleMarkAll('present')}>
+                    <AppButton size="small" variant="outlined" color="success" onClick={() => handleMarkAll('present')}>
                         Mark All Present
-                    </Button>
-                    <Button size="small" variant="outlined" color="error" onClick={() => handleMarkAll('absent')}>
+                    </AppButton>
+                    <AppButton size="small" variant="outlined" color="error" onClick={() => handleMarkAll('absent')}>
                         Mark All Absent
-                    </Button>
+                    </AppButton>
                 </Box>
             )}
 
@@ -315,15 +310,15 @@ const SimpleAttendance = () => {
             {/* Save Button */}
             {students.length > 0 && (
                 <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button
+                    <AppButton
                         variant="contained"
                         size="large"
-                        startIcon={markAttendance.isPending ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                        loading={markAttendance.isPending}
+                        startIcon={!markAttendance.isPending && <SaveIcon />}
                         onClick={handleSave}
-                        disabled={markAttendance.isPending}
                     >
-                        {markAttendance.isPending ? 'Saving...' : 'Save Attendance'}
-                    </Button>
+                        Save Attendance
+                    </AppButton>
                 </Box>
             )}
 

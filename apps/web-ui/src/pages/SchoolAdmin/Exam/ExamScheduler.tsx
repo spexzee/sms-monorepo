@@ -7,16 +7,12 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogContentText,
     DialogActions,
-    TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Grid,
-    Chip,
+    Alert,
     IconButton,
+    Divider,
+    Chip,
+    Grid,
     Table,
     TableBody,
     TableCell,
@@ -24,16 +20,20 @@ import {
     TableHead,
     TableRow,
     Paper,
-    Alert,
     Snackbar,
     Tabs,
     Tab,
     Avatar,
-    Divider,
     CircularProgress,
     Skeleton,
-    InputAdornment
+    InputAdornment,
+    TextField,
 } from '@mui/material';
+import { AppInput } from '../../../components/ui/AppInput';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppButton } from '../../../components/ui/AppButton';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { format } from 'date-fns';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -45,6 +45,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import SchoolIcon from '@mui/icons-material/School';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
 import { pdf } from '@react-pdf/renderer';
 import { useAuth } from '../../../context/AuthContext';
 import {
@@ -353,138 +354,151 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
             )}
 
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-                <DialogTitle>{editingExam ? 'Edit Exam Event' : 'Create New Exam Event'}</DialogTitle>
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>{editingExam ? 'Modify Exam Profile' : 'Register New Exam Event'}</Typography>
+                    <IconButton onClick={handleClose} size="small">
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                        <TextField
-                            label="Exam Name"
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Core Definition
+                        </Typography>
+
+                        <AppInput
+                            label="Exam Designation"
                             fullWidth
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="e.g. Mid-Term 2025"
+                            placeholder="e.g. Mid-Term Assessment 2025"
                         />
+                        
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Term</InputLabel>
-                                    <Select
-                                        value={formData.termId}
-                                        label="Term"
-                                        onChange={(e) => setFormData({ ...formData, termId: e.target.value })}
-                                    >
-                                        {terms?.data?.map((t: any) => <MenuItem key={t._id} value={t._id}>{t.name}</MenuItem>)}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Exam Type</InputLabel>
-                                    <Select
-                                        value={formData.typeId}
-                                        label="Exam Type"
-                                        onChange={(e) => setFormData({ ...formData, typeId: e.target.value })}
-                                    >
-                                        {types?.data?.map((t: any) => <MenuItem key={t._id} value={t._id}>{t.name}</MenuItem>)}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                        </Grid>
-
-                        <FormControl fullWidth>
-                            <InputLabel>Status</InputLabel>
-                            <Select
-                                value={formData.status}
-                                label="Status"
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                            >
-                                <MenuItem value="draft">Draft</MenuItem>
-                                <MenuItem value="scheduled">Scheduled</MenuItem>
-                                <MenuItem value="ongoing">Ongoing</MenuItem>
-                                <MenuItem value="published">Published</MenuItem>
-                                <MenuItem value="closed">Closed</MenuItem>
-                            </Select>
-                        </FormControl>
-
-                        <FormControl fullWidth>
-                            <InputLabel>Grading System</InputLabel>
-                            <Select
-                                value={formData.gradingSystemId}
-                                label="Grading System"
-                                onChange={(e) => setFormData({ ...formData, gradingSystemId: e.target.value })}
-                            >
-                                {gradingSystems?.data?.map((t: any) => <MenuItem key={t._id} value={t._id}>{t.name}</MenuItem>)}
-                            </Select>
-                        </FormControl>
-
-                        <FormControl fullWidth>
-                            <InputLabel>Participating Classes</InputLabel>
-                            <Select
-                                multiple
-                                value={formData.classes}
-                                label="Participating Classes"
-                                onChange={(e) => {
-                                    const val = typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value;
-                                    setFormData({ ...formData, classes: val });
-                                }}
-                                renderValue={(selected) => (
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                        {selected.map((value: string) => {
-                                            const cls = classes?.data?.find((c: any) => c.classId === value);
-                                            return <Chip key={value} label={cls?.name || value} />;
-                                        })}
-                                    </Box>
-                                )}
-                            >
-                                {classes?.data?.map((c: any) => <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>)}
-                            </Select>
-                        </FormControl>
-
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    label="Start Date"
-                                    type="date"
-                                    fullWidth
-                                    InputLabelProps={{ shrink: true }}
-                                    value={formData.startDate}
-                                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                <AppSelect
+                                    label="Administrative Term"
+                                    value={formData.termId}
+                                    options={terms?.data?.map((t: any) => ({ value: t._id, label: t.name })) || []}
+                                    onChange={(e) => setFormData({ ...formData, termId: e.target.value as string })}
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    label="End Date"
-                                    type="date"
-                                    fullWidth
-                                    InputLabelProps={{ shrink: true }}
-                                    value={formData.endDate}
-                                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                <AppSelect
+                                    label="Examination Category"
+                                    value={formData.typeId}
+                                    options={types?.data?.map((t: any) => ({ value: t._id, label: t.name })) || []}
+                                    onChange={(e) => setFormData({ ...formData, typeId: e.target.value as string })}
+                                />
+                            </Grid>
+                        </Grid>
+
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <AppSelect
+                                label="Event Status"
+                                value={formData.status}
+                                options={[
+                                    { value: 'draft', label: 'Draft / Internal' },
+                                    { value: 'scheduled', label: 'Officially Scheduled' },
+                                    { value: 'ongoing', label: 'Currently Live' },
+                                    { value: 'published', label: 'Results Published' },
+                                    { value: 'closed', label: 'Archived / Closed' },
+                                ]}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                                sx={{ flex: 1 }}
+                            />
+                            <AppSelect
+                                label="Grading Framework"
+                                value={formData.gradingSystemId}
+                                options={gradingSystems?.data?.map((t: any) => ({ value: t._id, label: t.name })) || []}
+                                onChange={(e) => setFormData({ ...formData, gradingSystemId: e.target.value as string })}
+                                sx={{ flex: 1 }}
+                            />
+                        </Box>
+
+                        <Divider sx={{ my: 0.5 }} />
+
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Scope & Duration
+                        </Typography>
+
+                        <AppSelect
+                            multiple
+                            label="Participating Classes"
+                            value={formData.classes}
+                            options={classes?.data?.map((c: any) => ({ value: c.classId, label: c.name })) || []}
+                            onChange={(e) => {
+                                const val = typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]);
+                                setFormData({ ...formData, classes: val });
+                            }}
+                            renderValue={(selected) => (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {(selected as string[]).map((value: string) => {
+                                        const cls = classes?.data?.find((c: any) => c.classId === value);
+                                        return <Chip key={value} label={cls?.name || value} size="small" variant="outlined" />;
+                                    })}
+                                </Box>
+                            )}
+                        />
+
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <AppDatePicker
+                                    label="Commencement Date"
+                                    value={formData.startDate ? new Date(formData.startDate) : null}
+                                    onChange={(date) => setFormData({ ...formData, startDate: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <AppDatePicker
+                                    label="Conclusion Date"
+                                    value={formData.endDate ? new Date(formData.endDate) : null}
+                                    onChange={(date) => setFormData({ ...formData, endDate: date ? format(date, 'yyyy-MM-dd') : '' })}
                                 />
                             </Grid>
                         </Grid>
                     </Box>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>Cancel</Button>
-                    <Button variant="contained" onClick={handleSubmit} disabled={createExam.isPending || updateExam.isPending}>
-                        {(createExam.isPending || updateExam.isPending) ? 'Saving...' : (editingExam ? 'Update Exam' : 'Create Exam')}
-                    </Button>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <AppButton onClick={handleClose} variant="text" color="inherit">Cancel</AppButton>
+                    <AppButton 
+                        variant="contained" 
+                        onClick={handleSubmit} 
+                        loading={createExam.isPending || updateExam.isPending}
+                    >
+                        {editingExam ? 'Update Exam Profile' : 'Register Exam Event'}
+                    </AppButton>
                 </DialogActions>
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-                <DialogTitle>Delete Exam</DialogTitle>
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Confirm Deletion</Typography>
+                    <IconButton onClick={() => setDeleteDialogOpen(false)} size="small">
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to delete <strong>{examToDelete?.name}</strong>?
-                        This action cannot be undone and will remove all associated schedules and data.
-                    </DialogContentText>
+                    <Box sx={{ py: 1 }}>
+                        <Typography variant="body1" sx={{ mb: 2 }}>
+                            Are you sure you want to delete <strong>{examToDelete?.name}</strong>?
+                        </Typography>
+                        <Alert severity="error" variant="outlined" sx={{ borderRadius: 2 }}>
+                            This action is permanent and will cascade to all associated schedules, marks, and admit card records.
+                        </Alert>
+                    </Box>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-                    <Button variant="contained" color="error" onClick={confirmDelete} disabled={deleteExam.isPending}>
-                        {deleteExam.isPending ? 'Deleting...' : 'Delete'}
-                    </Button>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <AppButton onClick={() => setDeleteDialogOpen(false)} variant="text" color="inherit">Cancel</AppButton>
+                    <AppButton 
+                        variant="contained" 
+                        color="error" 
+                        onClick={confirmDelete} 
+                        loading={deleteExam.isPending}
+                    >
+                        Delete Permanently
+                    </AppButton>
                 </DialogActions>
             </Dialog>
         </>
@@ -583,9 +597,11 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
     });
 
     const [errorMsg, setErrorMsg] = useState('');
+    const [errors, setErrors] = useState<any>({});
 
     const handleSubmit = () => {
         setErrorMsg('');
+        setErrors({});
         const payload = editingSchedule
             ? { ...formData, _id: editingSchedule._id }
             : formData;
@@ -791,7 +807,7 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                         <TextField
                             placeholder="Search by name, ID, or roll number..."
                             value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchInput(e.target.value)}
                             size="small"
                             sx={{ width: { xs: '100%', sm: 350 } }}
                             InputProps={{
@@ -912,65 +928,66 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
 
             {/* Schedule Dialog */}
             <Dialog open={open} onClose={() => { setOpen(false); setEditingSchedule(null); }} maxWidth="md" fullWidth>
-                <DialogTitle>{editingSchedule ? 'Edit Exam Schedule' : 'Schedule Exam Subject'}</DialogTitle>
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>{editingSchedule ? 'Modify Assessment Schedule' : 'Schedule Subject Assessment'}</Typography>
+                    <IconButton onClick={() => { setOpen(false); setEditingSchedule(null); }} size="small">
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                        {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+                        {errorMsg && <Alert severity="error" variant="outlined" sx={{ borderRadius: 2 }}>{errorMsg}</Alert>}
 
                         {examClasses.length === 0 && !classesLoading && (
-                            <Alert severity="warning">
-                                No participating classes found for this exam. Please edit the Exam details to add participating classes first.
+                            <Alert severity="warning" variant="outlined" sx={{ borderRadius: 2 }}>
+                                No participating classes found for this exam. Please define target classes in the Exam Profile first.
                             </Alert>
                         )}
 
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Target & Subject
+                        </Typography>
+
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <FormControl fullWidth required error={examClasses.length === 0}>
-                                    <InputLabel>Class</InputLabel>
-                                    <Select
-                                        value={formData.classId}
-                                        label="Class"
-                                        onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                                        disabled={examClasses.length === 0 || classesLoading}
-                                    >
-                                        {classesLoading ? (
-                                            <MenuItem disabled value=""><CircularProgress size={20} sx={{ mr: 1, verticalAlign: 'middle' }} /> Loading Classes...</MenuItem>
-                                        ) : examClasses.map((c: any) => (
-                                            <MenuItem key={c.classId} value={c.classId}>
-                                                {c.name}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
+                                <AppSelect
+                                    label="Target Class"
+                                    value={formData.classId}
+                                    options={examClasses.map((c: any) => ({ value: c.classId, label: c.name }))}
+                                    onChange={(e) => setFormData({ ...formData, classId: e.target.value as string })}
+                                    disabled={examClasses.length === 0 || classesLoading}
+                                    error={examClasses.length === 0}
+                                />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Subject</InputLabel>
-                                    <Select
-                                        value={formData.subjectId}
-                                        label="Subject"
-                                        onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
-                                    >
-                                        {subjects?.data?.map((s: any) => <MenuItem key={s.subjectId} value={s.subjectId}>{s.name}</MenuItem>)}
-                                    </Select>
-                                </FormControl>
+                                <AppSelect
+                                    label="Academic Subject"
+                                    value={formData.subjectId}
+                                    options={subjects?.data?.map((s: any) => ({ value: s.subjectId, label: s.name })) || []}
+                                    onChange={(e) => setFormData({ ...formData, subjectId: e.target.value as string })}
+                                />
                             </Grid>
                         </Grid>
 
+                        <Divider sx={{ my: 0.5 }} />
+
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Temporal Logistics
+                        </Typography>
+
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                                <TextField
-                                    label="Date"
-                                    type="date"
-                                    fullWidth
-                                    InputLabelProps={{ shrink: true }}
-                                    value={formData.date}
-                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                />
+                                <AppDatePicker
+                                label="Exam Date"
+                                value={formData.date ? new Date(formData.date) : null}
+                                onChange={(date) => setFormData({ ...formData, date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                error={!!errors.date}
+                                helperText={errors.date}
+                            />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                                <TextField
-                                    label="Start Time"
+                                <AppInput
+                                    label="Commencement Time"
                                     type="time"
                                     fullWidth
                                     InputLabelProps={{ shrink: true }}
@@ -979,8 +996,8 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                                <TextField
-                                    label="End Time"
+                                <AppInput
+                                    label="Conclusion Time"
                                     type="time"
                                     fullWidth
                                     InputLabelProps={{ shrink: true }}
@@ -990,41 +1007,53 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                             </Grid>
                         </Grid>
 
+                        <Divider sx={{ my: 0.5 }} />
+
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Allocation & Invigilation
+                        </Typography>
+
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Room</InputLabel>
-                                    <Select
-                                        value={formData.roomId}
-                                        label="Room"
-                                        onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
-                                    >
-                                        <MenuItem value="">None</MenuItem>
-                                        {rooms?.data?.map((r: any) => <MenuItem key={r._id} value={r._id}>{r.name} ({r.code}) — Cap: {r.capacity}</MenuItem>)}
-                                    </Select>
-                                </FormControl>
+                                <AppSelect
+                                    label="Examination Venue"
+                                    value={formData.roomId}
+                                    options={[
+                                        { value: "", label: "Unassigned / None" },
+                                        ...(rooms?.data?.map((r: any) => ({ 
+                                            value: r._id, 
+                                            label: `${r.name} (${r.code}) — Cap: ${r.capacity}` 
+                                        })) || [])
+                                    ]}
+                                    onChange={(e) => setFormData({ ...formData, roomId: e.target.value as string })}
+                                />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Invigilators</InputLabel>
-                                    <Select
-                                        multiple
-                                        value={formData.invigilators}
-                                        label="Invigilators"
-                                        onChange={(e) => {
-                                            const val = typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value;
-                                            setFormData({ ...formData, invigilators: val });
-                                        }}
-                                    >
-                                        {teachers?.data?.map((t: any) => <MenuItem key={t.teacherId} value={t.teacherId}>{t.firstName} {t.lastName}</MenuItem>)}
-                                    </Select>
-                                </FormControl>
+                                <AppSelect
+                                    multiple
+                                    label="Assigned Invigilators"
+                                    value={formData.invigilators}
+                                    options={teachers?.data?.map((t: any) => ({ 
+                                        value: t.teacherId, 
+                                        label: `${t.firstName} ${t.lastName}` 
+                                    })) || []}
+                                    onChange={(e) => {
+                                        const val = typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]);
+                                        setFormData({ ...formData, invigilators: val });
+                                    }}
+                                />
                             </Grid>
                         </Grid>
 
+                        <Divider sx={{ my: 0.5 }} />
+
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Assessment Weightage
+                        </Typography>
+
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                                <TextField
+                                <AppInput
                                     label="Max Marks (Theory)"
                                     type="number"
                                     fullWidth
@@ -1033,7 +1062,7 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                                <TextField
+                                <AppInput
                                     label="Max Marks (Practical)"
                                     type="number"
                                     fullWidth
@@ -1042,8 +1071,8 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
-                                <TextField
-                                    label="Passing Marks"
+                                <AppInput
+                                    label="Minimum Passing Marks"
                                     type="number"
                                     fullWidth
                                     value={formData.passingMarks}
@@ -1053,32 +1082,41 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                         </Grid>
                     </Box>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpen(false)}>Cancel</Button>
-                    <Button variant="contained" onClick={handleSubmit} disabled={scheduleExam.isPending}>
-                        {scheduleExam.isPending ? 'Scheduling...' : 'Schedule'}
-                    </Button>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <AppButton onClick={() => setOpen(false)} variant="text" color="inherit">Cancel</AppButton>
+                    <AppButton variant="contained" onClick={handleSubmit} loading={scheduleExam.isPending}>
+                        {editingSchedule ? 'Update Schedule' : 'Finalize Schedule'}
+                    </AppButton>
                 </DialogActions>
             </Dialog>
 
             {/* Confirmation Dialog for Admit Cards */}
-            <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
-                <DialogTitle>Generate Admit Cards</DialogTitle>
+            <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Batch Generation</Typography>
+                    <IconButton onClick={() => setConfirmDialogOpen(false)} size="small">
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to generate admit cards for all eligible students in participating classes?
-                        This action will create admit cards for students who don't have one yet.
-                    </DialogContentText>
+                    <Box sx={{ py: 1 }}>
+                        <Typography variant="body1" sx={{ mb: 2 }}>
+                            Are you sure you want to generate admit cards for all eligible students in participating classes?
+                        </Typography>
+                        <Alert severity="info" variant="outlined" sx={{ borderRadius: 2 }}>
+                            This will automatically skip students who already have generated cards and process new registrations.
+                        </Alert>
+                    </Box>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
-                    <Button
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <AppButton onClick={() => setConfirmDialogOpen(false)} variant="text" color="inherit">Cancel</AppButton>
+                    <AppButton
                         variant="contained"
                         onClick={confirmGenerateAdmitCards}
-                        disabled={generateAdmitCards.isPending}
+                        loading={generateAdmitCards.isPending}
                     >
-                        {generateAdmitCards.isPending ? 'Generating...' : 'Generate'}
-                    </Button>
+                        Start Generation
+                    </AppButton>
                 </DialogActions>
             </Dialog>
 

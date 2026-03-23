@@ -3,14 +3,12 @@ import {
   Box,
   Paper,
   Typography,
-  TextField,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Button,
   Chip,
   CircularProgress,
   ToggleButton,
@@ -19,6 +17,9 @@ import {
 } from "@mui/material";
 import { Save as SaveIcon } from "@mui/icons-material";
 import { useGetTeachers } from "../../../queries/Teacher";
+import { AppButton } from "../../../components/ui/AppButton";
+import { AppDatePicker } from "../../../components/ui/AppDatePicker";
+import { format } from "date-fns";
 import {
   useGetTeachersAttendance,
   useMarkTeacherAttendance,
@@ -129,30 +130,27 @@ const TeacherAttendancePage = () => {
             flexWrap: "wrap",
           }}
         >
-          <TextField
-            type="date"
-            label="Date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            inputProps={{ max: new Date().toLocaleDateString("en-CA") }}
+          <AppDatePicker
+            label="Attendance Date"
+            value={selectedDate ? new Date(selectedDate) : null}
+            onChange={(date) => setSelectedDate(date ? format(date, "yyyy-MM-dd") : "")}
           />
-          <Button
+          <AppButton
             size="small"
             variant="outlined"
             color="success"
             onClick={() => handleMarkAll("present")}
           >
             Mark All Present
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
             size="small"
             variant="outlined"
             color="error"
             onClick={() => handleMarkAll("absent")}
           >
             Mark All Absent
-          </Button>
+          </AppButton>
         </Box>
       </Paper>
 
@@ -229,21 +227,15 @@ const TeacherAttendancePage = () => {
       {/* Save */}
       {teachers.length > 0 && (
         <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
-          <Button
+          <AppButton
             variant="contained"
             size="large"
-            startIcon={
-              markAttendance.isPending ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <SaveIcon />
-              )
-            }
+            loading={markAttendance.isPending}
+            startIcon={!markAttendance.isPending && <SaveIcon />}
             onClick={handleSave}
-            disabled={markAttendance.isPending}
           >
             Save Teacher Attendance
-          </Button>
+          </AppButton>
         </Box>
       )}
     </Box>

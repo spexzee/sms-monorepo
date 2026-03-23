@@ -1,10 +1,10 @@
 import React from 'react';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { DatePicker, type DatePickerProps } from '@mui/x-date-pickers/DatePicker';
+import { TimePicker, type TimePickerProps } from '@mui/x-date-pickers/TimePicker';
 import { Box, Typography, alpha, type Theme } from '@mui/material';
 
-export interface AppDatePickerProps extends Omit<DatePickerProps<any>, 'renderInput' | 'slots' | 'slotProps'> {
+export interface AppTimePickerProps extends Omit<TimePickerProps<any>, 'renderInput' | 'slots' | 'slotProps'> {
   label: string;
   labelHint?: string;
   helperText?: string;
@@ -15,7 +15,7 @@ export interface AppDatePickerProps extends Omit<DatePickerProps<any>, 'renderIn
   onChange: (value: Date | null) => void;
 }
 
-export const AppDatePicker: React.FC<AppDatePickerProps> = ({
+export const AppTimePicker: React.FC<AppTimePickerProps> = ({
   label,
   labelHint,
   helperText,
@@ -44,9 +44,8 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
             )}
           </Box>
         )}
-        <DatePicker
+        <TimePicker
           {...props}
-          format="dd-MM-yyyy"
           slotProps={{
             textField: {
               fullWidth: true,
@@ -69,9 +68,6 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
                 },
               },
             },
-            actionBar: {
-              actions: ['clear', 'today'],
-            },
             popper: {
               sx: {
                 '& .MuiPaper-root': {
@@ -81,27 +77,15 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
                   borderColor: 'divider',
                   mt: 0.5,
                 },
-                '& .MuiDayCalendar-weekDayLabel': {
-                  fontWeight: 700,
-                  color: 'primary.main',
-                  fontSize: '0.75rem',
+                '& .MuiClock-clock': {
+                  backgroundColor: 'background.paper',
                 },
-                '& .MuiPickersDay-root': {
-                  borderRadius: 1.25,
-                  fontSize: '0.875rem',
-                  '&:hover': {
-                    backgroundColor: alpha('#6366f1', 0.08),
-                  },
+                '& .MuiClockPointer-root': {
+                  backgroundColor: 'primary.main',
+                },
+                '& .MuiClockNumber-root': {
                   '&.Mui-selected': {
                     backgroundColor: 'primary.main',
-                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                  },
-                  '&.MuiPickersDay-today': {
-                    borderColor: 'primary.main',
-                    borderWidth: 1.5,
                   },
                 },
               },

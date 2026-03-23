@@ -1,19 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  TextField,
   Box,
-  CircularProgress,
   Alert,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Typography,
   Divider,
 } from '@mui/material';
@@ -22,6 +15,9 @@ import { useCreateSchool, useUpdateSchool } from '../../queries/School';
 import type { CreateSchoolPayload, School } from '../../types';
 import { ImageUpload } from '../ImageUpload';
 import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
+import { AppInput } from '../ui/AppInput';
+import { AppSelect } from '../ui/AppSelect';
+import { AppButton } from '../ui/AppButton';
 
 interface SchoolDialogProps {
   open: boolean;
@@ -191,8 +187,14 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {isEditMode ? 'Edit School' : 'Add New School'}
+            <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>{isEditMode ? "Modify Institutional Profile" : "Establish New School Account"}</Typography>
         <IconButton onClick={handleClose} size="small">
           <CloseIcon />
         </IconButton>
@@ -206,8 +208,12 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
             </Alert>
           )}
 
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+              General Information
+            </Typography>
+
+            <AppInput
               name="schoolName"
               label="School Name"
               value={formData.schoolName}
@@ -215,127 +221,134 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
               error={!!errors.schoolName}
               helperText={errors.schoolName}
               required
-              fullWidth
             />
 
-            <TextField
+            <AppInput
               name="dbName"
               label="Database Name"
+              labelHint="Internal system identifier"
               value={formData.dbName}
               onChange={handleChange}
               error={!!errors.dbName}
-                            helperText={errors.dbName || 'Lowercase letters, numbers, and hyphens only (e.g., lincoln-high)'}
+              helperText={errors.dbName || 'Lowercase letters, numbers, and hyphens only (e.g., lincoln-high)'}
               required={!isEditMode}
               disabled={isEditMode}
-              fullWidth
             />
+
+            <Divider sx={{ my: 1 }} />
+            
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+              Visual Branding
+            </Typography>
 
             <ImageUpload
               folder={IMAGEKIT_FOLDERS.SCHOOL_LOGOS}
-                            fileName={isEditMode && editData ? `${editData.schoolId}_logo` : `new_school_logo_${Date.now()}`}
+              fileName={isEditMode && editData ? `${editData.schoolId}_logo` : `new_school_logo_${Date.now()}`}
               currentImage={formData.schoolLogo}
               label="School Logo"
               authEndpoint="admin"
               size="medium"
               onUploadSuccess={(result) => {
-                                setFormData(prev => ({ ...prev, schoolLogo: result.url }));
+                setFormData(prev => ({ ...prev, schoolLogo: result.url }));
               }}
               onRemove={() => {
-                                setFormData(prev => ({ ...prev, schoolLogo: '' }));
+                setFormData(prev => ({ ...prev, schoolLogo: '' }));
               }}
             />
 
-            <TextField
-              name="schoolEmail"
-              label="School Email"
-              type="email"
-              value={formData.schoolEmail}
-              onChange={handleChange}
-              error={!!errors.schoolEmail}
-              helperText={errors.schoolEmail}
-              fullWidth
-            />
+            <Divider sx={{ my: 1 }} />
 
-            <TextField
-              name="schoolContact"
-              label="Contact Number"
-              value={formData.schoolContact}
-              onChange={handleChange}
-              fullWidth
-            />
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+              Contact Details
+            </Typography>
 
-            <TextField
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <AppInput
+                name="schoolEmail"
+                label="School Email"
+                type="email"
+                value={formData.schoolEmail}
+                onChange={handleChange}
+                error={!!errors.schoolEmail}
+                helperText={errors.schoolEmail}
+              />
+
+              <AppInput
+                name="schoolContact"
+                label="Contact Number"
+                value={formData.schoolContact}
+                onChange={handleChange}
+              />
+            </Box>
+
+            <AppInput
               name="schoolAddress"
               label="Address"
               value={formData.schoolAddress}
               onChange={handleChange}
               multiline
               rows={2}
-              fullWidth
             />
 
-            <TextField
+            <AppInput
               name="schoolWebsite"
               label="Website"
               value={formData.schoolWebsite}
               onChange={handleChange}
-              fullWidth
             />
 
             <Divider sx={{ my: 1 }} />
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>
+            
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
               Attendance Settings
             </Typography>
 
-            <FormControl fullWidth>
-              <InputLabel>Attendance Mode</InputLabel>
-              <Select
-                                value={formData.attendanceSettings?.mode || 'simple'}
-                label="Attendance Mode"
-                                onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    attendanceSettings: {
-                      ...prev.attendanceSettings,
-                                        mode: e.target.value as 'simple' | 'period_wise' | 'check_in_out',
-                                    }
-                                }))}
-              >
-                <MenuItem value="simple">Simple Daily Attendance</MenuItem>
-                <MenuItem value="period_wise">Period-wise Attendance</MenuItem>
-                <MenuItem value="check_in_out">Check-In / Check-Out</MenuItem>
-              </Select>
-            </FormControl>
+            <AppSelect
+              label="Attendance Mode"
+              value={formData.attendanceSettings?.mode || 'simple'}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                attendanceSettings: {
+                  ...prev.attendanceSettings,
+                  mode: e.target.value as 'simple' | 'period_wise' | 'check_in_out',
+                }
+              }))}
+              options={[
+                { value: 'simple', label: 'Simple Daily Attendance' },
+                { value: 'period_wise', label: 'Period-wise Attendance' },
+                { value: 'check_in_out', label: 'Check-In / Check-Out' }
+              ]}
+            />
 
-                        {formData.attendanceSettings?.mode === 'period_wise' && (
-              <TextField
+            {formData.attendanceSettings?.mode === 'period_wise' && (
+              <AppInput
                 type="number"
                 label="Periods Per Day"
                 value={formData.attendanceSettings?.periodsPerDay || 8}
-                                onChange={(e) => setFormData(prev => ({
+                onChange={(e) => setFormData(prev => ({
                     ...prev,
                     attendanceSettings: {
                       ...prev.attendanceSettings,
-                                        mode: prev.attendanceSettings?.mode || 'simple',
+                      mode: prev.attendanceSettings?.mode || 'simple',
                       periodsPerDay: parseInt(e.target.value) || 8,
                     },
                   }))
                 }
-                inputProps={{ min: 1, max: 12 }}
-                fullWidth
+                slotProps={{ htmlInput: { min: 1, max: 12 } }}
               />
             )}
 
-                        {formData.attendanceSettings?.mode === 'check_in_out' && (
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                <TextField
+            {formData.attendanceSettings?.mode === 'check_in_out' && (
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <AppInput
                   type="time"
                   label="Working Hours Start"
-                                    value={formData.attendanceSettings?.workingHours?.start || '08:00'}
-                                    onChange={(e) => setFormData(prev => ({
+                  value={formData.attendanceSettings?.workingHours?.start || '08:00'}
+                  onChange={(e) => setFormData(prev => ({
                       ...prev,
                       attendanceSettings: {
                         ...prev.attendanceSettings,
-                                            mode: prev.attendanceSettings?.mode || 'simple',
+                        mode: prev.attendanceSettings?.mode || 'simple',
                         workingHours: {
                           start: e.target.value,
                           end:
@@ -345,10 +358,8 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
                       },
                     }))
                   }
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
                 />
-                <TextField
+                <AppInput
                   type="time"
                   label="Working Hours End"
                   value={
@@ -369,32 +380,23 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
                       },
                     }))
                   }
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
                 />
               </Box>
             )}
           </Box>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleClose} color="inherit">
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <AppButton onClick={handleClose} variant="text" color="inherit">
             Cancel
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
             type="submit"
             variant="contained"
-            disabled={isPending}
-            startIcon={isPending ? <CircularProgress size={20} /> : null}
+            loading={isPending}
           >
-            {isPending
-              ? isEditMode
-                ? "Updating..."
-                : "Creating..."
-              : isEditMode
-                ? "Update School"
-                : "Create School"}
-          </Button>
+            {isEditMode ? "Save Changes" : "Establish Institution"}
+          </AppButton>
         </DialogActions>
       </form>
     </Dialog>

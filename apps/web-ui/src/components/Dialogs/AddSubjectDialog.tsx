@@ -4,16 +4,17 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Button,
-    TextField,
-    CircularProgress,
     Alert,
     IconButton,
-    Grid,
+    Box,
+    Typography,
+    Divider,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateSubject, useUpdateSubject } from '../../queries/Subject';
 import type { Subject, CreateSubjectPayload } from '../../types';
+import { AppInput } from '../ui/AppInput';
+import { AppButton } from '../ui/AppButton';
 
 interface SubjectDialogProps {
     open: boolean;
@@ -114,7 +115,7 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({ open, onClose, schoolId, 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {isEditMode ? 'Edit Subject' : 'Add Subject'}
+                {isEditMode ? 'Modify Subject Profile' : 'Register New Subject'}
                 <IconButton onClick={handleClose} size="small">
                     <CloseIcon />
                 </IconButton>
@@ -128,57 +129,64 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({ open, onClose, schoolId, 
                         </Alert>
                     )}
 
-                    <Grid container spacing={2}>
-                        <Grid size={{ xs: 12 }}>
-                            <TextField
-                                name="name"
-                                label="Subject Name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                error={!!errors.name}
-                                helperText={errors.name}
-                                required
-                                fullWidth
-                                placeholder="e.g., Mathematics, English"
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="code"
-                                label="Subject Code"
-                                value={formData.code}
-                                onChange={handleChange}
-                                error={!!errors.code}
-                                helperText={errors.code || 'Short code (e.g., MATH, ENG)'}
-                                required
-                                fullWidth
-                                inputProps={{ style: { textTransform: 'uppercase' } }}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <TextField
-                                name="description"
-                                label="Description"
-                                value={formData.description}
-                                onChange={handleChange}
-                                fullWidth
-                                multiline
-                                rows={3}
-                            />
-                        </Grid>
-                    </Grid>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Subject Identification
+                        </Typography>
+
+                        <AppInput
+                            name="name"
+                            label="Official Subject Name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            error={!!errors.name}
+                            helperText={errors.name}
+                            required
+                            fullWidth
+                            placeholder="e.g., Advanced Mathematics, World History"
+                        />
+
+                        <AppInput
+                            name="code"
+                            label="Identifier Code"
+                            value={formData.code}
+                            onChange={handleChange}
+                            error={!!errors.code}
+                            helperText={errors.code || 'Short code for internal tracking (e.g., MATH101)'}
+                            required
+                            fullWidth
+                            inputProps={{ style: { textTransform: 'uppercase' } }}
+                            placeholder="MATH01"
+                        />
+
+                        <Divider sx={{ my: 0.5 }} />
+                        
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Categorization & Notes
+                        </Typography>
+
+                        <AppInput
+                            name="description"
+                            label="Subject Overview"
+                            value={formData.description}
+                            onChange={handleChange}
+                            fullWidth
+                            multiline
+                            rows={3}
+                            placeholder="Briefly describe the curriculum or scope of this subject"
+                        />
+                    </Box>
                 </DialogContent>
 
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={handleClose} color="inherit">Cancel</Button>
-                    <Button
+                    <AppButton onClick={handleClose} variant="text" color="inherit">Cancel</AppButton>
+                    <AppButton
                         type="submit"
                         variant="contained"
-                        disabled={isPending}
-                        startIcon={isPending ? <CircularProgress size={20} /> : null}
+                        loading={isPending}
                     >
-                        {isPending ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Create')}
-                    </Button>
+                        {isEditMode ? 'Update Subject' : 'Create Subject'}
+                    </AppButton>
                 </DialogActions>
             </form>
         </Dialog>

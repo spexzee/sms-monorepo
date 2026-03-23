@@ -5,14 +5,13 @@ import {
     Button,
     Paper,
     Grid,
-    TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Checkbox,
     FormControlLabel,
     FormGroup,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
     IconButton,
     Tooltip,
     Table,
@@ -22,23 +21,22 @@ import {
     TableRow,
     TableContainer,
     Chip,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     CircularProgress,
     Alert,
+    Divider,
 } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { AppInput } from '../../../components/ui/AppInput';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppButton } from '../../../components/ui/AppButton';
+import { AppTimePicker } from '../../../components/ui/AppTimePicker';
 import {
     Add as AddIcon,
     Delete as DeleteIcon,
     Edit as EditIcon,
-    Save as SaveIcon,
     Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { parse, format, addMinutes, differenceInMinutes } from 'date-fns';
 import {
     useGetActiveConfig,
@@ -72,52 +70,7 @@ const PERIOD_TYPES = [
     { value: 'free', label: 'Free/Study' },
 ];
 
-// Custom styling for time pickers
-const timePickerSlotProps = {
-    textField: {
-        fullWidth: true,
-        variant: 'outlined' as const,
-        sx: {
-            '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                backgroundColor: 'background.paper',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                    backgroundColor: 'action.hover',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'primary.main',
-                    },
-                },
-                '&.Mui-focused': {
-                    backgroundColor: 'background.paper',
-                    boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
-                },
-            },
-            '& .MuiInputLabel-root': {
-                fontWeight: 500,
-            },
-        },
-    },
-    popper: {
-        sx: {
-            '& .MuiPaper-root': {
-                borderRadius: 3,
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-            },
-            '& .MuiClock-clock': {
-                backgroundColor: 'background.paper',
-            },
-            '& .MuiClockPointer-root': {
-                backgroundColor: 'primary.main',
-            },
-            '& .MuiClockNumber-root': {
-                '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                },
-            },
-        },
-    },
-};
+
 
 interface PeriodDialogProps {
     open: boolean;
@@ -282,110 +235,113 @@ const PeriodDialog = ({ open, onClose, onSave, editData, shifts, nextPeriodNumbe
     };
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-                <DialogTitle>{editData ? 'Edit Period' : 'Add Period'}</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    label="Period Number"
-                                    type="number"
-                                    fullWidth
-                                    value={formData.periodNumber}
-                                    onChange={(e) => handleChange('periodNumber', parseInt(e.target.value))}
-                                    error={!!errors.periodNumber}
-                                    helperText={errors.periodNumber}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    label="Period Name"
-                                    fullWidth
-                                    value={formData.name}
-                                    onChange={(e) => handleChange('name', e.target.value)}
-                                    placeholder="e.g., Period 1, Break, Lunch"
-                                    error={!!errors.name}
-                                    helperText={errors.name}
-                                />
-                            </Grid>
-                        </Grid>
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 4 }}>
-                                <TimePicker
-                                    label="Start Time"
-                                    value={startTimeDate}
-                                    onChange={handleStartTimeChange}
-                                    slotProps={timePickerSlotProps}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 4 }}>
-                                <TimePicker
-                                    label="End Time"
-                                    value={endTimeDate}
-                                    onChange={handleEndTimeChange}
-                                    slotProps={timePickerSlotProps}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 4 }} sx={{ mt: 1 }}>
-                                <TextField
-                                    label="Duration (min)"
-                                    type="number"
-                                    fullWidth
-                                    value={formData.duration}
-                                    onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
-                                    sx={timePickerSlotProps.textField.sx}
-                                />
-                            </Grid>
-                        </Grid>
-                        <FormControl fullWidth error={!!errors.type}>
-                            <InputLabel>Period Type</InputLabel>
-                            <Select
-                                value={formData.type}
-                                label="Period Type"
-                                onChange={(e) => handleChange('type', e.target.value)}
-                            >
-                                {PERIOD_TYPES.map((t) => (
-                                    <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
-                                ))}
-                            </Select>
-                            {errors.type && <Typography variant="caption" color="error" sx={{ ml: 2, mt: 0.5 }}>{errors.type}</Typography>}
-                        </FormControl>
-                        {shifts.length > 0 && (
-                            <FormControl fullWidth>
-                                <InputLabel>Shift (Optional)</InputLabel>
-                                <Select
-                                    value={formData.shiftId || ''}
-                                    label="Shift (Optional)"
-                                    onChange={(e) => handleChange('shiftId', e.target.value)}
-                                >
-                                    <MenuItem value="">No Shift</MenuItem>
-                                    {shifts.map((s) => (
-                                        <MenuItem key={s.shiftId} value={s.shiftId}>{s.name}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        )}
-                        {formData.type === 'lab' && (
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={formData.isDoublePeriod}
-                                        onChange={(e) => handleChange('isDoublePeriod', e.target.checked)}
-                                    />
-                                }
-                                label="This is a double period"
-                            />
-                        )}
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>{editData ? 'Edit Period Definition' : 'Define New Period'}</Typography>
+                <IconButton onClick={onClose} size="small">
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+                    <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                        Temporal Definition
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        <AppInput
+                            label="Period Rank"
+                            type="number"
+                            fullWidth
+                            value={formData.periodNumber}
+                            onChange={(e) => handleChange('periodNumber', parseInt(e.target.value))}
+                            error={!!errors.periodNumber}
+                            helperText={errors.periodNumber}
+                            sx={{ flex: 1 }}
+                        />
+                        <AppInput
+                            label="Period Label"
+                            fullWidth
+                            value={formData.name}
+                            onChange={(e) => handleChange('name', e.target.value)}
+                            placeholder="e.g., Morning Session"
+                            error={!!errors.name}
+                            helperText={errors.name}
+                            sx={{ flex: 2 }}
+                        />
                     </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSubmit} variant="contained">{editData ? 'Update' : 'Add'}</Button>
-                </DialogActions>
-            </Dialog>
-        </LocalizationProvider>
+
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: 2, alignItems: 'start' }}>
+                        <AppTimePicker
+                            label="Start Time"
+                            value={startTimeDate}
+                            onChange={handleStartTimeChange}
+                        />
+                        <AppTimePicker
+                            label="End Time"
+                            value={endTimeDate}
+                            onChange={handleEndTimeChange}
+                        />
+                        <AppInput
+                            label="Duration"
+                            type="number"
+                            value={formData.duration}
+                            onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
+                            InputProps={{
+                                endAdornment: <Typography variant="caption" sx={{ ml: 0.5, color: 'text.secondary', fontWeight: 600 }}>min</Typography>
+                            }}
+                        />
+                    </Box>
+
+                    <Divider sx={{ my: 0.5 }} />
+
+                    <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                        Categorization & Scope
+                    </Typography>
+
+                    <AppSelect
+                        label="Period Classification"
+                        value={formData.type || ''}
+                        options={PERIOD_TYPES}
+                        onChange={(e) => handleChange('type', e.target.value)}
+                        error={!!errors.type}
+                        helperText={errors.type}
+                    />
+
+                    {shifts.length > 0 && (
+                        <AppSelect
+                            label="Assigned Shift"
+                            value={formData.shiftId || ''}
+                            options={[
+                                { value: '', label: 'General / All Shifts' },
+                                ...shifts.map(s => ({ value: s.shiftId, label: s.name }))
+                            ]}
+                            onChange={(e) => handleChange('shiftId', e.target.value)}
+                        />
+                    )}
+
+                    {formData.type === 'lab' && (
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={formData.isDoublePeriod}
+                                    onChange={(e) => handleChange('isDoublePeriod', e.target.checked)}
+                                    sx={{ borderRadius: '4px' }}
+                                />
+                            }
+                            label={<Typography variant="body2">This is a double-length block</Typography>}
+                            sx={{ mt: -1 }}
+                        />
+                    )}
+                </Box>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <AppButton onClick={onClose} variant="text" color="inherit">Cancel</AppButton>
+                <AppButton onClick={handleSubmit} variant="contained">
+                    {editData ? 'Update Period' : 'Append Period'}
+                </AppButton>
+            </DialogActions>
+        </Dialog>
     );
 };
 
@@ -515,7 +471,7 @@ const TimetableConfigPage = () => {
                     </Alert>
                     <Grid container spacing={2} alignItems="center">
                         <Grid size={{ xs: 12, md: 4 }}>
-                            <TextField
+                            <AppInput
                                 label="Academic Year"
                                 fullWidth
                                 value={newAcademicYear}
@@ -538,23 +494,24 @@ const TimetableConfigPage = () => {
                                                             : [...workingDays, day.value]
                                                     );
                                                 }}
+                                                sx={{ borderRadius: '4px' }}
                                             />
                                         }
-                                        label={day.label.slice(0, 3)}
+                                        label={<Typography variant="body2">{day.label.slice(0, 3)}</Typography>}
                                     />
                                 ))}
                             </FormGroup>
                         </Grid>
                         <Grid size={{ xs: 12, md: 2 }}>
-                            <Button
+                            <AppButton
                                 variant="contained"
                                 fullWidth
                                 onClick={handleCreateConfig}
-                                disabled={!newAcademicYear || createConfig.isPending}
-                                startIcon={createConfig.isPending ? <CircularProgress size={20} /> : <SaveIcon />}
+                                disabled={!newAcademicYear}
+                                loading={createConfig.isPending}
                             >
                                 Create
-                            </Button>
+                            </AppButton>
                         </Grid>
                     </Grid>
                 </Paper>
@@ -767,69 +724,77 @@ const TimetableConfigPage = () => {
 
             {/* Disable Timetable Dialog */}
             <Dialog open={disableDialogOpen} onClose={() => setDisableDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Temporarily Disable Timetable</DialogTitle>
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Temporary Suspension</Typography>
+                    <IconButton onClick={() => setDisableDialogOpen(false)} size="small">
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                        When disabled, exam scheduling will NOT check for teacher class conflicts.
+                    <Alert severity="warning" sx={{ mb: 3 }}>
+                        Suspending the timetable bypasses conflict detection during exam scheduling.
                     </Alert>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    label="From Date (Optional)"
-                                    type="date"
-                                    fullWidth
-                                    value={disableFrom}
-                                    onChange={(e) => setDisableFrom(e.target.value)}
-                                    slotProps={{ inputLabel: { shrink: true } }}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    label="To Date (Optional)"
-                                    type="date"
-                                    fullWidth
-                                    value={disableTo}
-                                    onChange={(e) => setDisableTo(e.target.value)}
-                                    slotProps={{ inputLabel: { shrink: true } }}
-                                />
-                            </Grid>
-                        </Grid>
-                        <TextField
-                            label="Reason (Optional)"
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Suspension Window
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <AppDatePicker
+                                label="Start Date"
+                                value={disableFrom ? new Date(disableFrom) : null}
+                                onChange={(date) => setDisableFrom(date ? format(date, 'yyyy-MM-dd') : '')}
+                            />
+                            <AppDatePicker
+                                label="End Date"
+                                value={disableTo ? new Date(disableTo) : null}
+                                onChange={(date) => setDisableTo(date ? format(date, 'yyyy-MM-dd') : '')}
+                            />
+                        </Box>
+
+                        <Divider sx={{ my: 0.5 }} />
+
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Context / Reason
+                        </Typography>
+
+                        <AppInput
+                            label="Reason for Suspension"
                             fullWidth
                             multiline
-                            rows={2}
+                            rows={3}
                             value={disableReason}
                             onChange={(e) => setDisableReason(e.target.value)}
-                            placeholder="e.g., Final Exams, Sports Week, etc."
+                            placeholder="e.g., Annual Examination Week, Sports Meet..."
                         />
                     </Box>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDisableDialogOpen(false)}>Cancel</Button>
-                    <Button
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <AppButton onClick={() => setDisableDialogOpen(false)} variant="text" color="inherit">Cancel</AppButton>
+                    <AppButton
+                        onClick={async () => {
+                            try {
+                                await toggleDisable.mutateAsync({
+                                    disabled: true,
+                                    disabledFrom: disableFrom || undefined,
+                                    disabledTo: disableTo || undefined,
+                                    disabledReason: disableReason || undefined
+                                });
+                                setDisableDialogOpen(false);
+                                setDisableFrom('');
+                                setDisableTo('');
+                                setDisableReason('');
+                            } catch (err) {
+                                console.error('Failed to suspend timetable:', err);
+                            }
+                        }}
                         variant="contained"
                         color="warning"
-                        onClick={() => {
-                            toggleDisable.mutate({
-                                disabled: true,
-                                disabledFrom: disableFrom || undefined,
-                                disabledTo: disableTo || undefined,
-                                disabledReason: disableReason || undefined,
-                            }, {
-                                onSuccess: () => {
-                                    setDisableDialogOpen(false);
-                                    setDisableFrom('');
-                                    setDisableTo('');
-                                    setDisableReason('');
-                                }
-                            });
-                        }}
-                        disabled={toggleDisable.isPending}
+                        loading={toggleDisable.isPending}
                     >
-                        {toggleDisable.isPending ? <CircularProgress size={20} /> : 'Disable Timetable'}
-                    </Button>
+                        Suspend Timetable
+                    </AppButton>
                 </DialogActions>
             </Dialog>
         </Box>

@@ -75,7 +75,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         <MenuIcon />
                     </IconButton>
                     <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 2 }}>
-                        {school?.schoolLogo && user?.role !== 'super_admin' && (
+                        {user?.role !== 'super_admin' && school?.schoolLogo && (
                             <Avatar
                                 src={school.schoolLogo}
                                 variant="square"
@@ -96,7 +96,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             variant="h5"
                             noWrap
                             component="div"
-                            sx={{ fontWeight: 700, ml: 1 }}
+                            sx={{ fontWeight: 700, ml: 1, letterSpacing: '0.5px' }}
                         >
                             {user?.role === 'super_admin' ? 'SMS EDU SOLUTION' : (school?.schoolName || 'SMS EDU SOLUTION')}
                         </Typography>

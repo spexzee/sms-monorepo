@@ -5,7 +5,6 @@ import {
     Paper,
     CircularProgress,
     Alert,
-    Chip,
     Card,
     CardContent,
     Table,
@@ -14,18 +13,13 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Button,
     Dialog,
     DialogTitle,
     DialogContent,
     DialogActions,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    TextField,
     Tabs,
     Tab,
+    Chip,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -43,6 +37,11 @@ import {
 import { useGetTeachers } from '../../../queries/Teacher';
 import { useGetClasses } from '../../../queries/Class';
 import TokenService from '../../../queries/token/tokenService';
+import { AppInput } from '../../../components/ui/AppInput';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppButton } from '../../../components/ui/AppButton';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { format } from 'date-fns';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -151,14 +150,14 @@ const SubstituteManagement = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
                 <Typography variant="h5" fontWeight={600}>Substitute Management</Typography>
-                <Button
+                <AppButton
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => setCreateDialogOpen(true)}
                     size="small"
                 >
                     Assign Substitute
-                </Button>
+                </AppButton>
             </Box>
 
             {/* Summary Card */}
@@ -187,13 +186,10 @@ const SubstituteManagement = () => {
             <TabPanel value={tabValue} index={0}>
                 {/* Date Selector */}
                 <Paper sx={{ p: 2, mb: 2 }}>
-                    <TextField
-                        type="date"
+                    <AppDatePicker
                         label="Select Date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        size="small"
-                        InputLabelProps={{ shrink: true }}
+                        value={selectedDate ? new Date(selectedDate) : null}
+                        onChange={(date) => setSelectedDate(date ? format(date, 'yyyy-MM-dd') : '')}
                     />
                 </Paper>
 
@@ -244,15 +240,16 @@ const SubstituteManagement = () => {
                                             </TableCell>
                                             <TableCell>
                                                 {sub.status === 'pending' && (
-                                                    <Button
+                                                    <AppButton
                                                         size="small"
+                                                        variant="text"
                                                         color="error"
                                                         startIcon={<CancelIcon />}
                                                         onClick={() => handleCancelSubstitute(sub.substituteId)}
-                                                        disabled={cancelSubstitute.isPending}
+                                                        loading={cancelSubstitute.isPending}
                                                     >
                                                         Cancel
-                                                    </Button>
+                                                    </AppButton>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -316,123 +313,85 @@ const SubstituteManagement = () => {
             <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Assign Substitute Teacher</DialogTitle>
                 <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-                        <FormControl fullWidth size="small">
-                            <InputLabel>Original Teacher (Absent)</InputLabel>
-                            <Select
-                                value={formData.originalTeacherId}
-                                label="Original Teacher (Absent)"
-                                onChange={(e) => setFormData({ ...formData, originalTeacherId: e.target.value })}
-                            >
-                                {teachers.map((t: any) => (
-                                    <MenuItem key={t.teacherId} value={t.teacherId}>
-                                        {t.firstName} {t.lastName}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+                        <AppSelect
+                            label="Original Teacher (Absent)"
+                            value={formData.originalTeacherId}
+                            options={teachers.map((t: any) => ({ value: t.teacherId, label: `${t.firstName} ${t.lastName}` }))}
+                            onChange={(e) => setFormData({ ...formData, originalTeacherId: e.target.value as string })}
+                        />
 
-                        <FormControl fullWidth size="small">
-                            <InputLabel>Substitute Teacher</InputLabel>
-                            <Select
-                                value={formData.substituteTeacherId}
-                                label="Substitute Teacher"
-                                onChange={(e) => setFormData({ ...formData, substituteTeacherId: e.target.value })}
-                            >
-                                {teachers
-                                    .filter((t: any) => t.teacherId !== formData.originalTeacherId)
-                                    .map((t: any) => (
-                                        <MenuItem key={t.teacherId} value={t.teacherId}>
-                                            {t.firstName} {t.lastName}
-                                        </MenuItem>
-                                    ))}
-                            </Select>
-                        </FormControl>
+                        <AppSelect
+                            label="Substitute Teacher"
+                            value={formData.substituteTeacherId}
+                            options={teachers
+                                .filter((t: any) => t.teacherId !== formData.originalTeacherId)
+                                .map((t: any) => ({ value: t.teacherId, label: `${t.firstName} ${t.lastName}` }))}
+                            onChange={(e) => setFormData({ ...formData, substituteTeacherId: e.target.value as string })}
+                        />
 
-                        <FormControl fullWidth size="small">
-                            <InputLabel>Class</InputLabel>
-                            <Select
-                                value={formData.classId}
-                                label="Class"
-                                onChange={(e) => setFormData({ ...formData, classId: e.target.value, sectionId: '' })}
-                            >
-                                {classes.map((c: any) => (
-                                    <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <AppSelect
+                            label="Class"
+                            value={formData.classId}
+                            options={classes.map((c: any) => ({ value: c.classId, label: c.name }))}
+                            onChange={(e) => setFormData({ ...formData, classId: e.target.value as string, sectionId: '' })}
+                        />
 
-                        <FormControl fullWidth size="small" disabled={!formData.classId}>
-                            <InputLabel>Section</InputLabel>
-                            <Select
-                                value={formData.sectionId}
-                                label="Section"
-                                onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
-                            >
-                                {sections.map((s: any) => (
-                                    <MenuItem key={s.sectionId} value={s.sectionId}>{s.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <AppSelect
+                            label="Section"
+                            value={formData.sectionId}
+                            disabled={!formData.classId}
+                            options={sections.map((s: any) => ({ value: s.sectionId, label: s.name }))}
+                            onChange={(e) => setFormData({ ...formData, sectionId: e.target.value as string })}
+                        />
 
-                        <FormControl fullWidth size="small">
-                            <InputLabel>Day</InputLabel>
-                            <Select
-                                value={formData.dayOfWeek}
-                                label="Day"
-                                onChange={(e) => setFormData({ ...formData, dayOfWeek: e.target.value })}
-                            >
-                                {config?.workingDays?.map((day: string) => (
-                                    <MenuItem key={day} value={day}>
-                                        {day.charAt(0).toUpperCase() + day.slice(1)}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <AppSelect
+                            label="Day"
+                            value={formData.dayOfWeek}
+                            options={config?.workingDays?.map((day: string) => ({ 
+                                value: day, 
+                                label: day.charAt(0).toUpperCase() + day.slice(1) 
+                            })) || []}
+                            onChange={(e) => setFormData({ ...formData, dayOfWeek: e.target.value as string })}
+                        />
 
-                        <FormControl fullWidth size="small">
-                            <InputLabel>Period</InputLabel>
-                            <Select
-                                value={formData.periodNumber}
-                                label="Period"
-                                onChange={(e) => setFormData({ ...formData, periodNumber: Number(e.target.value) })}
-                            >
-                                {regularPeriods.map((p: any) => (
-                                    <MenuItem key={p.periodNumber} value={p.periodNumber}>
-                                        {p.name} ({p.startTime} - {p.endTime})
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <AppSelect
+                            label="Period"
+                            value={formData.periodNumber}
+                            options={regularPeriods.map((p: any) => ({ 
+                                value: p.periodNumber, 
+                                label: `${p.name} (${p.startTime} - ${p.endTime})` 
+                            }))}
+                            onChange={(e) => setFormData({ ...formData, periodNumber: Number(e.target.value) })}
+                        />
 
-                        <TextField
+                        <AppInput
                             label="Reason for Substitution"
                             value={formData.reason}
                             onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                             multiline
                             rows={2}
                             fullWidth
-                            size="small"
                         />
                     </Box>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-                    <Button
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <AppButton onClick={() => setCreateDialogOpen(false)} color="inherit">Cancel</AppButton>
+                    <AppButton
                         onClick={handleCreateSubstitute}
                         variant="contained"
+                        loading={createSubstitute.isPending}
                         disabled={
                             !formData.originalTeacherId ||
                             !formData.substituteTeacherId ||
                             !formData.classId ||
                             !formData.sectionId ||
                             !formData.dayOfWeek ||
-                            !formData.periodNumber ||
-                            createSubstitute.isPending
+                            !formData.periodNumber
                         }
                     >
-                        {createSubstitute.isPending ? <CircularProgress size={20} /> : 'Assign'}
-                    </Button>
+                        Assign
+                    </AppButton>
                 </DialogActions>
             </Dialog>
         </Box>

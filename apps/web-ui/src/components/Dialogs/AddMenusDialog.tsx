@@ -22,8 +22,10 @@ import {
   Box,
   OutlinedInput,
   InputAdornment,
-  Autocomplete,
-  Switch,
+    Autocomplete,
+    Typography,
+    Divider,
+    Switch,
 } from "@mui/material";
 import { Close as CloseIcon, Apps as AppsIcon } from "@mui/icons-material";
 import { useCreateMenu, useGetMenus, useUpdateMenu } from "../../queries/Menus";
@@ -301,60 +303,61 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
             alignItems: "center",
           }}
         >
-          {menuToEdit ? "Edit Menu" : "Add New Menu"}
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>{menuToEdit ? "Modify Menu Configuration" : "Register New Navigation Gateway"}</Typography>
           <IconButton onClick={handleClose} size="small">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
 
         <form onSubmit={handleSubmit}>
-          <DialogContent sx={{ height: "500px" }}>
+          <DialogContent sx={{ minHeight: "450px" }}>
             {isError && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {errorMessage}
               </Alert>
             )}
 
-            <Grid container spacing={2}>
-              {/* School Selection (Multi-select) */}
-              <Grid size={{ xs: 12 }}>
-                <Autocomplete
-                  multiple
-                  options={schools}
-                  getOptionLabel={(school: any) => school.schoolName || ""}
-                  value={schools.filter((s: any) =>
-                    Array.isArray(formData.schoolId)
-                      ? formData.schoolId.includes(s.schoolId)
-                      : formData.schoolId === s.schoolId,
-                  )}
-                  onChange={(_event, newValue) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      schoolId: newValue.map((s: any) => s.schoolId),
-                    }));
-                    if (errors.schoolId) {
-                      setErrors((prev) => ({ ...prev, schoolId: "" }));
-                    }
-                  }}
-                  loading={isLoadingSchools}
-                  renderInput={(params) => (
-                    <AppInput
-                      {...params}
-                      label="Schools"
-                      error={!!errors.schoolId}
-                      helperText={errors.schoolId}
-                      placeholder="Select schools"
-                    />
-                  )}
-                  isOptionEqualToValue={(option, value) =>
-                    option.schoolId === value.schoolId
-                  }
-                  fullWidth
-                />
-              </Grid>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                Visibility & Scope
+              </Typography>
 
-              {/* Default Menu Toggle */}
-              <Grid size={{ xs: 12 }}>
+              {/* School Selection (Multi-select) */}
+              <Autocomplete
+                multiple
+                options={schools}
+                getOptionLabel={(school: any) => school.schoolName || ""}
+                value={schools.filter((s: any) =>
+                  Array.isArray(formData.schoolId)
+                    ? formData.schoolId.includes(s.schoolId)
+                    : formData.schoolId === s.schoolId,
+                )}
+                onChange={(_event, newValue) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    schoolId: newValue.map((s: any) => s.schoolId),
+                  }));
+                  if (errors.schoolId) {
+                    setErrors((prev) => ({ ...prev, schoolId: "" }));
+                  }
+                }}
+                loading={isLoadingSchools}
+                renderInput={(params) => (
+                  <AppInput
+                    {...params}
+                    label="Assigned Schools"
+                    error={!!errors.schoolId}
+                    helperText={errors.schoolId}
+                    placeholder="Search and select schools"
+                  />
+                )}
+                isOptionEqualToValue={(option, value) =>
+                  option.schoolId === value.schoolId
+                }
+                fullWidth
+              />
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -368,12 +371,9 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       color="primary"
                     />
                   }
-                  label="Default Menu (auto-assign to new schools)"
+                  label="Global Default (Auto-assign to new schools)"
                 />
-              </Grid>
 
-              {/* Show in Sidebar Toggle */}
-              <Grid size={{ xs: 12 }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -387,104 +387,134 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       color="primary"
                     />
                   }
-                  label="Show in Sidebar (disable for pages accessed only via navigation, e.g. dynamic routes)"
+                  label="Display in Sidebar Navigation"
                 />
-              </Grid>
+              </Box>
 
-              {/* Menu Name */}
-              <Grid size={{ xs: 12 }}>
-                <AppInput
-                  name="menuName"
-                  label="Menu Name"
-                  value={formData.menuName}
-                  onChange={handleChange}
-                  error={!!errors.menuName}
-                  helperText={errors.menuName}
-                  required
-                />
-              </Grid>
+              <Divider sx={{ my: 0.5 }} />
+              
+              <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                Basic Information
+              </Typography>
+
+              <AppInput
+                name="menuName"
+                label="Menu Display Name"
+                value={formData.menuName}
+                onChange={handleChange}
+                error={!!errors.menuName}
+                helperText={errors.menuName}
+                required
+              />
+
+              <AppInput
+                name="menuUrl"
+                label="Navigation Path"
+                value={formData.menuUrl}
+                onChange={handleChange}
+                error={!!errors.menuUrl}
+                helperText={errors.menuUrl}
+                placeholder="/dashboard/..."
+                required
+              />
+
+              <AppInput
+                name="menuIcon"
+                label="Navigation Icon"
+                value={formData.menuIcon}
+                onClick={() => setIconPickerOpen(true)}
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setIconPickerOpen(true)}
+                          edge="end"
+                          size="small"
+                        >
+                          <AppsIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                    sx: { cursor: 'pointer' }
+                  }
+                }}
+                placeholder="Click to select a brand icon"
+              />
+
+              <Divider sx={{ my: 0.5 }} />
+              
+              <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                Menu Structure
+              </Typography>
 
               {/* Menu Type Selection */}
-              <Grid size={{ xs: 12 }}>
-                <FormControl component="fieldset">
-                  <FormLabel component="legend">Menu Type</FormLabel>
-                  <RadioGroup
-                    row
-                    name="menuType"
-                    value={menuType}
-                    onChange={handleMenuTypeChange}
-                  >
-                    <FormControlLabel
-                      value="main"
-                      control={<Radio />}
-                      label="Main Menu"
-                    />
-                    <FormControlLabel
-                      value="sub"
-                      control={<Radio />}
-                      label="Sub Menu"
-                    />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
+              <FormControl component="fieldset">
+                <FormLabel component="legend" sx={{ fontSize: '0.75rem', fontWeight: 600, mb: 1 }}>Structure Type</FormLabel>
+                <RadioGroup
+                  row
+                  name="menuType"
+                  value={menuType}
+                  onChange={handleMenuTypeChange}
+                >
+                  <FormControlLabel
+                    value="main"
+                    control={<Radio size="small" />}
+                    label="Independent Main Menu"
+                  />
+                  <FormControlLabel
+                    value="sub"
+                    control={<Radio size="small" />}
+                    label="Nested Sub Menu"
+                  />
+                </RadioGroup>
+              </FormControl>
 
               {/* Main Menu Heading (Parent ID) - Conditional */}
               {menuType === "sub" && (
-                <Grid size={{ xs: 12 }}>
-                  <Autocomplete
-                    options={parentMenuOptions}
-                    getOptionLabel={(option: any) => option.menuName || ""}
-                    value={
-                      parentMenuOptions.find(
-                        (m: any) => m.menuId === formData.parentMenuId,
-                      ) || null
+                <Autocomplete
+                  options={parentMenuOptions}
+                  getOptionLabel={(option: any) => option.menuName || ""}
+                  value={
+                    parentMenuOptions.find(
+                      (m: any) => m.menuId === formData.parentMenuId,
+                    ) || null
+                  }
+                  onChange={(_event, newValue) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      parentMenuId: newValue ? newValue.menuId : "",
+                    }));
+                    if (errors.parentMenuId) {
+                      setErrors((prev) => ({ ...prev, parentMenuId: "" }));
                     }
-                    onChange={(_event, newValue) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        parentMenuId: newValue ? newValue.menuId : "",
-                      }));
-                      if (errors.parentMenuId) {
-                        setErrors((prev) => ({ ...prev, parentMenuId: "" }));
-                      }
-                    }}
-                    renderInput={(params) => (
-                      <AppInput
-                        {...params}
-                        label="Main Menu Heading"
-                        error={!!errors.parentMenuId}
-                        helperText={errors.parentMenuId}
-                        placeholder="Search for a menu..."
-                        required
-                      />
-                    )}
-                    isOptionEqualToValue={(option, value) =>
-                      option.menuId === value.menuId
-                    }
-                    fullWidth
-                  />
-                </Grid>
-              )}
-
-              {/* Menu Path */}
-              <Grid size={{ xs: 12 }}>
-                <AppInput
-                  name="menuUrl"
-                  label="Menu Path"
-                  value={formData.menuUrl}
-                  onChange={handleChange}
-                  error={!!errors.menuUrl}
-                  helperText={errors.menuUrl}
-                  required
+                  }}
+                  renderInput={(params) => (
+                    <AppInput
+                      {...params}
+                      label="Parent Category"
+                      error={!!errors.parentMenuId}
+                      helperText={errors.parentMenuId}
+                      placeholder="Select parent heading"
+                      required
+                    />
+                  )}
+                  isOptionEqualToValue={(option, value) =>
+                    option.menuId === value.menuId
+                  }
+                  fullWidth
                 />
-              </Grid>
+              )}
 
               {/* Menu Order - Only show when editing, as it's auto-generated on create */}
               {menuToEdit && (
-                <Grid size={{ xs: 12 }}>
-                  {/* Existing Codes Display */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                    Priority Sequencing
+                  </Typography>
                   <Box
-                    sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 1 }}
+                    sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 0.5 }}
                   >
                     {(Array.isArray(formData.menuOrder)
                       ? formData.menuOrder
@@ -493,19 +523,12 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       .filter(Boolean)
                       .map((order) => {
                         const o = String(order);
-                        let color:
-                          | "default"
-                          | "primary"
-                          | "secondary"
-                          | "error"
-                          | "info"
-                          | "success"
-                          | "warning" = "default";
+                        let color: any = "default";
                         if (o.startsWith("SA")) color = "error";
                         else if (o.startsWith("A")) color = "primary";
                         else if (o.startsWith("T")) color = "warning";
                         else if (o.startsWith("S")) color = "success";
-                        else if (o.startsWith("P")) color = "warning";
+                        else if (o.startsWith("P")) color = "secondary";
 
                         return (
                           <Chip
@@ -514,6 +537,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                             size="small"
                             color={color}
                             variant="outlined"
+                            sx={{ borderRadius: '6px' }}
                             onDelete={() => {
                               setFormData((prev) => {
                                 const currentOrders = (
@@ -536,212 +560,209 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       })}
                   </Box>
 
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <AppSelect
-                      label="Prefix"
-                      value={activeOrderPrefix}
-                      options={[
-                        { value: "SA", label: "SA (Super Admin)", role: "super_admin" },
-                        { value: "A", label: "A (School Admin)", role: "sch_admin" },
-                        { value: "T", label: "T (Teacher)", role: "teacher" },
-                        { value: "S", label: "S (Student)", role: "student" },
-                        { value: "P", label: "P (Parent)", role: "parent" },
-                      ].filter(p => {
-                        const selectedRoles = Array.isArray(formData.menuAccessRoles) ? formData.menuAccessRoles : [formData.menuAccessRoles];
-                        return selectedRoles.includes(p.role);
-                      }).map(p => ({ value: p.value, label: p.label }))}
-                      onChange={(e) => setActiveOrderPrefix(e.target.value as string)}
-                      disabled={!formData.menuAccessRoles?.length}
-                    />
-                    <AppInput
-                      name="menuOrderNumber"
-                      label="Order No."
-                      value={(() => {
-                        const orders = Array.isArray(formData.menuOrder)
-                          ? formData.menuOrder
-                          : [formData.menuOrder];
-                        const match = orders.find((o) =>
-                          String(o).startsWith(activeOrderPrefix),
-                        );
-                        return match
-                          ? String(match).replace(activeOrderPrefix, "")
-                          : "";
-                      })()}
-                      onChange={(e) => {
-                        const newValue = e.target.value;
-                        const newCode = `${activeOrderPrefix}${newValue}`;
-                        setFormData((prev) => {
-                          const currentOrders = (
-                            Array.isArray(prev.menuOrder)
-                              ? prev.menuOrder
-                              : [prev.menuOrder]
-                          )
-                            .filter(Boolean)
-                            .map(String);
-                          const filtered = currentOrders.filter(
-                            (o) => !o.startsWith(activeOrderPrefix),
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 8 }}>
+                      <AppSelect
+                        label="Target Domain"
+                        value={activeOrderPrefix}
+                        options={[
+                          { value: "SA", label: "Super Admin (SA)", role: "super_admin" },
+                          { value: "A", label: "School Admin (A)", role: "sch_admin" },
+                          { value: "T", label: "Educator (T)", role: "teacher" },
+                          { value: "S", label: "Scholar (S)", role: "student" },
+                          { value: "P", label: "Guardian (P)", role: "parent" },
+                        ].filter(p => {
+                          const selectedRoles = Array.isArray(formData.menuAccessRoles) ? formData.menuAccessRoles : [formData.menuAccessRoles];
+                          return selectedRoles.includes(p.role);
+                        }).map(p => ({ value: p.value, label: p.label }))}
+                        onChange={(e) => setActiveOrderPrefix(e.target.value as string)}
+                        disabled={!formData.menuAccessRoles?.length}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                      <AppInput
+                        name="menuOrderNumber"
+                        label="Sequence"
+                        value={(() => {
+                          const orders = Array.isArray(formData.menuOrder)
+                            ? formData.menuOrder
+                            : [formData.menuOrder];
+                          const match = orders.find((o) =>
+                            String(o).startsWith(activeOrderPrefix),
                           );
-                          if (newValue) {
-                            filtered.push(newCode);
-                          }
-                          return {
-                            ...prev,
-                            menuOrder: filtered,
-                          };
-                        });
-                      }}
-                      error={!!errors.menuOrder}
-                      placeholder={`No. for ${activeOrderPrefix}`}
-                    />
-                  </Box>
-                </Grid>
+                          return match
+                            ? String(match).replace(activeOrderPrefix, "")
+                            : "";
+                        })()}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          const newCode = `${activeOrderPrefix}${newValue}`;
+                          setFormData((prev) => {
+                            const currentOrders = (
+                              Array.isArray(prev.menuOrder)
+                                ? prev.menuOrder
+                                : [prev.menuOrder]
+                            )
+                              .filter(Boolean)
+                              .map(String);
+                            const filtered = currentOrders.filter(
+                              (o) => !o.startsWith(activeOrderPrefix),
+                            );
+                            if (newValue) {
+                              filtered.push(newCode);
+                            }
+                            return {
+                              ...prev,
+                              menuOrder: filtered,
+                            };
+                          });
+                        }}
+                        error={!!errors.menuOrder}
+                        placeholder="01"
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
               )}
 
-              {/* Menu Icon */}
-              <Grid size={{ xs: 12 }}>
-                <AppInput
-                  name="menuIcon"
-                  label="Menu Icon"
-                  value={formData.menuIcon}
-                  onClick={() => setIconPickerOpen(true)}
-                  slotProps={{
-                    input: {
-                      readOnly: true,
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setIconPickerOpen(true)}
-                            edge="end"
-                          >
-                            <AppsIcon />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                      sx: { cursor: 'pointer' }
-                    }
-                  }}
-                  placeholder="Click to select an icon"
-                />
-              </Grid>
+              <Divider sx={{ my: 0.5 }} />
+              
+              <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                Access Control
+              </Typography>
 
               {/* Role Selection */}
-              <Grid size={{ xs: 12 }}>
-                <FormControl fullWidth error={!!errors.menuAccessRoles}>
-                  <InputLabel>Roles</InputLabel>
-                  <Select
-                    name="menuAccessRoles"
-                    multiple
-                    value={
-                      Array.isArray(formData.menuAccessRoles)
-                        ? formData.menuAccessRoles
-                        : [formData.menuAccessRoles] // Fallback if string
-                    }
-                    onChange={(e) => handleChange(e as any)}
-                    input={<OutlinedInput label="Roles" />}
-                    renderValue={(selected) => {
-                      const selectedRoles = (
-                        Array.isArray(selected) ? selected : [selected]
-                      ) as string[];
-                      return (
-                        <Box
-                          sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
-                        >
-                          {selectedRoles.map((value) => {
-                            const roleLabel = roles.find(
-                              (r) => r.value === value,
-                            )?.label;
-                            const isInherited =
-                              selectedParentRoles !== null &&
-                              selectedParentRoles.includes(value);
+              <FormControl fullWidth error={!!errors.menuAccessRoles}>
+                <InputLabel sx={{ fontSize: '0.85rem' }}>Authorized User Roles</InputLabel>
+                <Select
+                  name="menuAccessRoles"
+                  multiple
+                  value={
+                    Array.isArray(formData.menuAccessRoles)
+                      ? formData.menuAccessRoles
+                      : [formData.menuAccessRoles]
+                  }
+                  onChange={(e) => handleChange(e as any)}
+                  input={<OutlinedInput label="Authorized User Roles" sx={{ borderRadius: '10px' }} />}
+                  renderValue={(selected) => {
+                    const selectedRoles = (
+                      Array.isArray(selected) ? selected : [selected]
+                    ) as string[];
+                    return (
+                      <Box
+                        sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
+                      >
+                        {selectedRoles.map((value) => {
+                          const roleLabel = roles.find(
+                            (r) => r.value === value,
+                          )?.label;
+                          const isInherited =
+                            selectedParentRoles !== null &&
+                            selectedParentRoles.includes(value);
 
-                            return (
-                              <Chip
-                                key={value}
-                                label={roleLabel || value}
-                                onDelete={
-                                  menuToEdit || !isInherited
-                                    ? () => {
-                                      const currentRoles = Array.isArray(
-                                        formData.menuAccessRoles,
-                                      )
-                                        ? formData.menuAccessRoles
-                                        : [formData.menuAccessRoles];
-                                      const newRoles = currentRoles.filter(
-                                        (r) => r !== value,
-                                      );
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        menuAccessRoles: newRoles,
-                                      }));
-                                    }
-                                    : undefined
-                                }
-                                onMouseDown={(event) => {
-                                  event.stopPropagation();
-                                }}
-                                sx={{
-                                  bgcolor: isInherited
-                                    ? "rgba(59, 130, 246, 0.1)"
-                                    : undefined,
-                                  borderColor: isInherited
-                                    ? "rgba(59, 130, 246, 0.5)"
-                                    : undefined,
-                                }}
-                                variant={isInherited ? "outlined" : "filled"}
-                              />
-                            );
-                          })}
-                        </Box>
-                      );
-                    }}
-                  >
-                    {roles.map((role) => {
-                      const selectedArray = Array.isArray(
-                        formData.menuAccessRoles,
-                      )
-                        ? formData.menuAccessRoles
-                        : [formData.menuAccessRoles];
+                          return (
+                            <Chip
+                              key={value}
+                              label={roleLabel || value}
+                              size="small"
+                              onDelete={
+                                menuToEdit || !isInherited
+                                  ? () => {
+                                    const currentRoles = Array.isArray(
+                                      formData.menuAccessRoles,
+                                    )
+                                      ? formData.menuAccessRoles
+                                      : [formData.menuAccessRoles];
+                                    const newRoles = currentRoles.filter(
+                                      (r) => r !== value,
+                                    );
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      menuAccessRoles: newRoles,
+                                    }));
+                                  }
+                                  : undefined
+                              }
+                              onMouseDown={(event) => {
+                                event.stopPropagation();
+                              }}
+                              sx={{
+                                bgcolor: isInherited
+                                  ? "rgba(59, 130, 246, 0.1)"
+                                  : undefined,
+                                borderColor: isInherited
+                                  ? "rgba(59, 130, 246, 0.5)"
+                                  : undefined,
+                                borderRadius: '6px'
+                              }}
+                              variant={isInherited ? "outlined" : "filled"}
+                            />
+                          );
+                        })}
+                      </Box>
+                    );
+                  }}
+                >
+                  {roles.map((role) => {
+                    const selectedArray = Array.isArray(
+                      formData.menuAccessRoles,
+                    )
+                      ? formData.menuAccessRoles
+                      : [formData.menuAccessRoles];
 
-                      return (
-                        <MenuItem
-                          key={role.value}
-                          value={role.value}
+                    return (
+                      <MenuItem
+                        key={role.value}
+                        value={role.value}
+                        disabled={
+                          !menuToEdit &&
+                          menuType === "sub" &&
+                          selectedParentRoles !== null &&
+                          selectedParentRoles.includes(role.value)
+                        }
+                      >
+                        <Checkbox
+                          checked={selectedArray.indexOf(role.value) > -1}
+                          size="small"
                           disabled={
                             !menuToEdit &&
                             menuType === "sub" &&
                             selectedParentRoles !== null &&
                             selectedParentRoles.includes(role.value)
                           }
-                        >
-                          <Checkbox
-                            checked={selectedArray.indexOf(role.value) > -1}
-                            disabled={
-                              !menuToEdit &&
-                              menuType === "sub" &&
-                              selectedParentRoles !== null &&
-                              selectedParentRoles.includes(role.value)
-                            }
-                          />
-                          <ListItemText
-                            primary={role.label}
-                            secondary={
-                              selectedParentRoles?.includes(role.value)
-                                ? !menuToEdit
-                                  ? "Inherited (Mandatory for sub-menu)"
-                                  : "Inherited from parent"
-                                : ""
-                            }
-                          />
-                        </MenuItem>
-                      );
-                    })}
-                  </Select>
-                  {errors.menuAccessRoles && (
-                    <FormHelperText>{errors.menuAccessRoles}</FormHelperText>
-                  )}
-                </FormControl>
-              </Grid>
-            </Grid>
+                        />
+                        <ListItemText
+                          primary={role.label}
+                          primaryTypographyProps={{ fontSize: '0.9rem' }}
+                          secondary={
+                            selectedParentRoles?.includes(role.value)
+                              ? !menuToEdit
+                                ? "Inherited (Mandatory for sub-menu)"
+                                : "Inherited from parent"
+                              : ""
+                          }
+                          secondaryTypographyProps={{ fontSize: '0.75rem' }}
+                        />
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+                {errors.menuAccessRoles && (
+                  <FormHelperText>{errors.menuAccessRoles}</FormHelperText>
+                )}
+              </FormControl>
+
+              <AppSelect
+                label="Overall Availability"
+                name="status"
+                value={formData.status || 'active'}
+                options={[
+                  { value: 'active', label: 'Active & Accessible' },
+                  { value: 'inactive', label: 'Disabled & Hidden' },
+                ]}
+                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+              />
+            </Box>
           </DialogContent>
 
           <DialogActions sx={{ px: 3, pb: 2 }}>

@@ -3,14 +3,7 @@ import {
     Box,
     Typography,
     Paper,
-    TextField,
-    Button,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Alert,
-    CircularProgress,
     Card,
     CardContent,
     Chip,
@@ -24,6 +17,11 @@ import { useNavigate } from 'react-router-dom';
 import { useApplyLeave } from '../../../queries/Leave';
 import TokenService from '../../../queries/token/tokenService';
 import type { LeaveType } from '../../../types';
+import { AppInput } from '../../../components/ui/AppInput';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppButton } from '../../../components/ui/AppButton';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { format } from 'date-fns';
 
 const leaveTypes: { value: LeaveType; label: string; description: string }[] = [
     { value: 'casual', label: 'Casual Leave', description: 'For personal matters' },
@@ -106,12 +104,12 @@ const TeacherApplyLeave: React.FC = () => {
                         Your leave request has been sent for approval.
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                        <Button variant="outlined" onClick={() => navigate('/teacher/leave/my')}>
+                        <AppButton variant="outlined" onClick={() => navigate('/teacher/leave/my')}>
                             View My Leaves
-                        </Button>
-                        <Button variant="contained" onClick={() => { setSubmitted(false); setFormData({ leaveType: '', startDate: '', endDate: '', reason: '' }); }}>
+                        </AppButton>
+                        <AppButton variant="contained" onClick={() => { setSubmitted(false); setFormData({ leaveType: '', startDate: '', endDate: '', reason: '' }); }}>
                             Apply Another
-                        </Button>
+                        </AppButton>
                     </Box>
                 </Card>
             </Box>
@@ -135,45 +133,33 @@ const TeacherApplyLeave: React.FC = () => {
 
                         <form onSubmit={handleSubmit}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                <FormControl fullWidth error={!!errors.leaveType}>
-                                    <InputLabel>Leave Type</InputLabel>
-                                    <Select
-                                        value={formData.leaveType}
-                                        label="Leave Type"
-                                        onChange={(e) => handleChange('leaveType', e.target.value)}
-                                    >
-                                        {leaveTypes.map((type) => (
-                                            <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
+                                <AppSelect
+                                    label="Leave Type"
+                                    value={formData.leaveType}
+                                    options={leaveTypes.map((type) => ({ value: type.value, label: type.label }))}
+                                    onChange={(e) => handleChange('leaveType', e.target.value as string)}
+                                    error={!!errors.leaveType}
+                                    helperText={errors.leaveType}
+                                />
 
                                 <Box sx={{ display: 'flex', gap: 2 }}>
-                                    <TextField
-                                        type="date"
+                                    <AppDatePicker
                                         label="Start Date"
-                                        value={formData.startDate}
-                                        onChange={(e) => handleChange('startDate', e.target.value)}
-                                        InputLabelProps={{ shrink: true }}
-                                        inputProps={{ min: new Date().toLocaleDateString('en-CA') }}
+                                        value={formData.startDate ? new Date(formData.startDate) : null}
+                                        onChange={(date) => handleChange('startDate', date ? format(date, 'yyyy-MM-dd') : '')}
                                         error={!!errors.startDate}
                                         helperText={errors.startDate}
-                                        fullWidth
                                     />
-                                    <TextField
-                                        type="date"
+                                    <AppDatePicker
                                         label="End Date"
-                                        value={formData.endDate}
-                                        onChange={(e) => handleChange('endDate', e.target.value)}
-                                        InputLabelProps={{ shrink: true }}
-                                        inputProps={{ min: formData.startDate || new Date().toLocaleDateString('en-CA') }}
+                                        value={formData.endDate ? new Date(formData.endDate) : null}
+                                        onChange={(date) => handleChange('endDate', date ? format(date, 'yyyy-MM-dd') : '')}
                                         error={!!errors.endDate}
                                         helperText={errors.endDate}
-                                        fullWidth
                                     />
                                 </Box>
 
-                                <TextField
+                                <AppInput
                                     label="Reason for Leave"
                                     value={formData.reason}
                                     onChange={(e) => handleChange('reason', e.target.value)}
@@ -184,15 +170,15 @@ const TeacherApplyLeave: React.FC = () => {
                                     fullWidth
                                 />
 
-                                <Button
+                                <AppButton
                                     type="submit"
                                     variant="contained"
                                     size="large"
-                                    startIcon={applyMutation.isPending ? <CircularProgress size={20} /> : <SendIcon />}
-                                    disabled={applyMutation.isPending}
+                                    loading={applyMutation.isPending}
+                                    startIcon={!applyMutation.isPending && <SendIcon />}
                                 >
-                                    {applyMutation.isPending ? 'Submitting...' : 'Submit Request'}
-                                </Button>
+                                    Submit Request
+                                </AppButton>
                             </Box>
                         </form>
                     </Paper>

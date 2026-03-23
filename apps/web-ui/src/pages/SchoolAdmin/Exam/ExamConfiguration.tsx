@@ -25,13 +25,18 @@ import {
     Paper,
     Chip,
     Tooltip,
-    Grid
+    Grid,
 } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CancelIcon from '@mui/icons-material/Cancel';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import { AppInput } from '../../../components/ui/AppInput';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppButton } from '../../../components/ui/AppButton';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { format } from 'date-fns';
 import { useAuth } from '../../../context/AuthContext';
 import {
     useCreateExamTerm,
@@ -178,9 +183,9 @@ const ExamTermsTab = ({ schoolId }: { schoolId: string }) => {
         <Card sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h6" fontWeight={600}>Academic Terms</Typography>
-                <Button variant="contained" startIcon={<AddCircleIcon />} onClick={() => setOpen(true)}>
+                <AppButton variant="contained" startIcon={<AddCircleIcon />} onClick={() => setOpen(true)}>
                     Add Term
-                </Button>
+                </AppButton>
             </Box>
 
             <TableContainer component={Paper} elevation={0} variant="outlined">
@@ -221,8 +226,8 @@ const ExamTermsTab = ({ schoolId }: { schoolId: string }) => {
             <Dialog open={open} onClose={handleClose} fullWidth>
                 <DialogTitle>{editingTerm ? 'Edit Term' : 'Add New Term'}</DialogTitle>
                 <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                        <TextField
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+                        <AppInput
                             label="Term Name"
                             fullWidth
                             value={formData.name}
@@ -230,7 +235,7 @@ const ExamTermsTab = ({ schoolId }: { schoolId: string }) => {
                             error={!!errors.name}
                             helperText={errors.name}
                         />
-                        <TextField
+                        <AppInput
                             label="Academic Year"
                             fullWidth
                             value={formData.academicYear}
@@ -238,26 +243,22 @@ const ExamTermsTab = ({ schoolId }: { schoolId: string }) => {
                             error={!!errors.academicYear}
                             helperText={errors.academicYear}
                         />
-                        <TextField
-                            label="Start Date"
-                            type="date"
-                            fullWidth
-                            InputLabelProps={{ shrink: true }}
-                            value={formData.startDate}
-                            onChange={(e) => handleFieldChange('startDate', e.target.value)}
-                            error={!!errors.startDate}
-                            helperText={errors.startDate}
-                        />
-                        <TextField
-                            label="End Date"
-                            type="date"
-                            fullWidth
-                            InputLabelProps={{ shrink: true }}
-                            value={formData.endDate}
-                            onChange={(e) => handleFieldChange('endDate', e.target.value)}
-                            error={!!errors.endDate}
-                            helperText={errors.endDate}
-                        />
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <AppDatePicker
+                                label="Start Date"
+                                value={formData.startDate ? new Date(formData.startDate) : null}
+                                onChange={(date) => handleFieldChange('startDate', date ? format(date, 'yyyy-MM-dd') : '')}
+                                error={!!errors.startDate}
+                                helperText={errors.startDate}
+                            />
+                            <AppDatePicker
+                                label="End Date"
+                                value={formData.endDate ? new Date(formData.endDate) : null}
+                                onChange={(date) => handleFieldChange('endDate', date ? format(date, 'yyyy-MM-dd') : '')}
+                                error={!!errors.endDate}
+                                helperText={errors.endDate}
+                            />
+                        </Box>
                     </Box>
                 </DialogContent>
                 <DialogActions>
@@ -308,9 +309,9 @@ const ExamTypesTab = ({ schoolId }: { schoolId: string }) => {
         <Card sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h6" fontWeight={600}>Exam Types</Typography>
-                <Button variant="contained" startIcon={<AddCircleIcon />} onClick={() => setOpen(true)}>
+                <AppButton variant="contained" startIcon={<AddCircleIcon />} onClick={() => setOpen(true)}>
                     Add Exam Type
-                </Button>
+                </AppButton>
             </Box>
 
             <TableContainer component={Paper} elevation={0} variant="outlined">
@@ -345,34 +346,30 @@ const ExamTypesTab = ({ schoolId }: { schoolId: string }) => {
             <Dialog open={open} onClose={() => setOpen(false)} fullWidth>
                 <DialogTitle>Add Exam Type</DialogTitle>
                 <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                        <TextField
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+                        <AppInput
                             label="Name"
                             fullWidth
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         />
-                        <FormControl fullWidth>
-                            <InputLabel>Associated Term (Optional)</InputLabel>
-                            <Select
-                                value={formData.termId}
-                                label="Associated Term (Optional)"
-                                onChange={(e) => setFormData({ ...formData, termId: e.target.value })}
-                            >
-                                <MenuItem value="">None</MenuItem>
-                                {terms?.data?.map((t: any) => (
-                                    <MenuItem key={t._id} value={t._id}>{t.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <TextField
+                        <AppSelect
+                            label="Associated Term (Optional)"
+                            value={formData.termId}
+                            options={[
+                                { value: '', label: 'None' },
+                                ...(terms?.data?.map((t: any) => ({ value: t._id, label: t.name })) || [])
+                            ]}
+                            onChange={(e) => setFormData({ ...formData, termId: e.target.value as string })}
+                        />
+                        <AppInput
                             label="Weightage (%)"
                             type="number"
                             fullWidth
                             value={formData.weightage}
                             onChange={(e) => setFormData({ ...formData, weightage: parseInt(e.target.value) })}
                         />
-                        <TextField
+                        <AppInput
                             label="Description"
                             fullWidth
                             multiline
