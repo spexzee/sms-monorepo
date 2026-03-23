@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useApi from "../useApi";
+import { studentKeys } from "../Student";
 import type {
   ApiResponse,
   Parent,
@@ -86,7 +87,10 @@ export const useCreateParent = (schoolId: string) => {
         data,
       ),
     onSuccess: () => {
+      // Invalidate parent list
       queryClient.invalidateQueries({ queryKey: parentKeys.all(schoolId) });
+      // Invalidate students list — backend updated their parentId
+      queryClient.invalidateQueries({ queryKey: studentKeys.all(schoolId) });
     },
   });
 };
@@ -113,6 +117,8 @@ export const useUpdateParent = (schoolId: string) => {
       queryClient.invalidateQueries({
         queryKey: parentKeys.detail(schoolId, variables.parentId),
       });
+      // Invalidate students list — backend updated their parentId
+      queryClient.invalidateQueries({ queryKey: studentKeys.all(schoolId) });
     },
   });
 };

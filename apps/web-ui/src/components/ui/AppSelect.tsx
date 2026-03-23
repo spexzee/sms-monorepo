@@ -49,7 +49,7 @@ export const AppSelect: React.FC<AppSelectProps> = ({
           displayEmpty
           {...props}
           sx={{
-            borderRadius: 2,
+            borderRadius: 1,
             backgroundColor: '#ffffff',
             '&:hover': {
               backgroundColor: '#f1f5f9',

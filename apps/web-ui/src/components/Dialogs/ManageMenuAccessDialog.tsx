@@ -4,7 +4,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   IconButton,
   Table,
   TableBody,
@@ -25,6 +24,7 @@ import {
 } from "@mui/icons-material";
 import { useUpdateMenu } from "../../queries/Menus";
 import type { Menu } from "../../types";
+import { AppButton } from "../ui/AppButton";
 
 interface ManageMenuAccessDialogProps {
   open: boolean;
@@ -135,7 +135,13 @@ const ManageMenuAccessDialog: React.FC<ManageMenuAccessDialogProps> = ({
       : [];
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 1.5 } }}
+    >
       <DialogTitle
         sx={{
           display: "flex",
@@ -295,9 +301,9 @@ const ManageMenuAccessDialog: React.FC<ManageMenuAccessDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} variant="outlined">
+        <AppButton onClick={onClose} variant="outlined" color="inherit">
           Close
-        </Button>
+        </AppButton>
       </DialogActions>
     </Dialog>
   );

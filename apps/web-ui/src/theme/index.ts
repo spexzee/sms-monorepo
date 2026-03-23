@@ -43,7 +43,7 @@ export const theme = createTheme({
     button: { textTransform: 'none', fontWeight: 600 },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 8,
   },
   components: {
     MuiButton: {
@@ -64,7 +64,7 @@ export const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 16,
+          borderRadius: 10,
           boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
           border: `1px solid ${alpha('#cbd5e1', 0.5)}`,
         },
@@ -78,7 +78,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
+            borderRadius: 6,
             backgroundColor: '#ffffff',
             transition: 'all 0.2s',
             '&:hover': {
@@ -88,6 +88,28 @@ export const theme = createTheme({
               backgroundColor: '#ffffff',
             },
           },
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: 10,
+        },
+      },
+    },
+    MuiSelect: {
+      defaultProps: {
+        size: 'small',
+      },
+    },
+    MuiAutocomplete: {
+      defaultProps: {
+        size: 'small',
+      },
+      styleOverrides: {
+        paper: {
+          borderRadius: 8,
         },
       },
     },

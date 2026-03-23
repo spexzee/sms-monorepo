@@ -127,7 +127,7 @@ function DataTable<T>({
               onClick={onAddClick}
               sx={{
                                 textTransform: 'none',
-                borderRadius: 2,
+                borderRadius: 1,
                 px: 3,
               }}
             >
@@ -140,7 +140,7 @@ function DataTable<T>({
       {/* Table */}
       <Paper
         sx={{
-          borderRadius: 2,
+          borderRadius: 1,
                     overflow: 'hidden',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}

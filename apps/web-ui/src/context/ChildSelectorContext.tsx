@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useGetMyChildren } from '../queries/ParentPortal';
-import TokenService from '../queries/token/tokenService';
+import { useAuth } from './AuthContext';
 import type { Student } from '../types';
 
 interface ChildSelectorContextType {
@@ -20,14 +20,22 @@ interface ChildSelectorProviderProps {
 }
 
 export const ChildSelectorProvider: React.FC<ChildSelectorProviderProps> = ({ children }) => {
-    const schoolId = TokenService.getSchoolId() || '';
-    const role = TokenService.getRole();
-    const isParent = role === 'parent';
+    const { user } = useAuth();
+    const schoolId = user?.schoolId || '';
+    const isParent = user?.role === 'parent';
 
     // Only fetch children for parent role
     const { data, isLoading, error } = useGetMyChildren(isParent ? schoolId : '');
 
     const [selectedChild, setSelectedChildState] = useState<(Student & { className?: string; sectionName?: string }) | null>(null);
+    // True until we have resolved selectedChild after the children list has loaded
+    const [isInitializing, setIsInitializing] = useState(true);
+
+    // Reset initialization when auth state changes (login/logout/role change)
+    useEffect(() => {
+        setIsInitializing(true);
+        setSelectedChildState(null);
+    }, [isParent, schoolId]);
 
     // Get children from API response
     const childrenList = useMemo(() => {
@@ -39,6 +47,9 @@ export const ChildSelectorProvider: React.FC<ChildSelectorProviderProps> = ({ ch
 
     // Initialize selected child from localStorage or first child
     useEffect(() => {
+        // Still waiting for the API
+        if (isLoading) return;
+
         if (childrenList.length > 0 && !selectedChild) {
             // Try to restore from localStorage
             const storedChildId = localStorage.getItem(STORAGE_KEY);
@@ -46,13 +57,16 @@ export const ChildSelectorProvider: React.FC<ChildSelectorProviderProps> = ({ ch
                 const found = childrenList.find(c => c.studentId === storedChildId);
                 if (found) {
                     setSelectedChildState(found);
+                    setIsInitializing(false);
                     return;
                 }
             }
             // Default to first child
             setSelectedChildState(childrenList[0]);
         }
-    }, [childrenList, selectedChild]);
+        // Either children arrived (and we just set one) or the list is empty — either way we're done initializing
+        setIsInitializing(false);
+    }, [childrenList, isLoading, selectedChild]);
 
     const setSelectedChild = (child: Student & { className?: string; sectionName?: string }) => {
         setSelectedChildState(child);
@@ -63,9 +77,9 @@ export const ChildSelectorProvider: React.FC<ChildSelectorProviderProps> = ({ ch
         selectedChild,
         setSelectedChild,
         children: childrenList,
-        isLoading,
+        isLoading: isLoading || isInitializing,
         error: error as Error | null,
-    }), [selectedChild, childrenList, isLoading, error]);
+    }), [selectedChild, childrenList, isLoading, isInitializing, error]);
 
     return (
         <ChildSelectorContext.Provider value={value}>

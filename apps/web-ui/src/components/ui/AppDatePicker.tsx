@@ -41,7 +41,7 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
               size: 'small',
               sx: {
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: 1.5,
                   backgroundColor: 'background.paper',
                   transition: 'all 0.2s',
                   '&:hover': {

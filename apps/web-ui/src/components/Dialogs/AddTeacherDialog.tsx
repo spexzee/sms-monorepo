@@ -4,16 +4,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   TextField,
-  CircularProgress,
   Alert,
   IconButton,
   Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Autocomplete,
   Chip,
   Typography,
@@ -32,6 +26,9 @@ import type {
 } from "../../types";
 import { ImageUpload } from "../ImageUpload";
 import { IMAGEKIT_FOLDERS } from "../../utils/imagekit";
+import { AppInput } from "../ui/AppInput";
+import { AppSelect } from "../ui/AppSelect";
+import { AppButton } from "../ui/AppButton";
 
 interface TeacherDialogProps {
   open: boolean;
@@ -243,7 +240,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
 
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
+              <AppInput
                 name="firstName"
                 label="First Name"
                 value={formData.firstName}
@@ -251,11 +248,10 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                 error={!!errors.firstName}
                 helperText={errors.firstName}
                 required
-                fullWidth
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
+              <AppInput
                 name="lastName"
                 label="Last Name"
                 value={formData.lastName}
@@ -263,11 +259,10 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                 error={!!errors.lastName}
                 helperText={errors.lastName}
                 required
-                fullWidth
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <TextField
+              <AppInput
                 name="email"
                 label="Email"
                 type="email"
@@ -276,29 +271,27 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                 error={!!errors.email}
                 helperText={errors.email}
                 required
-                fullWidth
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <TextField
+              <AppInput
                 name="password"
-                label={"Password"}
+                label="Password"
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
                 error={!!errors.password}
                 helperText={errors.password}
                 required={!isEditMode}
-                fullWidth
+                labelHint={isEditMode ? 'Leave blank to keep current' : ''}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
+              <AppInput
                 name="phone"
                 label="Phone"
                 value={formData.phone}
                 onChange={handleChange}
-                fullWidth
               />
             </Grid>
 
@@ -377,22 +370,20 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
             </Grid>
 
             <Grid size={{ xs: 12 }}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  label="Status"
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      status: e.target.value as "active" | "inactive",
-                    }))
-                  }
-                >
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                </Select>
-              </FormControl>
+              <AppSelect
+                label="Status"
+                value={formData.status || 'active'}
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    status: e.target.value as "active" | "inactive",
+                  }))
+                }
+              />
             </Grid>
 
             {/* Class Teacher Option */}
@@ -488,23 +479,16 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleClose} color="inherit">
+          <AppButton onClick={handleClose} variant="text" color="inherit">
             Cancel
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
             type="submit"
             variant="contained"
-            disabled={isPending}
-            startIcon={isPending ? <CircularProgress size={20} /> : null}
+            loading={isPending}
           >
-            {isPending
-              ? isEditMode
-                ? "Updating..."
-                : "Creating..."
-              : isEditMode
-                ? "Update"
-                : "Create"}
-          </Button>
+            {isEditMode ? "Update" : "Create"}
+          </AppButton>
         </DialogActions>
       </form>
     </Dialog>

@@ -4,16 +4,11 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Button,
     TextField,
     CircularProgress,
     Alert,
     IconButton,
     Grid,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Autocomplete,
     Chip,
     Typography,
@@ -25,6 +20,9 @@ import { searchStudentsApi } from '../../queries/Student';
 import type { CreateParentPayload, Parent, Student } from '../../types';
 import { ImageUpload } from '../ImageUpload';
 import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
+import { AppInput } from '../ui/AppInput';
+import { AppSelect } from '../ui/AppSelect';
+import { AppButton } from '../ui/AppButton';
 
 interface ParentDialogProps {
     open: boolean;
@@ -94,6 +92,25 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
         fetchStudents();
     }, [debouncedStudentQuery, schoolId]);
 
+    // Fetch real student details for already-linked students when editing
+    useEffect(() => {
+        if (!editData || !editData.studentIds || editData.studentIds.length === 0) return;
+        const fetchLinkedStudents = async () => {
+            const results: Student[] = [];
+            for (const id of editData.studentIds!) {
+                try {
+                    const response = await searchStudentsApi(schoolId, id);
+                    const found = (response.data || []).find((s) => s.studentId === id);
+                    results.push(found ?? ({ studentId: id, firstName: '', lastName: '', class: '' } as Student));
+                } catch {
+                    results.push({ studentId: id, firstName: '', lastName: '', class: '' } as Student);
+                }
+            }
+            setSelectedStudents(results);
+        };
+        fetchLinkedStudents();
+    }, [editData, schoolId]);
+
     useEffect(() => {
         if (editData) {
             setFormData({
@@ -110,7 +127,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                 profileImage: editData.profileImage || '',
                 signature: editData.signature || '',
             });
-            // For edit mode, create placeholder students from IDs
+            // Show placeholder chips immediately; real names load via the effect above
             setSelectedStudents(
                 (editData.studentIds || []).map(id => ({ studentId: id, firstName: '', lastName: '', class: '' } as Student))
             );
@@ -232,41 +249,43 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
 
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField name="firstName" label="First Name" value={formData.firstName}
+                            <AppInput name="firstName" label="First Name" value={formData.firstName}
                                 onChange={handleChange} error={!!errors.firstName} helperText={errors.firstName}
-                                required fullWidth />
+                                required />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField name="lastName" label="Last Name" value={formData.lastName}
+                            <AppInput name="lastName" label="Last Name" value={formData.lastName}
                                 onChange={handleChange} error={!!errors.lastName} helperText={errors.lastName}
-                                required fullWidth />
+                                required />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField name="email" label="Email" type="email" value={formData.email}
+                            <AppInput name="email" label="Email" type="email" value={formData.email}
                                 onChange={handleChange} error={!!errors.email} helperText={errors.email}
-                                required fullWidth />
+                                required />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField name="password" label={"Password"}
+                            <AppInput name="password" label="Password"
                                 type="password" value={formData.password} onChange={handleChange}
-                                error={!!errors.password} helperText={errors.password} required={!isEditMode} fullWidth />
+                                error={!!errors.password} helperText={errors.password} required={!isEditMode}
+                                labelHint={isEditMode ? 'Leave blank to keep current' : ''} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField name="phone" label="Phone" value={formData.phone}
+                            <AppInput name="phone" label="Phone" value={formData.phone}
                                 onChange={handleChange} error={!!errors.phone} helperText={errors.phone}
-                                required fullWidth />
+                                required />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormControl fullWidth required>
-                                <InputLabel>Relationship</InputLabel>
-                                <Select value={formData.relationship} label="Relationship"
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, relationship: e.target.value as 'father' | 'mother' | 'guardian' | 'other' }))}>
-                                    <MenuItem value="father">Father</MenuItem>
-                                    <MenuItem value="mother">Mother</MenuItem>
-                                    <MenuItem value="guardian">Guardian</MenuItem>
-                                    <MenuItem value="other">Other</MenuItem>
-                                </Select>
-                            </FormControl>
+                            <AppSelect
+                                label="Relationship"
+                                value={formData.relationship || 'father'}
+                                options={[
+                                    { value: 'father', label: 'Father' },
+                                    { value: 'mother', label: 'Mother' },
+                                    { value: 'guardian', label: 'Guardian' },
+                                    { value: 'other', label: 'Other' },
+                                ]}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, relationship: e.target.value as 'father' | 'mother' | 'guardian' | 'other' }))}
+                            />
                         </Grid>
 
                         {/* Student Search Autocomplete */}
@@ -318,22 +337,23 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                         </Grid>
 
                         <Grid size={{ xs: 12 }}>
-                            <TextField name="occupation" label="Occupation" value={formData.occupation}
-                                onChange={handleChange} fullWidth />
+                            <AppInput name="occupation" label="Occupation" value={formData.occupation}
+                                onChange={handleChange} />
                         </Grid>
                         <Grid size={{ xs: 12 }}>
-                            <TextField name="address" label="Address" value={formData.address}
-                                onChange={handleChange} multiline rows={2} fullWidth />
+                            <AppInput name="address" label="Address" value={formData.address}
+                                onChange={handleChange} multiline rows={2} />
                         </Grid>
                         <Grid size={{ xs: 12 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Status</InputLabel>
-                                <Select value={formData.status} label="Status"
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value as 'active' | 'inactive' }))}>
-                                    <MenuItem value="active">Active</MenuItem>
-                                    <MenuItem value="inactive">Inactive</MenuItem>
-                                </Select>
-                            </FormControl>
+                            <AppSelect
+                                label="Status"
+                                value={formData.status || 'active'}
+                                options={[
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'inactive', label: 'Inactive' },
+                                ]}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value as 'active' | 'inactive' }))}
+                            />
                         </Grid>
 
                         {/* Profile Image and Signature */}
@@ -382,11 +402,10 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                 </DialogContent>
 
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={handleClose} color="inherit">Cancel</Button>
-                    <Button type="submit" variant="contained" disabled={isPending}
-                        startIcon={isPending ? <CircularProgress size={20} /> : null}>
-                        {isPending ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Create')}
-                    </Button>
+                    <AppButton onClick={handleClose} variant="text" color="inherit">Cancel</AppButton>
+                    <AppButton type="submit" variant="contained" loading={isPending}>
+                        {isEditMode ? 'Update' : 'Create'}
+                    </AppButton>
                 </DialogActions>
             </form>
         </Dialog>
