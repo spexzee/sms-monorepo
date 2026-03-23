@@ -94,6 +94,25 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
         fetchStudents();
     }, [debouncedStudentQuery, schoolId]);
 
+    // Fetch real student details for already-linked students when editing
+    useEffect(() => {
+        if (!editData || !editData.studentIds || editData.studentIds.length === 0) return;
+        const fetchLinkedStudents = async () => {
+            const results: Student[] = [];
+            for (const id of editData.studentIds!) {
+                try {
+                    const response = await searchStudentsApi(schoolId, id);
+                    const found = (response.data || []).find((s) => s.studentId === id);
+                    results.push(found ?? ({ studentId: id, firstName: '', lastName: '', class: '' } as Student));
+                } catch {
+                    results.push({ studentId: id, firstName: '', lastName: '', class: '' } as Student);
+                }
+            }
+            setSelectedStudents(results);
+        };
+        fetchLinkedStudents();
+    }, [editData, schoolId]);
+
     useEffect(() => {
         if (editData) {
             setFormData({
@@ -110,7 +129,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                 profileImage: editData.profileImage || '',
                 signature: editData.signature || '',
             });
-            // For edit mode, create placeholder students from IDs
+            // Show placeholder chips immediately; real names load via the effect above
             setSelectedStudents(
                 (editData.studentIds || []).map(id => ({ studentId: id, firstName: '', lastName: '', class: '' } as Student))
             );

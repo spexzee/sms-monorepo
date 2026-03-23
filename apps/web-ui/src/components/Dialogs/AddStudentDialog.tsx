@@ -97,6 +97,40 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
         fetchParents();
     }, [debouncedParentQuery, schoolId]);
 
+    // Fetch real parent details for the linked parent when editing
+    useEffect(() => {
+        if (!editData?.parentId) return;
+        const fetchLinkedParent = async () => {
+            try {
+                const response = await searchParentsApi(schoolId, editData.parentId!);
+                const found = (response.data || []).find((p) => p.parentId === editData.parentId);
+                if (found) {
+                    setSelectedParent(found);
+                } else {
+                    // Fallback: split parentName if search returns nothing
+                    const nameParts = (editData.parentName || '').split(' ');
+                    setSelectedParent({
+                        parentId: editData.parentId,
+                        firstName: nameParts[0] || 'Parent',
+                        lastName: nameParts.slice(1).join(' ') || '(Linked)',
+                        email: '',
+                        phone: '',
+                    } as Parent);
+                }
+            } catch {
+                const nameParts = (editData.parentName || '').split(' ');
+                setSelectedParent({
+                    parentId: editData.parentId,
+                    firstName: nameParts[0] || 'Parent',
+                    lastName: nameParts.slice(1).join(' ') || '(Linked)',
+                    email: '',
+                    phone: '',
+                } as Parent);
+            }
+        };
+        fetchLinkedParent();
+    }, [editData, schoolId]);
+
     useEffect(() => {
         if (editData) {
             setFormData({
@@ -116,6 +150,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                 profileImage: editData.profileImage || '',
                 signature: editData.signature || '',
             });
+            // Set placeholder; real data loads via the effect above
             if (editData.parentId) {
                 const nameParts = (editData.parentName || '').split(' ');
                 setSelectedParent({
@@ -123,7 +158,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                     firstName: nameParts[0] || 'Parent',
                     lastName: nameParts.slice(1).join(' ') || '(Linked)',
                     email: '',
-                    phone: ''
+                    phone: '',
                 } as Parent);
             }
         } else {
