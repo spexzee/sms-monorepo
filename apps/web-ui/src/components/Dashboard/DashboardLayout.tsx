@@ -54,8 +54,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         navigate('/login');
     };
 
-    const schoolName = school?.schoolName || 'SMS Platform';
-
     return (
         <Box sx={{ display: 'flex', minHeight: '100vh' }}>
             {/* App Bar */}
@@ -77,7 +75,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         <MenuIcon />
                     </IconButton>
                     <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 2 }}>
-                        {school?.schoolLogo && (
+                        {school?.schoolLogo && user?.role !== 'super_admin' && (
                             <Avatar
                                 src={school.schoolLogo}
                                 variant="square"
@@ -100,7 +98,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             component="div"
                             sx={{ fontWeight: 700, ml: 1 }}
                         >
-                            {schoolName}
+                            {user?.role === 'super_admin' ? 'SMS EDU SOLUTION' : (school?.schoolName || 'SMS EDU SOLUTION')}
                         </Typography>
                     </Box>
 
