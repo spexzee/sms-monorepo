@@ -334,23 +334,77 @@ const getAllStudents = async (req, res) => {
     const Student = getStudentModel(schoolDbName);
     const Parent = getParentModel(schoolDbName);
 
-    // Build query filters
     const query = {};
 
     // If teacher role, filter by their assigned classes only
     if (userRole === "teacher" && userClasses && userClasses.length > 0) {
       query.class = { $in: userClasses };
-    } else if (classes) {
-      // If classes filter passed as query param (comma separated)
-      const classArray = classes.split(",").map((c) => c.trim());
-      query.class = { $in: classArray };
-    } else if (studentClass) {
-      query.class = studentClass;
     }
 
-    if (section) query.section = section;
+    const sectionIdFilter = section || req.query.sectionId;
+    const classIdFilter = studentClass || req.query.classId || classes;
+
+    if (classIdFilter) {
+      if (typeof classIdFilter === 'string' && classIdFilter.includes(',')) {
+        const classArray = classIdFilter.split(",").map((c) => c.trim());
+        query.class = { $in: classArray };
+      } else if (!query.class) {
+        query.class = classIdFilter;
+      }
+    }
+
+    if (sectionIdFilter) {
+      if (query.class && typeof query.class === 'string') {
+        const ClassModel = getClassModel(schoolDbName);
+        const classDoc = await ClassModel.findOne({ classId: query.class }).lean();
+        if (classDoc && classDoc.sections) {
+          const target = classDoc.sections.find(s => 
+            s.sectionId === sectionIdFilter || 
+            s.name.toLowerCase() === sectionIdFilter.toLowerCase()
+          );
+          if (target) {
+            query.section = { $in: [target.sectionId, target.name] };
+          } else {
+            query.section = sectionIdFilter;
+          }
+        } else {
+          query.section = sectionIdFilter;
+        }
+      } else {
+        query.section = sectionIdFilter;
+      }
+    }
+    
     if (status) query.status = status;
     if (parentId) query.parentId = parentId;
+
+    // Search filter (firstName, lastName, or studentId)
+    if (req.query.search) {
+      const search = req.query.search.trim();
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const searchRegex = new RegExp(escapedSearch, "i");
+
+      const searchConditions = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { studentId: searchRegex },
+        { email: searchRegex },
+      ];
+
+      // Handle full names if search contains space
+      if (search.includes(" ")) {
+        const parts = search.split(/\s+/);
+        if (parts.length >= 2) {
+          searchConditions.push({
+            $and: [
+              { firstName: new RegExp(parts[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") },
+              { lastName: new RegExp(parts[parts.length - 1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") },
+            ],
+          });
+        }
+      }
+      query.$or = searchConditions;
+    }
 
     const { page, limit, skip } = getPaginationParams(req.query);
 
@@ -392,12 +446,12 @@ const getAllStudents = async (req, res) => {
 
     // Create maps for class names and sections
     const classMap = {};
-    const sectionMap = {};
+    const sectionMap = {}; // Use compound key: classId_sectionId
     classData.forEach((c) => {
       classMap[c.classId] = c.name;
       if (c.sections) {
         c.sections.forEach((s) => {
-          sectionMap[s.sectionId] = s.name;
+          sectionMap[`${c.classId}_${s.sectionId}`] = s.name;
         });
       }
     });
@@ -414,8 +468,9 @@ const getAllStudents = async (req, res) => {
         studentObj.className = classMap[studentObj.class];
       }
       // Add section name
-      if (studentObj.section && sectionMap[studentObj.section]) {
-        studentObj.sectionName = sectionMap[studentObj.section];
+      const sectionKey = `${studentObj.class}_${studentObj.section}`;
+      if (sectionKey && sectionMap[sectionKey]) {
+        studentObj.sectionName = sectionMap[sectionKey];
       }
       return studentObj;
     });
@@ -615,13 +670,12 @@ const deleteStudentById = async (req, res) => {
   }
 };
 
-// Search students for autocomplete (partial matching)
 const searchStudents = async (req, res) => {
   try {
     const { schoolId } = req.params;
-    const { query } = req.query;
+    const { query: searchTerm } = req.query;
 
-    if (!query || query.length < 2) {
+    if (!searchTerm || searchTerm.length < 2) {
       return res.status(200).json({
         success: true,
         data: [],
@@ -639,18 +693,39 @@ const searchStudents = async (req, res) => {
 
     const Student = getStudentModel(schoolDbName);
 
-    // Search by studentId, email, firstName, lastName with partial matching
-    const searchRegex = new RegExp(query, "i");
+    const mongoQuery = { status: "active" };
 
-    const students = await Student.find({
-      $or: [
+    // Search filter
+    if (searchTerm) {
+      const search = searchTerm.trim();
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const searchRegex = new RegExp(escapedSearch, "i");
+
+      const searchConditions = [
         { studentId: searchRegex },
-        { email: searchRegex },
         { firstName: searchRegex },
         { lastName: searchRegex },
-      ],
-      status: "active",
-    })
+        { email: searchRegex },
+        { phone: searchRegex },
+        { parentId: searchRegex },
+      ];
+
+      // Handle full names if search contains space
+      if (search.includes(" ")) {
+        const parts = search.split(/\s+/);
+        if (parts.length >= 2) {
+          searchConditions.push({
+            $and: [
+              { firstName: new RegExp(parts[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") },
+              { lastName: new RegExp(parts[parts.length - 1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") },
+            ],
+          });
+        }
+      }
+      mongoQuery.$or = searchConditions;
+    }
+
+    const students = await Student.find(mongoQuery)
       .select("studentId firstName lastName email class section")
       .limit(10);
 
