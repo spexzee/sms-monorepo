@@ -3,11 +3,6 @@ import {
     Box,
     Paper,
     Typography,
-    Button,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Table,
     TableBody,
     TableCell,
@@ -19,7 +14,6 @@ import {
     Alert,
     ToggleButton,
     ToggleButtonGroup,
-    TextField,
     Snackbar,
     Grid,
 } from '@mui/material';
@@ -35,6 +29,10 @@ import { useGetStudents } from '../../../queries/Student';
 import { useGetPeriodClassAttendance, useMarkPeriodAttendance } from '../../../queries/Attendance';
 import type { Student, Class, Subject } from '../../../types';
 import TokenService from '../../../queries/token/tokenService';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppButton } from '../../../components/ui/AppButton';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { format } from 'date-fns';
 
 type PeriodStatus = "present" | "absent" | "late";
 
@@ -156,80 +154,57 @@ const PeriodAttendance = () => {
 
             {/* Filters */}
             <Paper sx={{ p: 2, mb: 3 }}>
-                <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-                        <TextField
-                            type="date"
-                            label="Date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                            inputProps={{ max: new Date().toLocaleDateString('en-CA') }}
-                            fullWidth
+                <Grid container spacing={2} alignItems="center">
+                    <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+                        <AppDatePicker
+                            label="Attendance Date"
+                            value={selectedDate ? new Date(selectedDate) : null}
+                            onChange={(date) => {
+                                setSelectedDate(date ? format(date, 'yyyy-MM-dd') : '');
+                                setAttendance({});
+                            }}
                         />
                     </Grid>
                     <Grid size={{ xs: 6, sm: 3, md: 2 }}>
-                        <FormControl fullWidth>
-                            <InputLabel>Period</InputLabel>
-                            <Select
-                                value={selectedPeriod}
-                                label="Period"
-                                onChange={(e) => setSelectedPeriod(Number(e.target.value))}
-                            >
-                                {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
-                                    <MenuItem key={p} value={p}>Period {p}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <AppSelect
+                            label="Period"
+                            value={selectedPeriod}
+                            options={[1, 2, 3, 4, 5, 6, 7, 8].map(p => ({ value: p, label: `Period ${p}` }))}
+                            onChange={(e) => setSelectedPeriod(Number(e.target.value))}
+                        />
                     </Grid>
-                    <Grid size={{ xs: 6, sm: 3, md: 2 }}>
-                        <FormControl fullWidth>
-                            <InputLabel>Class</InputLabel>
-                            <Select
-                                value={selectedClass}
-                                label="Class"
-                                onChange={(e) => {
-                                    setSelectedClass(e.target.value);
-                                    setSelectedSection('');
-                                    setAttendance({});
-                                }}
-                            >
-                                {classes.map((c: Class) => (
-                                    <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                    <Grid size={{ xs: 6, sm: 3, md: 2.5 }}>
+                        <AppSelect
+                            label="Class"
+                            value={selectedClass}
+                            options={classes.map((c: Class) => ({ value: c.classId, label: c.name }))}
+                            onChange={(e) => {
+                                setSelectedClass(e.target.value as string);
+                                setSelectedSection('');
+                                setAttendance({});
+                            }}
+                        />
                     </Grid>
                     {sections.length > 0 && (
-                        <Grid size={{ xs: 6, sm: 3, md: 2 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Section</InputLabel>
-                                <Select
-                                    value={selectedSection}
-                                    label="Section"
-                                    onChange={(e) => setSelectedSection(e.target.value)}
-                                >
-                                    <MenuItem value="">All</MenuItem>
-                                    {sections.map(s => (
-                                        <MenuItem key={s.sectionId} value={s.sectionId}>{s.name}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                        <Grid size={{ xs: 6, sm: 3, md: 1.5 }}>
+                            <AppSelect
+                                label="Section"
+                                value={selectedSection}
+                                options={[
+                                    { value: '', label: 'All' },
+                                    ...sections.map(s => ({ value: s.sectionId, label: s.name }))
+                                ]}
+                                onChange={(e) => setSelectedSection(e.target.value as string)}
+                            />
                         </Grid>
                     )}
-                    <Grid size={{ xs: 6, sm: 3, md: 2 }}>
-                        <FormControl fullWidth>
-                            <InputLabel>Subject</InputLabel>
-                            <Select
-                                value={selectedSubject}
-                                label="Subject"
-                                onChange={(e) => setSelectedSubject(e.target.value)}
-                            >
-                                {subjects.map((s: Subject) => (
-                                    <MenuItem key={s.subjectId} value={s.subjectId}>{s.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                    <Grid size={{ xs: 6, sm: 3, md: 2.5 }}>
+                        <AppSelect
+                            label="Subject"
+                            value={selectedSubject}
+                            options={subjects.map((s: Subject) => ({ value: s.subjectId, label: s.name }))}
+                            onChange={(e) => setSelectedSubject(e.target.value as string)}
+                        />
                     </Grid>
                 </Grid>
             </Paper>
@@ -242,12 +217,12 @@ const PeriodAttendance = () => {
                     <Chip label={`Absent: ${summary.absent}`} color="error" />
                     <Chip label={`Late: ${summary.late}`} color="warning" />
                     <Box sx={{ ml: 'auto' }}>
-                        <Button size="small" variant="outlined" color="success" onClick={() => handleMarkAll('present')} sx={{ mr: 1 }}>
+                        <AppButton size="small" variant="outlined" color="success" onClick={() => handleMarkAll('present')} sx={{ mr: 1 }}>
                             All Present
-                        </Button>
-                        <Button size="small" variant="outlined" color="error" onClick={() => handleMarkAll('absent')}>
+                        </AppButton>
+                        <AppButton size="small" variant="outlined" color="error" onClick={() => handleMarkAll('absent')}>
                             All Absent
-                        </Button>
+                        </AppButton>
                     </Box>
                 </Box>
             )}
@@ -300,15 +275,15 @@ const PeriodAttendance = () => {
             {/* Save */}
             {students.length > 0 && (
                 <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button
+                    <AppButton
                         variant="contained"
                         size="large"
-                        startIcon={markAttendance.isPending ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                        loading={markAttendance.isPending}
+                        startIcon={!markAttendance.isPending && <SaveIcon />}
                         onClick={handleSave}
-                        disabled={markAttendance.isPending}
                     >
                         Save Period Attendance
-                    </Button>
+                    </AppButton>
                 </Box>
             )}
 

@@ -4,19 +4,18 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Button,
-    TextField,
-    CircularProgress,
     Alert,
     IconButton,
-    Grid,
     Typography,
     Box,
     Chip,
+    Divider,
 } from '@mui/material';
-import { Close as CloseIcon, Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Close as CloseIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useCreateClass, useUpdateClass, useAddSection } from '../../queries/Class';
 import type { Class, CreateClassPayload } from '../../types';
+import { AppInput } from '../ui/AppInput';
+import { AppButton } from '../ui/AppButton';
 
 interface ClassDialogProps {
     open: boolean;
@@ -166,7 +165,7 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {isEditMode ? 'Edit Class' : 'Add Class'}
+                {isEditMode ? 'Edit Class Configuration' : 'Create New Class'}
                 <IconButton onClick={handleClose} size="small">
                     <CloseIcon />
                 </IconButton>
@@ -180,37 +179,45 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
                         </Alert>
                     )}
 
-                    <Grid container spacing={2}>
-                        <Grid size={{ xs: 12 }}>
-                            <TextField
-                                name="name"
-                                label="Class Name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                error={!!errors.name}
-                                helperText={errors.name}
-                                required
-                                fullWidth
-                                placeholder="e.g., Class 10, Grade 5"
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <TextField
-                                name="description"
-                                label="Description"
-                                value={formData.description}
-                                onChange={handleChange}
-                                fullWidth
-                                multiline
-                                rows={2}
-                            />
-                        </Grid>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Core Definition
+                        </Typography>
+
+                        <AppInput
+                            name="name"
+                            label="Class Designation"
+                            value={formData.name}
+                            onChange={handleChange}
+                            error={!!errors.name}
+                            helperText={errors.name}
+                            required
+                            fullWidth
+                            placeholder="e.g., Grade 10-A, Year 5"
+                        />
+
+                        <AppInput
+                            name="description"
+                            label="Brief Description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            fullWidth
+                            multiline
+                            rows={2}
+                            placeholder="Optional metadata about this class"
+                        />
+
+                        <Divider sx={{ my: 0.5 }} />
+                        
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Section Management
+                        </Typography>
 
                         {/* Existing Sections (in edit mode) */}
                         {isEditMode && editData && editData.sections.length > 0 && (
-                            <Grid size={{ xs: 12 }}>
-                                <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                                    Existing Sections
+                            <Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
+                                    Active Sections
                                 </Typography>
                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                                     {editData.sections.map((section) => (
@@ -219,21 +226,22 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
                                             label={section.name}
                                             color="primary"
                                             variant="outlined"
+                                            size="small"
+                                            sx={{ borderRadius: '6px' }}
                                         />
                                     ))}
                                 </Box>
-                            </Grid>
+                            </Box>
                         )}
 
                         {/* Add New Sections */}
-                        <Grid size={{ xs: 12 }}>
-                            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                                {isEditMode ? 'Add New Sections' : 'Sections'}
+                        <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
+                                {isEditMode ? 'Append New Sections' : 'Define Sections'}
                             </Typography>
-                            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                                <TextField
-                                    size="small"
-                                    placeholder="Section name (e.g., A, B)"
+                            <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                                <AppInput
+                                    placeholder="Section ID (e.g., A, B, Blue)"
                                     value={newSectionName}
                                     onChange={(e) => setNewSectionName(e.target.value)}
                                     error={!!errors.section}
@@ -246,13 +254,13 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
                                     }}
                                     sx={{ flex: 1 }}
                                 />
-                                <Button
+                                <AppButton
                                     variant="outlined"
                                     onClick={handleAddSection}
-                                    startIcon={<AddIcon />}
+                                    sx={{ minWidth: '80px', height: '45px' }}
                                 >
                                     Add
-                                </Button>
+                                </AppButton>
                             </Box>
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                                 {newSections.map((section, index) => (
@@ -260,25 +268,31 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
                                         key={index}
                                         label={section.name}
                                         color="success"
+                                        size="small"
                                         onDelete={() => handleRemoveNewSection(index)}
                                         deleteIcon={<DeleteIcon />}
+                                        sx={{ borderRadius: '6px' }}
                                     />
                                 ))}
+                                {newSections.length === 0 && !isEditMode && (
+                                    <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                                        No sections defined yet
+                                    </Typography>
+                                )}
                             </Box>
-                        </Grid>
-                    </Grid>
+                        </Box>
+                    </Box>
                 </DialogContent>
 
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={handleClose} color="inherit">Cancel</Button>
-                    <Button
+                    <AppButton onClick={handleClose} variant="text" color="inherit">Cancel</AppButton>
+                    <AppButton
                         type="submit"
                         variant="contained"
-                        disabled={isPending}
-                        startIcon={isPending ? <CircularProgress size={20} /> : null}
+                        loading={isPending}
                     >
-                        {isPending ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Create')}
-                    </Button>
+                        {isEditMode ? 'Update Configuration' : 'Create Class'}
+                    </AppButton>
                 </DialogActions>
             </form>
         </Dialog>

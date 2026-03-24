@@ -6,11 +6,6 @@ import {
     Grid,
     Card,
     CardContent,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    TextField,
     Table,
     TableBody,
     TableCell,
@@ -24,6 +19,9 @@ import {
 } from '@mui/material';
 import { useGetDailyReport, useGetClassWiseReport, useGetMonthlyReport } from '../../../queries/Attendance';
 import { useGetClasses } from '../../../queries/Class';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { format } from 'date-fns';
 import { useGetSchoolById } from '../../../queries/School';
 import type { Class, ClassWiseReport as ClassReport } from '../../../types';
 import TokenService from '../../../queries/token/tokenService';
@@ -35,7 +33,7 @@ const AttendanceReports = () => {
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedClass, setSelectedClass] = useState('');
-    const [selectedSection, setSelectedSection] = useState('');
+    const [selectedSection] = useState('');
 
     const { data: schoolData } = useGetSchoolById(schoolId);
     const mode = schoolData?.data?.attendanceSettings?.mode || 'simple';
@@ -81,27 +79,21 @@ const AttendanceReports = () => {
                 <>
                     <Paper sx={{ p: 2, mb: 3 }}>
                         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <TextField
-                                type="date"
-                                label="Date"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                InputLabelProps={{ shrink: true }}
+                            <AppDatePicker
+                                label="Report Date"
+                                value={selectedDate ? new Date(selectedDate) : null}
+                                onChange={(date) => setSelectedDate(date ? format(date, 'yyyy-MM-dd') : '')}
                             />
-                            <FormControl sx={{ minWidth: 150 }}>
-                                <InputLabel>Class</InputLabel>
-                                <Select
-                                    value={selectedClass}
-                                    label="Class"
-                                    onChange={(e) => {
-                                        setSelectedClass(e.target.value);
-                                        setSelectedSection('');
-                                    }}
-                                >
-                                    <MenuItem value="">All Classes</MenuItem>
-                                    {classes.map((c: Class) => <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>)}
-                                </Select>
-                            </FormControl>
+                            <AppSelect
+                                label="Filter by Class"
+                                value={selectedClass}
+                                options={[
+                                    { value: '', label: 'All Classes' },
+                                    ...classes.map((c: Class) => ({ value: c.classId, label: c.name }))
+                                ]}
+                                onChange={(e) => setSelectedClass(e.target.value as string)}
+                                sx={{ minWidth: 200 }}
+                            />
                             <Chip label={`Mode: ${mode.replace('_', ' ')}`} variant="outlined" />
                         </Box>
                     </Paper>
@@ -163,42 +155,11 @@ const AttendanceReports = () => {
             {tab === 1 && (
                 <>
                     <Paper sx={{ p: 2, mb: 3 }}>
-                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <TextField
-                                type="date"
-                                label="Date"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                InputLabelProps={{ shrink: true }}
-                            />
-                            <FormControl sx={{ minWidth: 150 }}>
-                                <InputLabel>Class</InputLabel>
-                                <Select
-                                    value={selectedClass}
-                                    label="Class"
-                                    onChange={(e) => {
-                                        setSelectedClass(e.target.value);
-                                        setSelectedSection('');
-                                    }}
-                                >
-                                    <MenuItem value="">All Classes</MenuItem>
-                                    {classes.map((c: Class) => <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>)}
-                                </Select>
-                            </FormControl>
-                            <FormControl sx={{ minWidth: 150 }} disabled={!selectedClass}>
-                                <InputLabel>Section</InputLabel>
-                                <Select
-                                    value={selectedSection}
-                                    label="Section"
-                                    onChange={(e) => setSelectedSection(e.target.value)}
-                                >
-                                    <MenuItem value="">All Sections</MenuItem>
-                                    {classes.find((c: Class) => c.classId === selectedClass)?.sections.map((s) => (
-                                        <MenuItem key={s.sectionId} value={s.sectionId}>{s.name}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Box>
+                        <AppDatePicker
+                            label="Report Date"
+                            value={selectedDate ? new Date(selectedDate) : null}
+                            onChange={(date) => setSelectedDate(date ? format(date, 'yyyy-MM-dd') : '')}
+                        />
                     </Paper>
 
                     {classWiseLoading ? (
@@ -249,34 +210,33 @@ const AttendanceReports = () => {
                 <>
                     <Paper sx={{ p: 2, mb: 3 }}>
                         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <FormControl sx={{ minWidth: 100 }}>
-                                <InputLabel>Month</InputLabel>
-                                <Select value={selectedMonth} label="Month" onChange={(e) => setSelectedMonth(Number(e.target.value))}>
-                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => (
-                                        <MenuItem key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'short' })}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            <FormControl sx={{ minWidth: 100 }}>
-                                <InputLabel>Year</InputLabel>
-                                <Select value={selectedYear} label="Year" onChange={(e) => setSelectedYear(Number(e.target.value))}>
-                                    {[2024, 2025, 2026].map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
-                                </Select>
-                            </FormControl>
-                            <FormControl sx={{ minWidth: 150 }}>
-                                <InputLabel>Class</InputLabel>
-                                <Select
-                                    value={selectedClass}
-                                    label="Class"
-                                    onChange={(e) => {
-                                        setSelectedClass(e.target.value);
-                                        setSelectedSection('');
-                                    }}
-                                >
-                                    <MenuItem value="">All Classes</MenuItem>
-                                    {classes.map((c: Class) => <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>)}
-                                </Select>
-                            </FormControl>
+                            <AppSelect
+                                label="Month"
+                                value={selectedMonth}
+                                options={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => ({
+                                    value: m,
+                                    label: new Date(2000, m - 1).toLocaleString('default', { month: 'short' })
+                                }))}
+                                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                                sx={{ minWidth: 120 }}
+                            />
+                            <AppSelect
+                                label="Year"
+                                value={selectedYear}
+                                options={[2024, 2025, 2026].map(y => ({ value: y, label: y.toString() }))}
+                                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                sx={{ minWidth: 120 }}
+                            />
+                            <AppSelect
+                                label="Class"
+                                value={selectedClass}
+                                options={[
+                                    { value: '', label: 'All Classes' },
+                                    ...classes.map((c: Class) => ({ value: c.classId, label: c.name }))
+                                ]}
+                                onChange={(e) => setSelectedClass(e.target.value as string)}
+                                sx={{ minWidth: 200 }}
+                            />
                         </Box>
                     </Paper>
 

@@ -6,12 +6,10 @@ import {
     DialogActions,
     Alert,
     IconButton,
-    Grid,
     Autocomplete,
     Typography,
     Divider,
     Box,
-    TextField,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateStudent, useUpdateStudent } from '../../queries/Student';
@@ -23,6 +21,8 @@ import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
 import { AppInput } from '../ui/AppInput';
 import { AppSelect } from '../ui/AppSelect';
 import { AppButton } from '../ui/AppButton';
+import { AppDatePicker } from '../ui/AppDatePicker';
+import { format } from 'date-fns';
 
 interface StudentDialogProps {
     open: boolean;
@@ -227,58 +227,32 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3 }}>
-                <Typography variant="h5" fontWeight={700}>
-                    {isEditMode ? 'Edit Student Profile' : 'Register New Student'}
-                </Typography>
-                <IconButton onClick={handleClose} size="small" sx={{ bgcolor: 'background.default' }}>
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>{isEditMode ? 'Modify Student Profile' : 'Register New Student'}</Typography>
+                <IconButton onClick={handleClose} size="small">
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
 
             <form onSubmit={handleSubmit}>
-                <DialogContent sx={{ p: 3, pt: 1 }}>
-                    {createMutation.isError && <Alert severity="error" sx={{ mb: 3 }}>{(createMutation.error as any)?.message || 'Failed to save'}</Alert>}
+                <DialogContent>
+                    {createMutation.isError && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {(createMutation.error as any)?.message || 'Failed to save student profile'}
+                        </Alert>
+                    )}
 
-                    <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Student Identity
+                        </Typography>
+
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <AppInput name="firstName" label="First Name" value={formData.firstName} onChange={handleChange} error={!!errors.firstName} helperText={errors.firstName} required />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
                             <AppInput name="lastName" label="Last Name" value={formData.lastName} onChange={handleChange} error={!!errors.lastName} helperText={errors.lastName} required />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <AppInput name="email" label="Email Address" type="email" value={formData.email} onChange={handleChange} error={!!errors.email} helperText={errors.email} />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <AppInput name="password" label="Portal Password" type="password" value={formData.password} onChange={handleChange} error={!!errors.password} helperText={errors.password} required={!isEditMode} labelHint={isEditMode ? 'Leave blank to keep current' : ''} />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <AppSelect
-                                label="Assign Class"
-                                value={formData.class}
-                                error={!!errors.class}
-                                helperText={errors.class}
-                                options={classes.filter((c: Class) => c.status === 'active').map((c: Class) => ({ value: c.classId, label: c.name }))}
-                                onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value as string, section: '' }))}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <AppSelect
-                                label="Select Section"
-                                value={formData.section}
-                                disabled={!formData.class}
-                                options={[{ value: '', label: 'None' }, ...selectedClassSections.map((s: Section) => ({ value: s.sectionId, label: s.name }))]}
-                                onChange={(e) => setFormData(prev => ({ ...prev, section: e.target.value as string }))}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <AppInput name="rollNumber" label="Roll Number" value={formData.rollNumber} onChange={handleChange} />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <AppInput name="phone" label="Phone Number" value={formData.phone} onChange={handleChange} />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        </Box>
+
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <AppSelect
                                 label="Gender"
                                 value={formData.gender || ''}
@@ -289,63 +263,94 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                                 ]}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, gender: e.target.value as any }))}
                             />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <AppInput name="dateOfBirth" label="Date of Birth" type="date" value={formData.dateOfBirth} onChange={handleChange} slotProps={{ inputLabel: { shrink: true } }} />
-                        </Grid>
-
-                        <Grid size={{ xs: 12 }}>
-                            <Autocomplete
-                                options={parentOptions}
-                                value={selectedParent}
-                                onChange={handleParentSelect}
-                                loading={parentLoading}
-                                getOptionLabel={(option) => `${option.firstName} ${option.lastName} (${option.phone || option.email || 'N/A'})`}
-                                onInputChange={(_, value) => setParentSearchQuery(value)}
-                                renderInput={(params) => (
-                                    <TextField {...params} label="Link to Parent Account" placeholder="Search by name, email, or phone..." variant="outlined" />
-                                )}
+                            <AppDatePicker
+                                label="Date of Birth"
+                                value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                                onChange={(date) => setFormData((prev) => ({ ...prev, dateOfBirth: date ? format(date, 'yyyy-MM-dd') : '' }))}
                             />
-                        </Grid>
+                        </Box>
 
-                        <Grid size={{ xs: 12 }}>
-                            <AppInput name="address" label="Home Address" value={formData.address} onChange={handleChange} multiline rows={2} />
-                        </Grid>
+                        <AppInput name="email" label="Email Address" type="email" value={formData.email} onChange={handleChange} error={!!errors.email} helperText={errors.email} labelHint="Optional" />
 
-                        <Grid size={{ xs: 12 }}>
-                            <Divider sx={{ my: 2 }} />
-                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>Profile Media</Typography>
-                            <Box sx={{ display: 'flex', gap: 4 }}>
-                                <ImageUpload
-                                    folder={IMAGEKIT_FOLDERS.PROFILE_IMAGES}
-                                    fileName={isEditMode && editData ? `${editData.studentId}_profile` : `new_student_profile_${Date.now()}`}
-                                    currentImage={formData.profileImage}
-                                    label="Student Photo"
-                                    authEndpoint="school"
-                                    variant="avatar"
-                                    size="medium"
-                                    onUploadSuccess={(result) => setFormData(prev => ({ ...prev, profileImage: result.url }))}
-                                    onRemove={() => setFormData(prev => ({ ...prev, profileImage: '' }))}
-                                />
-                                <ImageUpload
-                                    folder={IMAGEKIT_FOLDERS.SIGNATURES}
-                                    fileName={isEditMode && editData ? `${editData.studentId}_signature` : `new_student_signature_${Date.now()}`}
-                                    currentImage={formData.signature}
-                                    label="Signature"
-                                    authEndpoint="school"
-                                    size="small"
-                                    onUploadSuccess={(result) => setFormData(prev => ({ ...prev, signature: result.url }))}
-                                    onRemove={() => setFormData(prev => ({ ...prev, signature: '' }))}
-                                />
-                            </Box>
-                        </Grid>
-                    </Grid>
+                        <AppInput name="password" label="Portal Access Password" type="password" value={formData.password} onChange={handleChange} error={!!errors.password} helperText={errors.password} required={!isEditMode} labelHint={isEditMode ? 'Leave blank to keep current' : ''} />
+
+                        <Divider sx={{ my: 1 }} />
+                        
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Academic Placement
+                        </Typography>
+
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                            <AppSelect
+                                label="Assign Class"
+                                value={formData.class}
+                                error={!!errors.class}
+                                helperText={errors.class}
+                                options={classes.filter((c: Class) => c.status === 'active').map((c: Class) => ({ value: c.classId, label: c.name }))}
+                                onChange={(e) => setFormData(prev => ({ ...prev, class: e.target.value as string, section: '' }))}
+                            />
+                            <AppSelect
+                                label="Select Section"
+                                value={formData.section}
+                                disabled={!formData.class}
+                                options={[{ value: '', label: 'None' }, ...selectedClassSections.map((s: Section) => ({ value: s.sectionId, label: s.name }))]}
+                                onChange={(e) => setFormData(prev => ({ ...prev, section: e.target.value as string }))}
+                            />
+                            <AppInput name="rollNumber" label="Roll Number" value={formData.rollNumber} onChange={handleChange} />
+                        </Box>
+
+                        <Divider sx={{ my: 1 }} />
+                        
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Additional Information
+                        </Typography>
+
+                        <AppInput name="phone" label="Contact Phone" value={formData.phone} onChange={handleChange} labelHint="Optional" />
+
+                        <Autocomplete
+                            options={parentOptions}
+                            value={selectedParent}
+                            onChange={handleParentSelect}
+                            loading={parentLoading}
+                            getOptionLabel={(option) => `${option.firstName} ${option.lastName} (${option.phone || option.email || 'N/A'})`}
+                            onInputChange={(_, value) => setParentSearchQuery(value)}
+                            renderInput={(params) => (
+                                <AppInput {...params} label="Link Parent Account" placeholder="Search by name, email, or phone..." />
+                            )}
+                        />
+
+                        <AppInput name="address" label="Home Address" value={formData.address} onChange={handleChange} multiline rows={2} />
+
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1 }}>
+                            <ImageUpload
+                                folder={IMAGEKIT_FOLDERS.PROFILE_IMAGES}
+                                fileName={isEditMode && editData ? `${editData.studentId}_profile` : `new_student_profile_${Date.now()}`}
+                                currentImage={formData.profileImage}
+                                label="Student Photo"
+                                authEndpoint="school"
+                                variant="avatar"
+                                size="medium"
+                                onUploadSuccess={(result) => setFormData(prev => ({ ...prev, profileImage: result.url }))}
+                                onRemove={() => setFormData(prev => ({ ...prev, profileImage: '' }))}
+                            />
+                            <ImageUpload
+                                folder={IMAGEKIT_FOLDERS.SIGNATURES}
+                                fileName={isEditMode && editData ? `${editData.studentId}_signature` : `new_student_signature_${Date.now()}`}
+                                currentImage={formData.signature}
+                                label="Signature Consent"
+                                authEndpoint="school"
+                                size="small"
+                                onUploadSuccess={(result) => setFormData(prev => ({ ...prev, signature: result.url }))}
+                                onRemove={() => setFormData(prev => ({ ...prev, signature: '' }))}
+                            />
+                        </Box>
+                    </Box>
                 </DialogContent>
 
-                <DialogActions sx={{ p: 3, pt: 1 }}>
-                    <AppButton onClick={handleClose} variant="text" color="inherit">Discard</AppButton>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <AppButton onClick={handleClose} variant="text" color="inherit">Cancel</AppButton>
                     <AppButton type="submit" variant="contained" loading={isPending}>
-                        {isEditMode ? 'Update Profile' : 'Confirm Registration'}
+                        {isEditMode ? 'Update Profile' : 'Register Student'}
                     </AppButton>
                 </DialogActions>
             </form>

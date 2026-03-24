@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField, type TextFieldProps, Typography, Box } from '@mui/material';
+import { TextField, type TextFieldProps, alpha, Typography, Box } from '@mui/material';
 
 export type AppInputProps = TextFieldProps & {
   labelHint?: string;
@@ -30,8 +30,14 @@ export const AppInput: React.FC<AppInputProps> = ({
         hiddenLabel
         sx={{
           '& .MuiOutlinedInput-root': {
-            '& fieldset': {
-              borderColor: 'divider',
+            backgroundColor: 'background.paper',
+            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              backgroundColor: alpha('#f1f5f9', 0.5),
+            },
+            '&.Mui-focused': {
+              backgroundColor: 'background.paper',
+              boxShadow: (theme) => `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
             },
           },
           ...sx

@@ -4,14 +4,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Alert,
   IconButton,
-  Grid,
   Autocomplete,
   Chip,
   Typography,
   Divider,
+  Box,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import { useCreateTeacher, useUpdateTeacher } from "../../queries/Teacher";
@@ -54,6 +53,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
     phone: "",
     subjects: [],
     classes: [],
+    sections: [],
     status: "active",
     profileImage: "",
     signature: "",
@@ -114,6 +114,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
         phone: editData.phone || "",
         subjects: editData.subjects || [],
         classes: editData.classes || [],
+        sections: editData.sections || [],
         status: editData.status || "active",
         profileImage: editData.profileImage || "",
         signature: editData.signature || "",
@@ -128,6 +129,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
         phone: "",
         subjects: [],
         classes: [],
+        sections: [],
         status: "active",
         profileImage: "",
         signature: "",
@@ -197,6 +199,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
       phone: "",
       subjects: [],
       classes: [],
+      sections: [],
       status: "active",
       profileImage: "",
       signature: "",
@@ -224,7 +227,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
           alignItems: "center",
         }}
       >
-        {isEditMode ? "Edit Teacher" : "Add Teacher"}
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>{isEditMode ? "Modify Educator Profile" : "Register New Teacher"}</Typography>
         <IconButton onClick={handleClose} size="small">
           <CloseIcon />
         </IconButton>
@@ -238,8 +241,12 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
             </Alert>
           )}
 
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+              Basic Information
+            </Typography>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <AppInput
                 name="firstName"
                 label="First Name"
@@ -249,8 +256,6 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                 helperText={errors.firstName}
                 required
               />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
               <AppInput
                 name="lastName"
                 label="Last Name"
@@ -260,20 +265,20 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                 helperText={errors.lastName}
                 required
               />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <AppInput
-                name="email"
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                error={!!errors.email}
-                helperText={errors.email}
-                required
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
+            </Box>
+
+            <AppInput
+              name="email"
+              label="Email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              error={!!errors.email}
+              helperText={errors.email}
+              required
+            />
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <AppInput
                 name="password"
                 label="Password"
@@ -285,74 +290,103 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                 required={!isEditMode}
                 labelHint={isEditMode ? 'Leave blank to keep current' : ''}
               />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
               <AppInput
                 name="phone"
                 label="Phone"
                 value={formData.phone}
                 onChange={handleChange}
               />
-            </Grid>
+            </Box>
+
+            <Divider sx={{ my: 1 }} />
+
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+              Academic Assignments
+            </Typography>
 
             {/* Classes Multi-Select */}
-            <Grid size={{ xs: 12 }}>
-              <Autocomplete
-                multiple
-                options={classOptions}
-                getOptionLabel={(option) => option.label}
-                value={classOptions.filter((opt) =>
-                  formData.classes?.includes(opt.id),
-                )}
-                onChange={(_, newValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    classes: newValue.map((v) => v.id),
-                  }));
-                }}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Assigned Class Sections"
-                    placeholder="Select classes and sections"
+            <Autocomplete
+              multiple
+              options={classOptions}
+              getOptionLabel={(option) => option.label}
+              value={classOptions.filter((opt) =>
+                formData.classes?.includes(opt.id)
+              )}
+              onChange={(_, newValue) => {
+                const newClassIds = newValue.map((v) => v.id);
+                const validSections =
+                  formData.sections?.filter((sId: string) => {
+                    return classes.some(
+                      (c) =>
+                        newClassIds.includes(c.classId) &&
+                        c.sections.some((s) => s.sectionId === sId)
+                    );
+                  }) || [];
+                setFormData((prev) => ({
+                  ...prev,
+                  classes: newClassIds,
+                  sections: validSections,
+                }));
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => (
+                <AppInput
+                  {...params}
+                  label="Assigned Classes"
+                  placeholder="Select classes"
+                />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    label={option.label}
+                    {...getTagProps({ index })}
+                    key={option.id}
+                    color="primary"
+                    variant="outlined"
+                    size="small"
                   />
-                )}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      label={option.label}
-                      {...getTagProps({ index })}
-                      key={option.id}
-                      color="primary"
-                      variant="outlined"
-                    />
-                  ))
-                }
-              />
-            </Grid>
+                ))
+              }
+            />
 
-            {/* Subjects Multi-Select */}
-            <Grid size={{ xs: 12 }}>
+            {/* Sections Multi-Select */}
+            {formData.classes && formData.classes.length > 0 && (
               <Autocomplete
                 multiple
-                options={subjectOptions}
+                options={classes
+                  .filter((c) => formData.classes?.includes(c.classId))
+                  .flatMap((c) =>
+                    c.sections.map((s) => ({
+                      id: s.sectionId,
+                      label: `${c.name} - ${s.name}`,
+                    }))
+                  )}
                 getOptionLabel={(option) => option.label}
-                value={subjectOptions.filter((opt) =>
-                  formData.subjects?.includes(opt.id),
-                )}
+                value={classes
+                  .filter((c) => formData.classes?.includes(c.classId))
+                  .flatMap((c) =>
+                    c.sections
+                      .filter((s) => formData.sections?.includes(s.sectionId))
+                      .map((s) => ({
+                        id: s.sectionId,
+                        label: `${c.name} - ${s.name}`,
+                      }))
+                  )}
                 onChange={(_, newValue) => {
                   setFormData((prev) => ({
                     ...prev,
-                    subjects: newValue.map((v) => v.id),
+                    sections: newValue.map((v) => v.id),
                   }));
                 }}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 renderInput={(params) => (
-                  <TextField
+                  <AppInput
                     {...params}
-                    label="Assigned Subjects"
-                    placeholder="Select subjects"
+                    label="Assigned Sections"
+                    labelHint="Optional"
+                    placeholder="Select specific sections"
+                    helperText="Leave empty to assign to entire class"
                   />
                 )}
                 renderTags={(value, getTagProps) =>
@@ -363,108 +397,116 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                       key={option.id}
                       color="secondary"
                       variant="outlined"
+                      size="small"
                     />
                   ))
                 }
               />
-            </Grid>
+            )}
 
-            <Grid size={{ xs: 12 }}>
-              <AppSelect
-                label="Status"
-                value={formData.status || 'active'}
-                options={[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                ]}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    status: e.target.value as "active" | "inactive",
-                  }))
-                }
-              />
-            </Grid>
-
-            {/* Class Teacher Option */}
-            <Grid size={{ xs: 12 }}>
-              <Autocomplete
-                options={allSections}
-                getOptionLabel={(option) => option.label}
-                value={
-                  allSections.find(
-                    (opt) => opt.id === formData.classTeacherSectionId,
-                  ) || null
-                }
-                onChange={(_, newValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    classTeacherSectionId: newValue?.id || null,
-                  }));
-                }}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Class Teacher Of (Optional)"
-                    placeholder="Select class & section"
+            {/* Subjects Multi-Select */}
+            <Autocomplete
+              multiple
+              options={subjectOptions}
+              getOptionLabel={(option) => option.label}
+              value={subjectOptions.filter((opt) =>
+                formData.subjects?.includes(opt.id)
+              )}
+              onChange={(_, newValue) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  subjects: newValue.map((v) => v.id),
+                }));
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => (
+                <AppInput
+                  {...params}
+                  label="Assigned Subjects"
+                  placeholder="Select subjects"
+                />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    label={option.label}
+                    {...getTagProps({ index })}
+                    key={option.id}
+                    color="info"
+                    variant="outlined"
+                    size="small"
                   />
-                )}
-                renderOption={(props, option) => (
-                  <li {...props} key={option.id}>
-                    {option.label}
-                  </li>
-                )}
-              />
-            </Grid>
+                ))
+              }
+            />
 
-            {/* Profile Image and Signature */}
-            <Grid size={{ xs: 12 }}>
-              <Divider sx={{ my: 1 }} />
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                sx={{ mb: 2 }}
-              >
-                Images
-              </Typography>
-            </Grid>
+            <Divider sx={{ my: 1 }} />
 
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+              Status & Identification
+            </Typography>
+
+            <AppSelect
+              label="Account Status"
+              value={formData.status || 'active'}
+              options={[
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+              ]}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  status: e.target.value as "active" | "inactive",
+                }))
+              }
+            />
+
+            <Autocomplete
+              options={allSections}
+              getOptionLabel={(option) => option.label}
+              value={
+                allSections.find(
+                  (opt) => opt.id === formData.classTeacherSectionId
+                ) || null
+              }
+              onChange={(_, newValue) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  classTeacherSectionId: newValue?.id || null,
+                }));
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => (
+                <AppInput
+                  {...params}
+                  label="Class Teacher Of"
+                  labelHint="Optional"
+                  placeholder="Select class & section"
+                />
+              )}
+            />
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1 }}>
               <ImageUpload
                 folder={IMAGEKIT_FOLDERS.PROFILE_IMAGES}
-                fileName={
-                  isEditMode && editData
-                    ? `${editData.teacherId}_profile`
-                    : `new_teacher_profile_${Date.now()}`
-                }
+                fileName={isEditMode && editData ? `${editData.teacherId}_profile` : `new_teacher_profile_${Date.now()}`}
                 currentImage={formData.profileImage}
                 label="Profile Image"
                 authEndpoint="school"
                 variant="avatar"
                 size="medium"
                 onUploadSuccess={(result) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    profileImage: result.url,
-                  }));
+                  setFormData((prev) => ({ ...prev, profileImage: result.url }));
                 }}
                 onRemove={() => {
                   setFormData((prev) => ({ ...prev, profileImage: "" }));
                 }}
               />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6 }}>
               <ImageUpload
                 folder={IMAGEKIT_FOLDERS.SIGNATURES}
-                fileName={
-                  isEditMode && editData
-                    ? `${editData.teacherId}_signature`
-                    : `new_teacher_signature_${Date.now()}`
-                }
+                fileName={isEditMode && editData ? `${editData.teacherId}_signature` : `new_teacher_signature_${Date.now()}`}
                 currentImage={formData.signature}
-                label="Signature"
+                label="Signature Approval"
                 authEndpoint="school"
                 size="small"
                 onUploadSuccess={(result) => {
@@ -474,11 +516,11 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                   setFormData((prev) => ({ ...prev, signature: "" }));
                 }}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <AppButton onClick={handleClose} variant="text" color="inherit">
             Cancel
           </AppButton>
@@ -487,7 +529,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
             variant="contained"
             loading={isPending}
           >
-            {isEditMode ? "Update" : "Create"}
+            {isEditMode ? "Save Changes" : "Create Profile"}
           </AppButton>
         </DialogActions>
       </form>

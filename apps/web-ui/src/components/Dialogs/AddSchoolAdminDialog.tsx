@@ -1,20 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  TextField,
   Box,
-  CircularProgress,
   Alert,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
+  Typography,
+  Divider,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateSchoolAdmin, useUpdateSchoolAdmin } from '../../queries/SchoolAdmin';
@@ -22,6 +16,9 @@ import { useGetSchools } from '../../queries/School';
 import type { CreateSchoolAdminPayload, SchoolAdmin } from '../../types';
 import { ImageUpload } from '../ImageUpload';
 import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
+import { AppInput } from '../ui/AppInput';
+import { AppSelect } from '../ui/AppSelect';
+import { AppButton } from '../ui/AppButton';
 
 interface SchoolAdminDialogProps {
   open: boolean;
@@ -181,7 +178,7 @@ const SchoolAdminDialog: React.FC<SchoolAdminDialogProps> = ({
           alignItems: "center",
         }}
       >
-        {isEditMode ? "Edit School Admin" : "Add School Admin"}
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>{isEditMode ? "Modify Administrator Profile" : "Register School Administrator"}</Typography>
         <IconButton onClick={handleClose} size="small">
           <CloseIcon />
         </IconButton>
@@ -196,26 +193,25 @@ const SchoolAdminDialog: React.FC<SchoolAdminDialogProps> = ({
           )}
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <FormControl fullWidth error={!!errors.schoolId} required>
-              <InputLabel>School</InputLabel>
-              <Select
-                value={formData.schoolId}
-                label="School"
-                onChange={(e) => handleSelectChange("schoolId", e.target.value)}
-                disabled={schoolsLoading || isEditMode}
-              >
-                {schools.map((school) => (
-                  <MenuItem key={school.schoolId} value={school.schoolId}>
-                    {school.schoolName} ({school.schoolId})
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.schoolId && (
-                <FormHelperText>{errors.schoolId}</FormHelperText>
-              )}
-            </FormControl>
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+              Account Information
+            </Typography>
 
-            <TextField
+            <AppSelect
+              label="Select School"
+              value={formData.schoolId}
+              onChange={(e) => handleSelectChange("schoolId", e.target.value as string)}
+              disabled={schoolsLoading || isEditMode}
+              options={schools.map(school => ({
+                value: school.schoolId,
+                label: `${school.schoolName} (${school.schoolId})`
+              }))}
+              error={!!errors.schoolId}
+              helperText={errors.schoolId}
+              required
+            />
+
+            <AppInput
               name="username"
               label="Username"
               value={formData.username}
@@ -223,40 +219,46 @@ const SchoolAdminDialog: React.FC<SchoolAdminDialogProps> = ({
               error={!!errors.username}
               helperText={errors.username}
               required
-              fullWidth
             />
 
-            <TextField
-              name="email"
-              label="Email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              error={!!errors.email}
-              helperText={errors.email}
-              required
-              fullWidth
-            />
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <AppInput
+                name="email"
+                label="Email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                error={!!errors.email}
+                helperText={errors.email}
+                required
+              />
 
-            <TextField
-              name="password"
-              label={"Password"}
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              error={!!errors.password}
-              helperText={errors.password}
-              required={!isEditMode}
-              fullWidth
-            />
+              <AppInput
+                name="contactNumber"
+                label="Contact Number"
+                value={formData.contactNumber}
+                onChange={handleChange}
+              />
+            </Box>
 
-            <TextField
-              name="contactNumber"
-              label="Contact Number"
-              value={formData.contactNumber}
-              onChange={handleChange}
-              fullWidth
-            />
+            {!isEditMode && (
+              <AppInput
+                name="password"
+                label="Password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                error={!!errors.password}
+                helperText={errors.password}
+                required
+              />
+            )}
+
+            <Divider sx={{ my: 1 }} />
+
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+              Profile Branding
+            </Typography>
 
             <ImageUpload
               folder={IMAGEKIT_FOLDERS.PROFILE_IMAGES}
@@ -280,24 +282,17 @@ const SchoolAdminDialog: React.FC<SchoolAdminDialogProps> = ({
           </Box>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleClose} color="inherit">
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <AppButton onClick={handleClose} variant="text" color="inherit">
             Cancel
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
             type="submit"
             variant="contained"
-            disabled={isPending}
-            startIcon={isPending ? <CircularProgress size={20} /> : null}
+            loading={isPending}
           >
-            {isPending
-              ? isEditMode
-                ? "Updating..."
-                : "Creating..."
-              : isEditMode
-                ? "Update Admin"
-                : "Create Admin"}
-          </Button>
+            {isEditMode ? "Update Profile" : "Create Account"}
+          </AppButton>
         </DialogActions>
       </form>
     </Dialog>

@@ -4,15 +4,14 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    TextField,
     CircularProgress,
     Alert,
     IconButton,
-    Grid,
     Autocomplete,
     Chip,
     Typography,
     Divider,
+    Box,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateParent, useUpdateParent } from '../../queries/Parent';
@@ -237,7 +236,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {isEditMode ? 'Edit Parent' : 'Add Parent'}
+                {isEditMode ? 'Edit Parent Profile' : 'Add New Parent'}
                 <IconButton onClick={handleClose} size="small">
                     <CloseIcon />
                 </IconButton>
@@ -247,36 +246,23 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                 <DialogContent>
                     {isError && <Alert severity="error" sx={{ mb: 2 }}>{errorMessage}</Alert>}
 
-                    <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Personal Details
+                        </Typography>
+
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <AppInput name="firstName" label="First Name" value={formData.firstName}
                                 onChange={handleChange} error={!!errors.firstName} helperText={errors.firstName}
                                 required />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
                             <AppInput name="lastName" label="Last Name" value={formData.lastName}
                                 onChange={handleChange} error={!!errors.lastName} helperText={errors.lastName}
                                 required />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <AppInput name="email" label="Email" type="email" value={formData.email}
-                                onChange={handleChange} error={!!errors.email} helperText={errors.email}
-                                required />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <AppInput name="password" label="Password"
-                                type="password" value={formData.password} onChange={handleChange}
-                                error={!!errors.password} helperText={errors.password} required={!isEditMode}
-                                labelHint={isEditMode ? 'Leave blank to keep current' : ''} />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <AppInput name="phone" label="Phone" value={formData.phone}
-                                onChange={handleChange} error={!!errors.phone} helperText={errors.phone}
-                                required />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                        </Box>
+
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <AppSelect
-                                label="Relationship"
+                                label="Relationship to Student"
                                 value={formData.relationship || 'father'}
                                 options={[
                                     { value: 'father', label: 'Father' },
@@ -286,85 +272,101 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                                 ]}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, relationship: e.target.value as 'father' | 'mother' | 'guardian' | 'other' }))}
                             />
-                        </Grid>
+                            <AppInput name="phone" label="Contact Number" value={formData.phone}
+                                onChange={handleChange} error={!!errors.phone} helperText={errors.phone}
+                                required />
+                        </Box>
+
+                        <AppInput name="email" label="Email Address" type="email" value={formData.email}
+                            onChange={handleChange} error={!!errors.email} helperText={errors.email}
+                            required />
+
+                        <AppInput name="password" label="Account Password"
+                            type="password" value={formData.password} onChange={handleChange}
+                            error={!!errors.password} helperText={errors.password} required={!isEditMode}
+                            labelHint={isEditMode ? 'Leave blank to keep current' : ''} />
+
+                        <Divider sx={{ my: 1 }} />
+                        
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Contact & Occupation
+                        </Typography>
+
+                        <AppInput name="occupation" label="Occupation" value={formData.occupation}
+                            onChange={handleChange} />
+
+                        <AppInput name="address" label="Residential Address" value={formData.address}
+                            onChange={handleChange} multiline rows={2} />
+
+                        <Divider sx={{ my: 1 }} />
+                        
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Student Connectivity
+                        </Typography>
 
                         {/* Student Search Autocomplete */}
-                        <Grid size={{ xs: 12 }}>
-                            <Autocomplete
-                                multiple
-                                options={studentOptions}
-                                value={selectedStudents}
-                                onChange={handleStudentSelect}
-                                loading={studentLoading}
-                                getOptionLabel={(option) =>
-                                    `${option.studentId} - ${option.firstName} ${option.lastName} (${option.class || 'N/A'})`
-                                }
-                                isOptionEqualToValue={(option, value) => option.studentId === value.studentId}
-                                onInputChange={(_, value) => setStudentSearchQuery(value)}
-                                renderTags={(value, getTagProps) =>
-                                    value.map((option, index) => {
-                                        const { key, ...tagProps } = getTagProps({ index });
-                                        return (
-                                            <Chip
-                                                key={key}
-                                                label={option.firstName ? `${option.studentId} - ${option.firstName}` : option.studentId}
-                                                {...tagProps}
-                                                size="small"
-                                            />
-                                        );
-                                    })
-                                }
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Search & Add Students"
-                                        placeholder="Search by ID, name, or email..."
-                                        helperText="Type at least 2 characters to search"
-                                        slotProps={{
-                                            input: {
-                                                ...params.InputProps,
-                                                endAdornment: (
-                                                    <>
-                                                        {studentLoading && <CircularProgress size={20} />}
-                                                        {params.InputProps.endAdornment}
-                                                    </>
-                                                ),
-                                            },
-                                        }}
-                                    />
-                                )}
-                            />
-                        </Grid>
+                        <Autocomplete
+                            multiple
+                            options={studentOptions}
+                            value={selectedStudents}
+                            onChange={handleStudentSelect}
+                            loading={studentLoading}
+                            getOptionLabel={(option) =>
+                                `${option.studentId} - ${option.firstName} ${option.lastName} (${option.class || 'N/A'})`
+                            }
+                            isOptionEqualToValue={(option, value) => option.studentId === value.studentId}
+                            onInputChange={(_, value) => setStudentSearchQuery(value)}
+                            renderTags={(value, getTagProps) =>
+                                value.map((option, index) => {
+                                    const { key, ...tagProps } = getTagProps({ index });
+                                    return (
+                                        <Chip
+                                            key={key}
+                                            label={option.firstName ? `${option.studentId} - ${option.firstName}` : option.studentId}
+                                            {...tagProps}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    );
+                                })
+                            }
+                            renderInput={(params) => (
+                                <AppInput
+                                    {...params}
+                                    label="Search & Link Students"
+                                    placeholder="Search by ID, name, or email..."
+                                    helperText="Type at least 2 characters to search"
+                                    InputProps={{
+                                        ...params.InputProps,
+                                        endAdornment: (
+                                            <>
+                                                {studentLoading && <CircularProgress size={20} />}
+                                                {params.InputProps.endAdornment}
+                                            </>
+                                        ),
+                                    }}
+                                />
+                            )}
+                        />
 
-                        <Grid size={{ xs: 12 }}>
-                            <AppInput name="occupation" label="Occupation" value={formData.occupation}
-                                onChange={handleChange} />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <AppInput name="address" label="Address" value={formData.address}
-                                onChange={handleChange} multiline rows={2} />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <AppSelect
-                                label="Status"
-                                value={formData.status || 'active'}
-                                options={[
-                                    { value: 'active', label: 'Active' },
-                                    { value: 'inactive', label: 'Inactive' },
-                                ]}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value as 'active' | 'inactive' }))}
-                            />
-                        </Grid>
+                        <Divider sx={{ my: 1 }} />
+                        
+                        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+                            Status & Identification
+                        </Typography>
 
-                        {/* Profile Image and Signature */}
-                        <Grid size={{ xs: 12 }}>
-                            <Divider sx={{ my: 1 }} />
-                            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                                Images
-                            </Typography>
-                        </Grid>
+                        <AppSelect
+                            label="Account Status"
+                            value={formData.status || 'active'}
+                            options={[
+                                { value: 'active', label: 'Active' },
+                                { value: 'inactive', label: 'Inactive' },
+                            ]}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value as 'active' | 'inactive' }))}
+                        />
 
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1 }}>
                             <ImageUpload
                                 folder={IMAGEKIT_FOLDERS.PROFILE_IMAGES}
                                 fileName={isEditMode && editData ? `${editData.parentId}_profile` : `new_parent_profile_${Date.now()}`}
@@ -380,14 +382,11 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                                     setFormData(prev => ({ ...prev, profileImage: '' }));
                                 }}
                             />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6 }}>
                             <ImageUpload
                                 folder={IMAGEKIT_FOLDERS.SIGNATURES}
                                 fileName={isEditMode && editData ? `${editData.parentId}_signature` : `new_parent_signature_${Date.now()}`}
                                 currentImage={formData.signature}
-                                label="Signature"
+                                label="Signature Approval"
                                 authEndpoint="school"
                                 size="small"
                                 onUploadSuccess={(result) => {
@@ -397,14 +396,14 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                                     setFormData(prev => ({ ...prev, signature: '' }));
                                 }}
                             />
-                        </Grid>
-                    </Grid>
+                        </Box>
+                    </Box>
                 </DialogContent>
 
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <AppButton onClick={handleClose} variant="text" color="inherit">Cancel</AppButton>
                     <AppButton type="submit" variant="contained" loading={isPending}>
-                        {isEditMode ? 'Update' : 'Create'}
+                        {isEditMode ? 'Update Parent' : 'Create Parent'}
                     </AppButton>
                 </DialogActions>
             </form>

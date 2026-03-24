@@ -162,6 +162,8 @@ export interface Teacher {
   signature?: string;
   classTeacherSectionId?: string | null;
   classTeacherLabel?: string | null;
+  sections: string[];
+  sectionNames?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -177,6 +179,7 @@ export interface CreateTeacherPayload {
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
+  sections?: string[];
   classTeacherSectionId?: string | null;
 }
 
@@ -191,6 +194,7 @@ export interface UpdateTeacherPayload {
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
+  sections?: string[];
   classTeacherSectionId?: string | null;
 }
 

@@ -3,11 +3,6 @@ import {
     Box,
     Paper,
     Typography,
-    Button,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Table,
     TableBody,
     TableCell,
@@ -17,7 +12,6 @@ import {
     Chip,
     CircularProgress,
     Alert,
-    TextField,
     Snackbar,
     Card,
     CardContent,
@@ -31,6 +25,10 @@ import { useGetStudents } from '../../../queries/Student';
 import { useGetDailyCheckins, useCheckIn, useCheckOut } from '../../../queries/Attendance';
 import type { Student, Class, AttendanceCheckin } from '../../../types';
 import TokenService from '../../../queries/token/tokenService';
+import { AppSelect } from '../../../components/ui/AppSelect';
+import { AppButton } from '../../../components/ui/AppButton';
+import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { format } from 'date-fns';
 
 const CheckInAttendance = () => {
     const schoolId = TokenService.getSchoolId() || '';
@@ -118,45 +116,38 @@ const CheckInAttendance = () => {
             {/* Filters */}
             <Paper sx={{ p: 2, mb: 3 }}>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                    <TextField
-                        type="date"
-                        label="Date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                        inputProps={{ max: new Date().toLocaleDateString('en-CA') }}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                    <AppDatePicker
+                        label="Check-In Date"
+                        value={selectedDate ? new Date(selectedDate) : null}
+                        onChange={(date) => setSelectedDate(date ? format(date, 'yyyy-MM-dd') : '')}
                     />
-                    <FormControl sx={{ minWidth: 150 }}>
-                        <InputLabel>Class</InputLabel>
-                        <Select
-                            value={selectedClass}
-                            label="Class"
-                            onChange={(e) => {
-                                setSelectedClass(e.target.value);
-                                setSelectedSection('');
-                            }}
-                        >
-                            <MenuItem value="">All Classes</MenuItem>
-                            {classes.map((c: Class) => (
-                                <MenuItem key={c.classId} value={c.classId}>{c.name}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <AppSelect
+                        label="Class"
+                        value={selectedClass}
+                        options={[
+                            { value: '', label: 'All Classes' },
+                            ...classes.map((c: Class) => ({ value: c.classId, label: c.name }))
+                        ]}
+                        onChange={(e) => {
+                            setSelectedClass(e.target.value as string);
+                            setSelectedSection('');
+                        }}
+                        sx={{ minWidth: 200 }}
+                    />
                     {sections.length > 0 && (
-                        <FormControl sx={{ minWidth: 120 }}>
-                            <InputLabel>Section</InputLabel>
-                            <Select
-                                value={selectedSection}
-                                label="Section"
-                                onChange={(e) => setSelectedSection(e.target.value)}
-                            >
-                                <MenuItem value="">All</MenuItem>
-                                {sections.map(s => (
-                                    <MenuItem key={s.sectionId} value={s.sectionId}>{s.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <AppSelect
+                            label="Section"
+                            value={selectedSection}
+                            options={[
+                                { value: '', label: 'All' },
+                                ...sections.map(s => ({ value: s.sectionId, label: s.name }))
+                            ]}
+                            onChange={(e) => setSelectedSection(e.target.value as string)}
+                            sx={{ minWidth: 150 }}
+                        />
                     )}
+                </Box>
                 </Box>
             </Paper>
 
@@ -218,27 +209,27 @@ const CheckInAttendance = () => {
                                         <TableCell>{getStatusChip(checkin)}</TableCell>
                                         <TableCell align="center">
                                             {!checkin?.checkInTime ? (
-                                                <Button
+                                                <AppButton
                                                     size="small"
                                                     variant="contained"
                                                     color="success"
                                                     startIcon={<CheckInIcon />}
                                                     onClick={() => handleCheckIn(student)}
-                                                    disabled={checkInMutation.isPending}
+                                                    loading={checkInMutation.isPending}
                                                 >
                                                     Check In
-                                                </Button>
+                                                </AppButton>
                                             ) : !checkin?.checkOutTime ? (
-                                                <Button
+                                                <AppButton
                                                     size="small"
                                                     variant="contained"
                                                     color="primary"
                                                     startIcon={<CheckOutIcon />}
                                                     onClick={() => handleCheckOut(student)}
-                                                    disabled={checkOutMutation.isPending}
+                                                    loading={checkOutMutation.isPending}
                                                 >
                                                     Check Out
-                                                </Button>
+                                                </AppButton>
                                             ) : (
                                                 <Chip label="Complete" color="success" size="small" />
                                             )}

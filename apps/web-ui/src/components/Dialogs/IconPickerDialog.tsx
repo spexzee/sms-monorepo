@@ -4,16 +4,16 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  Grid,
   IconButton,
-  TextField,
   Typography,
   Box,
   InputAdornment,
   CircularProgress,
+  Grid,
 } from "@mui/material";
 import { Search as SearchIcon, Close as CloseIcon } from "@mui/icons-material";
+import { AppInput } from "../ui/AppInput";
+import { AppButton } from "../ui/AppButton";
 
 interface IconPickerDialogProps {
   open: boolean;
@@ -28,15 +28,13 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
   onSelect,
   currentIcon,
 }) => {
-  const [searchTerm, setSearchTerm] = useState(""); // Default search is now blank
+  const [searchTerm, setSearchTerm] = useState("");
   const [icons, setIcons] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch icons from Iconify API
   const searchIcons = async (query: string) => {
     setIsLoading(true);
     try {
-      // Using Iconify Public API
       const response = await fetch(
         `https://api.iconify.design/search?query=${encodeURIComponent(
           query,
@@ -63,12 +61,11 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
       } else {
         setIcons([]);
       }
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Handle initial load when dialog opens
   useEffect(() => {
     if (open && icons.length === 0 && searchTerm) {
       searchIcons(searchTerm);
@@ -87,7 +84,12 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { height: "80vh", display: "flex", flexDirection: "column" },
+        sx: { 
+            height: "80vh", 
+            display: "flex", 
+            flexDirection: "column",
+            borderRadius: '16px'
+        },
       }}
     >
       <DialogTitle
@@ -98,14 +100,14 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
           pb: 1,
         }}
       >
-        Select Icon
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>Select Icon</Typography>
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
       <Box sx={{ px: 3, pb: 2 }}>
-        <TextField
+        <AppInput
           fullWidth
           placeholder="Search icons (e.g. school, user, chart)..."
           value={searchTerm}
@@ -113,11 +115,10 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon />
+                <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
               </InputAdornment>
             ),
           }}
-          size="small"
           autoFocus
         />
       </Box>
@@ -133,7 +134,7 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
               width: "100%",
             }}
           >
-            <CircularProgress />
+            <CircularProgress size={32} />
           </Box>
         ) : (
           <Grid container spacing={2}>
@@ -146,7 +147,7 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
                   key={iconName}
                   sx={{ display: "flex", justifyContent: "center" }}
                 >
-                  <Button
+                  <AppButton
                     onClick={() => handleIconClick(iconName)}
                     variant={isSelected ? "contained" : "outlined"}
                     color={isSelected ? "primary" : "inherit"}
@@ -157,15 +158,21 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
                       justifyContent: "center",
                       p: 1.5,
                       width: "100%",
+                      minHeight: "90px",
                       borderColor: isSelected ? "primary.main" : "divider",
+                      borderRadius: '10px',
+                      backgroundColor: isSelected ? undefined : 'background.paper',
                       "&:hover": {
                         backgroundColor: isSelected
                           ? "primary.dark"
                           : "action.hover",
                         borderColor: isSelected
                           ? "primary.dark"
-                          : "text.primary",
+                          : "primary.main",
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       },
+                      transition: 'all 0.2s ease-in-out',
                       textTransform: "none",
                       gap: 1,
                     }}
@@ -178,7 +185,8 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
                         height: 32,
                         filter: isSelected
                           ? "brightness(0) invert(1)"
-                          : "grayscale(100%) brightness(0.2)",
+                          : "none",
+                        opacity: isSelected ? 1 : 0.7
                       }}
                     />
                     <Typography
@@ -189,12 +197,13 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                         textAlign: "center",
-                        fontSize: "0.7rem",
+                        fontSize: "0.65rem",
+                        fontWeight: isSelected ? 600 : 400
                       }}
                     >
-                      {iconName}
+                      {iconName.split(':').pop()}
                     </Typography>
-                  </Button>
+                  </AppButton>
                 </Grid>
               );
             })}
@@ -210,8 +219,8 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
         )}
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <AppButton onClick={onClose} variant="text" color="inherit">Cancel</AppButton>
       </DialogActions>
     </Dialog>
   );
