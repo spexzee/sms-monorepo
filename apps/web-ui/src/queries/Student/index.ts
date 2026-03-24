@@ -34,6 +34,7 @@ export const useGetStudents = (schoolId: string, filters?: StudentFilters) => {
         if (filters.section) queryParams.append("section", filters.section);
         if (filters.status) queryParams.append("status", filters.status);
         if (filters.parentId) queryParams.append("parentId", filters.parentId);
+        if (filters.search) queryParams.append("search", filters.search);
       }
 
       const queryString = queryParams.toString();

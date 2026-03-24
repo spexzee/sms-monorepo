@@ -322,6 +322,7 @@ export interface StudentFilters {
   section?: string;
   status?: "active" | "inactive";
   parentId?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }
@@ -329,6 +330,7 @@ export interface StudentFilters {
 export interface ParentFilters {
   status?: "active" | "inactive";
   relationship?: "father" | "mother" | "guardian" | "other";
+  search?: string;
   page?: number;
   limit?: number;
 }

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Box, IconButton, Tooltip, Switch } from "@mui/material";
+import { Box, IconButton, Tooltip, Switch, TextField, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { Edit as EditIcon } from "@mui/icons-material";
 import DataTable, { StatusChip } from "../../components/Table/DataTable";
 import type { Column } from "../../components/Table/DataTable";
 import ParentDialog from "../../components/Dialogs/AddParentDialog";
 import { useGetParents, useUpdateParent } from "../../queries/Parent";
-import type { Parent } from "../../types";
+import type { Parent, ParentFilters } from "../../types";
 import TokenService from "../../queries/token/tokenService";
 import { useAuth } from "../../context/AuthContext";
 import { useNotificationStore } from "../../stores/notificationStore";
@@ -17,8 +17,22 @@ const ParentsPage = () => {
 
   const schoolId = TokenService.getSchoolId() || "";
   const { page, setPage, limit, setLimit } = useAuth();
+  const [filters, setFilters] = useState<ParentFilters>({
+    search: '',
+    relationship: undefined,
+    status: undefined,
+  });
 
-  const { data, isLoading, error } = useGetParents(schoolId, { page, limit });
+  const handleFilterChange = (newFilters: Partial<ParentFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+    setPage(1);
+  };
+
+  const { data, isLoading, error } = useGetParents(schoolId, { 
+    page, 
+    limit,
+    ...filters
+  });
   const updateMutation = useUpdateParent(schoolId);
 
   const parents = data?.data || [];
@@ -53,7 +67,7 @@ const ParentsPage = () => {
   };
 
   const columns: Column<Parent>[] = [
-    { id: "parentId", label: "ID", minWidth: 100 },
+    { id: "parentId", label: "ID", minWidth: 80, hide: 'md' },
     {
       id: "firstName",
       label: "Name",
@@ -66,6 +80,7 @@ const ParentsPage = () => {
       id: "relationship",
       label: "Relationship",
       minWidth: 100,
+      hide: 'sm',
       format: (value) =>
         (value as string)?.charAt(0).toUpperCase() +
         (value as string)?.slice(1),
@@ -73,8 +88,9 @@ const ParentsPage = () => {
     {
       id: "status",
       label: "Status",
-      minWidth: 100,
+      minWidth: 80,
       align: "center",
+      hide: 'sm',
       format: (value) => (
         <StatusChip status={(value as "active" | "inactive") || "active"} />
       ),
@@ -117,6 +133,62 @@ const ParentsPage = () => {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      {/* Filters */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' }, 
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'stretch', md: 'center' },
+        gap: 2, 
+        mb: 3
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: { xs: 1, sm: 2 }, 
+          flex: 1 
+        }}>
+          <TextField
+            label="Search"
+            variant="outlined"
+            size="small"
+            value={filters.search}
+            onChange={(e) => handleFilterChange({ search: e.target.value })}
+            placeholder="Search parents..."
+            sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 250 } }}
+          />
+          
+          <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' } }}>
+            <FormControl size="small" sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { sm: 150 } }}>
+              <InputLabel>Relationship</InputLabel>
+              <Select
+                value={filters.relationship || ''}
+                label="Relationship"
+                onChange={(e) => handleFilterChange({ relationship: e.target.value as any })}
+              >
+                <MenuItem value="">All Relationships</MenuItem>
+                <MenuItem value="father">Father</MenuItem>
+                <MenuItem value="mother">Mother</MenuItem>
+                <MenuItem value="guardian">Guardian</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { sm: 150 } }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={filters.status || ''}
+                label="Status"
+                onChange={(e) => handleFilterChange({ status: e.target.value as any })}
+              >
+                <MenuItem value="">All Status</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </Box>
+      </Box>
       <DataTable<Parent>
         title="Parents"
         columns={columns}
