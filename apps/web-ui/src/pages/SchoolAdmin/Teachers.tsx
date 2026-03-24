@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Box, IconButton, Tooltip, Chip } from "@mui/material";
-import { Edit as EditIcon, Block as BlockIcon } from "@mui/icons-material";
+import { Box, IconButton, Tooltip, Chip, Switch } from "@mui/material";
+import { Edit as EditIcon } from "@mui/icons-material";
 import DataTable, { StatusChip } from "../../components/Table/DataTable";
 import type { Column } from "../../components/Table/DataTable";
 import TeacherDialog from "../../components/Dialogs/AddTeacherDialog";
@@ -36,15 +36,13 @@ const TeachersPage = () => {
   const handleToggleStatus = async (teacher: Teacher) => {
     const newStatus = teacher.status === "active" ? "inactive" : "active";
     try {
-      await updateMutation.mutateAsync({
+      const result = await updateMutation.mutateAsync({
         teacherId: teacher.teacherId,
         data: { status: newStatus },
       });
-      notification.success(
-        `Teacher ${newStatus === "active" ? "activated" : "deactivated"} successfully`,
-      );
+      notification.success(result.message || `Teacher status updated to ${newStatus}`);
     } catch (err) {
-      notification.error("Failed to update status");
+      notification.error((err as any)?.message || "Failed to update status");
       console.error("Failed to update status:", err);
     }
   };
@@ -107,17 +105,16 @@ const TeachersPage = () => {
             </IconButton>
           </Tooltip>
           <Tooltip title={row.status === "active" ? "Deactivate" : "Activate"}>
-            <IconButton
+            <Switch
               size="small"
-              color={row.status === "active" ? "error" : "success"}
-              onClick={(e) => {
+              checked={row.status === "active"}
+              onChange={(e) => {
                 e.stopPropagation();
                 handleToggleStatus(row);
               }}
               disabled={updateMutation.isPending}
-            >
-              <BlockIcon fontSize="small" />
-            </IconButton>
+              color="success"
+            />
           </Tooltip>
         </Box>
       ),
