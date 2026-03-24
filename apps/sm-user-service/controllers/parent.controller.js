@@ -245,6 +245,35 @@ const getAllParents = async (req, res) => {
     if (status) query.status = status;
     if (relationship) query.relationship = relationship;
 
+    // Search filter (firstName, lastName, email, phone, or parentId)
+    if (req.query.search) {
+      const search = req.query.search.trim();
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const searchRegex = new RegExp(escapedSearch, "i");
+
+      const searchConditions = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex },
+        { parentId: searchRegex },
+      ];
+
+      // Handle full names if search contains space
+      if (search.includes(" ")) {
+        const parts = search.split(/\s+/);
+        if (parts.length >= 2) {
+          searchConditions.push({
+            $and: [
+              { firstName: new RegExp(parts[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") },
+              { lastName: new RegExp(parts[parts.length - 1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") },
+            ],
+          });
+        }
+      }
+      query.$or = searchConditions;
+    }
+
     const { page, limit, skip } = getPaginationParams(req.query);
 
     // If teacher role, only get parents of students in their classes

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Box, IconButton, Tooltip, Switch } from '@mui/material';
+import { Box, IconButton, Tooltip, Switch, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { Edit as EditIcon } from '@mui/icons-material';
 import DataTable, { StatusChip } from '../../components/Table/DataTable';
 import type { Column } from '../../components/Table/DataTable';
@@ -7,7 +7,7 @@ import StudentDialog from '../../components/Dialogs/AddStudentDialog';
 import ExcelBulkActions from '../../components/ExcelBulk/ExcelBulkActions';
 import { useGetStudents, useUpdateStudent, useBulkCreateStudents } from '../../queries/Student';
 import { useGetClasses } from '../../queries/Class';
-import type { Student, CreateStudentPayload } from '../../types';
+import type { Student, CreateStudentPayload, StudentFilters, Class } from '../../types';
 import type { TemplateConfig, ParseConfig } from '../../utils/excelBulk';
 import TokenService from '../../queries/token/tokenService';
 import { useAuth } from '../../context/AuthContext';
@@ -48,14 +48,36 @@ const StudentsPage = () => {
   const { page, setPage, limit, setLimit } = useAuth();
   const { showNotification } = useNotificationStore();
 
-  const { data, isLoading, error } = useGetStudents(schoolId, { page, limit });
+  const [filters, setFilters] = useState<StudentFilters>({
+    class: '',
+    section: '',
+    search: '',
+  });
+
+  const { data, isLoading, error } = useGetStudents(schoolId, { 
+    page, 
+    limit,
+    ...filters
+  });
   const updateMutation = useUpdateStudent(schoolId);
   const bulkCreateMutation = useBulkCreateStudents(schoolId);
 
-  // Fetch classes for reference in notes
+  // Fetch classes for reference in notes and filters
   const { data: classesData } = useGetClasses(schoolId);
 
   const students = data?.data || [];
+
+  // Get sections for the selected class
+  const selectedClassSections = useMemo(() => {
+    if (!filters.class || !classesData?.data) return [];
+    const selectedClass = classesData.data.find((c: Class) => c.classId === filters.class);
+    return selectedClass?.sections || [];
+  }, [filters.class, classesData]);
+
+  const handleFilterChange = (newFilters: Partial<StudentFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+    setPage(1); // Reset to first page on filter change
+  };
 
   const handleAdd = () => {
     setEditData(null);
@@ -142,7 +164,7 @@ const StudentsPage = () => {
   };
 
   const columns: Column<Student>[] = [
-    { id: 'studentId', label: 'ID', minWidth: 100 },
+    { id: 'studentId', label: 'ID', minWidth: 80, hide: 'md' },
     {
       id: 'firstName',
       label: 'Name',
@@ -161,19 +183,21 @@ const StudentsPage = () => {
       minWidth: 80,
       format: (value, row) => row.sectionName || value || '-',
     },
-    { id: 'rollNumber', label: 'Roll No', minWidth: 80 },
+    { id: 'rollNumber', label: 'Roll No', minWidth: 80, hide: 'sm' },
     {
       id: 'parentName',
       label: 'Parent',
       minWidth: 120,
+      hide: 'md',
       format: (value, row) => value || (row.parentId ? 'Unknown' : 'Not Linked'),
     },
-    { id: 'phone', label: 'Phone', minWidth: 120 },
+    { id: 'phone', label: 'Phone', minWidth: 120, hide: 'sm' },
     {
       id: 'status',
       label: 'Status',
-      minWidth: 100,
+      minWidth: 80,
       align: 'center',
+      hide: 'sm',
       format: (value) => <StatusChip status={(value as 'active' | 'inactive') || 'active'} />,
     },
     {
@@ -204,16 +228,92 @@ const StudentsPage = () => {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      {/* Bulk Actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 2 }}>
-        <ExcelBulkActions
-          templateConfig={templateConfig}
-          parseConfig={parseConfig}
-          onUploadComplete={handleBulkUpload}
-          downloadButtonText="Download Template"
-          uploadButtonText="Upload Students"
-          disabled={bulkCreateMutation.isPending}
-        />
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        gap: 2, 
+        mb: 3
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', md: 'row' }, 
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'stretch', md: 'center' },
+          gap: 2 
+        }}>
+          {/* Filters Row */}
+          <Box sx={{ 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: { xs: 1, sm: 2 }, 
+            flex: 1 
+          }}>
+            <TextField
+              label="Search"
+              variant="outlined"
+              size="small"
+              value={filters.search}
+              onChange={(e) => handleFilterChange({ search: e.target.value })}
+              placeholder="Search students..."
+              sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 250 } }}
+            />
+            
+            <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' } }}>
+              <FormControl size="small" sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { sm: 150 } }}>
+                <InputLabel>Class</InputLabel>
+                <Select
+                  value={filters.class || ''}
+                  label="Class"
+                  onChange={(e) => handleFilterChange({ class: e.target.value as string, section: '' })}
+                >
+                  <MenuItem value="">All Classes</MenuItem>
+                  {classesData?.data?.map((cls: Class) => (
+                    <MenuItem key={cls.classId} value={cls.classId}>
+                      {cls.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { sm: 150 } }} disabled={!filters.class}>
+                <InputLabel>Section</InputLabel>
+                <Select
+                  value={filters.section || ''}
+                  label="Section"
+                  onChange={(e) => handleFilterChange({ section: e.target.value as string })}
+                >
+                  <MenuItem value="">All Sections</MenuItem>
+                  {selectedClassSections.map((sec: any) => (
+                    <MenuItem key={sec.sectionId} value={sec.sectionId}>
+                      {sec.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          </Box>
+
+          {/* Bulk Actions Row */}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: { xs: 'center', md: 'flex-end' },
+            width: { xs: '100%', md: 'auto' },
+            gap: 1,
+            '& > button': { 
+              width: { xs: '100%', sm: 'auto' } 
+            }
+          }}>
+            <ExcelBulkActions
+              templateConfig={templateConfig}
+              parseConfig={parseConfig}
+              onUploadComplete={handleBulkUpload}
+              downloadButtonText="Template"
+              uploadButtonText="Bulk Upload"
+              disabled={bulkCreateMutation.isPending}
+            />
+          </Box>
+        </Box>
       </Box>
 
       <DataTable<Student>
