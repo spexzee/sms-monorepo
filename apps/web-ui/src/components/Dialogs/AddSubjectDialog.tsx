@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogTitle,
@@ -21,15 +21,22 @@ interface SubjectDialogProps {
     onClose: () => void;
     schoolId: string;
     editData?: Subject | null;
+    initialClassId?: string;
+    initialSectionId?: string;
 }
 
-const SubjectDialog: React.FC<SubjectDialogProps> = ({ open, onClose, schoolId, editData }) => {
+const SubjectDialog: React.FC<SubjectDialogProps> = ({
+    open,
+    onClose,
+    schoolId,
+    editData,
+}) => {
     const isEditMode = !!editData;
 
     const [formData, setFormData] = useState<CreateSubjectPayload>({
-        name: '',
-        code: '',
-        description: '',
+        name: "",
+        code: "",
+        description: "",
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,35 +47,35 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({ open, onClose, schoolId, 
     useEffect(() => {
         if (editData) {
             setFormData({
-                name: editData.name || '',
-                code: editData.code || '',
-                description: editData.description || '',
+                name: editData.name || "",
+                code: editData.code || "",
+                description: editData.description || "",
             });
         } else {
             setFormData({
-                name: '',
-                code: '',
-                description: '',
+                name: "",
+                code: "",
+                description: "",
             });
         }
-    }, [editData]);
+    }, [editData, open]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
         if (errors[name]) {
-            setErrors((prev) => ({ ...prev, [name]: '' }));
+            setErrors((prev) => ({ ...prev, [name]: "" }));
         }
     };
 
     const validate = (): boolean => {
         const newErrors: Record<string, string> = {};
 
-        if (!formData.name.trim()) newErrors.name = 'Subject name is required';
+        if (!formData.name.trim()) newErrors.name = "Subject name is required";
         if (!formData.code.trim()) {
-            newErrors.code = 'Subject code is required';
+            newErrors.code = "Subject code is required";
         } else if (formData.code.length > 10) {
-            newErrors.code = 'Code must be 10 characters or less';
+            newErrors.code = "Code must be 10 characters or less";
         }
 
         setErrors(newErrors);
@@ -96,9 +103,9 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({ open, onClose, schoolId, 
 
     const handleClose = () => {
         setFormData({
-            name: '',
-            code: '',
-            description: '',
+            name: "",
+            code: "",
+            description: "",
         });
         setErrors({});
         createMutation.reset();
@@ -108,9 +115,10 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({ open, onClose, schoolId, 
 
     const isPending = createMutation.isPending || updateMutation.isPending;
     const isError = createMutation.isError || updateMutation.isError;
-    const errorMessage = (createMutation.error as { message?: string })?.message ||
+    const errorMessage =
+        (createMutation.error as { message?: string })?.message ||
         (updateMutation.error as { message?: string })?.message ||
-        'Operation failed';
+        "Operation failed";
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -122,9 +130,10 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({ open, onClose, schoolId, 
             </DialogTitle>
 
             <form onSubmit={handleSubmit}>
-                <DialogContent>
+                <Divider />
+                <DialogContent sx={{ py: 3 }}>
                     {isError && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
+                        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
                             {errorMessage}
                         </Alert>
                     )}
@@ -160,7 +169,7 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({ open, onClose, schoolId, 
                         />
 
                         <Divider sx={{ my: 0.5 }} />
-                        
+
                         <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                             Categorization & Notes
                         </Typography>

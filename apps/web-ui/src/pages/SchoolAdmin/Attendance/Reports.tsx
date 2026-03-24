@@ -33,6 +33,7 @@ const AttendanceReports = () => {
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedClass, setSelectedClass] = useState('');
+    const [selectedSection] = useState('');
 
     const { data: schoolData } = useGetSchoolById(schoolId);
     const mode = schoolData?.data?.attendanceSettings?.mode || 'simple';
@@ -45,7 +46,7 @@ const AttendanceReports = () => {
     const dailyReport = dailyData?.data;
 
     // Class-wise Report
-    const { data: classWiseData, isLoading: classWiseLoading } = useGetClassWiseReport(schoolId, selectedDate, mode);
+    const { data: classWiseData, isLoading: classWiseLoading } = useGetClassWiseReport(schoolId, selectedDate, mode, { classId: selectedClass || undefined, sectionId: selectedSection || undefined });
     const classWiseReport = classWiseData?.data?.classes || [];
 
     // Monthly Report

@@ -60,6 +60,7 @@ const createTeacher = async (req, res) => {
       classes,
       status,
       profileImage,
+      signature,
       classTeacherSectionId,
     } = req.body;
 
@@ -111,6 +112,7 @@ const createTeacher = async (req, res) => {
       classes: classes || [],
       status: status || "active",
       profileImage,
+      signature,
       classTeacherSectionId: classTeacherSectionId || null,
     });
 
@@ -217,11 +219,26 @@ const getTeacherById = async (req, res) => {
       const { ClassSchema: classSchema } = require("@sms/shared");
       const Class = schoolDb.model("Class", classSchema);
 
-      const classes = await Class.find({
-        classId: { $in: teacher.classes },
-      }).select("classId name");
+      const uniqueClassIds = [
+        ...new Set(teacher.classes.map((c) => c.split("#")[0])),
+      ];
+      const classesDocs = await Class.find({
+        classId: { $in: uniqueClassIds },
+      }).select("classId name sections");
 
-      teacherObj.classNames = classes.map((c) => c.name);
+      teacherObj.classNames = teacher.classes.map((c) => {
+        if (c.includes("#")) {
+          const [cId, sId] = c.split("#");
+          const classDoc = classesDocs.find((cls) => cls.classId === cId);
+          if (classDoc) {
+            const section = classDoc.sections.find((s) => s.sectionId === sId);
+            return section
+              ? `${classDoc.name} - ${section.name}`
+              : classDoc.name;
+          }
+        }
+        return c;
+      });
     }
 
     // Fetch class teacher label if applicable

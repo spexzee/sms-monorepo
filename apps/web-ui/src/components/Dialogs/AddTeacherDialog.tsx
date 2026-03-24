@@ -75,11 +75,12 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
   // Get class options for Autocomplete - format: "Class Name - Section A, B"
   const classOptions = classes
     .filter((c: Class) => c.status === "active")
-    .map((c: Class) => ({
-      id: c.classId,
-      label: c.name,
-      sections: c.sections.map((s) => s.name).join(", "),
-    }));
+    .flatMap((c: Class) =>
+      c.sections.map((s) => ({
+        id: `${c.classId}#${s.sectionId}`,
+        label: `${c.name} - ${s.name}`,
+      })),
+    );
 
   // Get subject options for Autocomplete
   const subjectOptions = subjects
@@ -298,7 +299,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
             </Box>
 
             <Divider sx={{ my: 1 }} />
-            
+
             <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
               Academic Assignments
             </Typography>
@@ -314,7 +315,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
               onChange={(_, newValue) => {
                 const newClassIds = newValue.map((v) => v.id);
                 const validSections =
-                  formData.sections?.filter((sId) => {
+                  formData.sections?.filter((sId: string) => {
                     return classes.some(
                       (c) =>
                         newClassIds.includes(c.classId) &&

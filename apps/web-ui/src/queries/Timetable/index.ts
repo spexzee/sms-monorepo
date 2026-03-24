@@ -320,6 +320,43 @@ export const useDeleteTimetableSchedule = (schoolId: string) => {
 // TIMETABLE ENTRY HOOKS
 // ==========================================
 
+export interface ActiveClass {
+    classId: string;
+    className: string;
+    sectionId: string;
+    sectionName: string;
+}
+
+export const useGetActiveClasses = (schoolId: string) => {
+    return useQuery({
+        queryKey: ["active-classes", schoolId],
+        queryFn: () =>
+            useApi<ApiResponse<ActiveClass[]>>(
+                "GET",
+                `/api/academics/school/${schoolId}/active-classes`
+            ),
+        enabled: !!schoolId,
+    });
+};
+
+export const useCopyClassTimetable = (schoolId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { targetClassId: string, targetSectionId: string, sourceClassId: string, sourceSectionId: string }) =>
+            useApi<ApiResponse<TimetableEntry[]>>(
+                "POST",
+                `/api/academics/school/${schoolId}/copy`,
+                data
+            ),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["class-timetable", schoolId] });
+            queryClient.invalidateQueries({ queryKey: ["teacher-timetable", schoolId] });
+            queryClient.invalidateQueries({ queryKey: ["timetable-entries-day", schoolId] });
+            queryClient.invalidateQueries({ queryKey: ["active-classes", schoolId] });
+        },
+    });
+};
+
 export const useGetClassTimetable = (schoolId: string, classId: string, sectionId: string) => {
     return useQuery({
         queryKey: ["class-timetable", schoolId, classId, sectionId],
@@ -416,6 +453,21 @@ export const useDeleteEntry = (schoolId: string) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["class-timetable", schoolId] });
             queryClient.invalidateQueries({ queryKey: ["teacher-timetable", schoolId] });
+        },
+    });
+};
+
+export const useDeleteClassTimetable = (schoolId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ classId, sectionId }: { classId: string; sectionId: string }) =>
+            useApi<ApiResponse<void>>(
+                "DELETE",
+                `/api/academics/school/${schoolId}/class/${classId}/${sectionId}`
+            ),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["class-timetable", schoolId] });
+            queryClient.invalidateQueries({ queryKey: ["active-classes", schoolId] });
         },
     });
 };

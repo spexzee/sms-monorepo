@@ -140,6 +140,30 @@ router.get(
     entryController.getClassTimetable
 );
 
+// Delete all entries for a class/section
+router.delete(
+    "/class/:classId/:sectionId",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    entryController.deleteClassTimetable
+);
+
+// Get list of class sections that have an active timetable
+router.get(
+    "/active-classes",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    entryController.getClassesWithTimetables
+);
+
+// Copy timetable from another class
+router.post(
+    "/copy",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    entryController.copyClassTimetable
+);
+
 // Get teacher timetable
 router.get(
     "/teacher/:teacherId",

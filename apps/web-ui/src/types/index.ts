@@ -156,13 +156,14 @@ export interface Teacher {
   subjectNames?: string[];
   classes: string[];
   classNames?: string[];
-  sections?: string[];
   department?: string;
   status: "active" | "inactive";
   profileImage?: string;
   signature?: string;
   classTeacherSectionId?: string | null;
   classTeacherLabel?: string | null;
+  sections: string[];
+  sectionNames?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -175,10 +176,10 @@ export interface CreateTeacherPayload {
   phone?: string;
   subjects?: string[];
   classes?: string[];
-  sections?: string[];
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
+  sections?: string[];
   classTeacherSectionId?: string | null;
 }
 
@@ -190,10 +191,10 @@ export interface UpdateTeacherPayload {
   phone?: string;
   subjects?: string[];
   classes?: string[];
-  sections?: string[];
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
+  sections?: string[];
   classTeacherSectionId?: string | null;
 }
 
@@ -422,6 +423,8 @@ export interface Subject {
   code: string;
   description?: string;
   status: "active" | "inactive";
+  assignedTeacherName?: string;
+  assignedTeacherId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -441,6 +444,8 @@ export interface UpdateSubjectPayload {
 
 export interface SubjectFilters {
   status?: "active" | "inactive";
+  classId?: string;
+  sectionId?: string;
 }
 
 // ==========================================
