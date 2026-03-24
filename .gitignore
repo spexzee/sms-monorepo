@@ -39,3 +39,7 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary Artifacts
+*.xlsx
+stitch_design.html

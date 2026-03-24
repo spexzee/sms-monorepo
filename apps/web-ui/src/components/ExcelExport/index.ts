@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import type { AttendanceSimple, MonthlyReport } from '../../types';
+import type { AttendanceSimple, MonthlyReport, ClassWiseReport } from '../../types';
 
 // Style configuration
 const styles = {
@@ -95,22 +95,23 @@ export const exportDailyAttendance = async (
     worksheet.addRow([]);
 
     // Headers
-    const headerRow = worksheet.addRow(['#', 'Student ID', 'Student Name', 'Class', 'Status', 'Remarks']);
+    const headerRow = worksheet.addRow(['#', 'Roll No', 'Student ID', 'Student Name', 'Class', 'Status', 'Remarks']);
     applyHeaderStyle(headerRow);
 
     // Data rows
     data.forEach((record, index) => {
         const row = worksheet.addRow([
             index + 1,
+            (record as any).rollNumber || '-',
             record.studentId || '',
-            (record as unknown as { studentName?: string }).studentName || record.studentId || '',
-            (record as unknown as { className?: string }).className || '',
+            (record as any).studentName || record.studentId || '', 
+            (record as any).className || '',
             record.status.charAt(0).toUpperCase() + record.status.slice(1),
             record.remarks || '-',
         ]);
 
         row.eachCell((cell, colNumber) => {
-            applyCellStyle(cell, colNumber === 5 ? record.status : undefined);
+            applyCellStyle(cell, colNumber === 6 ? record.status : undefined);
         });
     });
 
@@ -125,7 +126,7 @@ export const exportDailyAttendance = async (
     worksheet.addRow(['Present', present]);
     worksheet.addRow(['Absent', absent]);
     worksheet.addRow(['Late', late]);
-    worksheet.addRow(['Attendance %', `${((present + late) / data.length * 100).toFixed(1)}%`]);
+    worksheet.addRow(['Attendance %', data.length > 0 ? `${((present + late) / data.length * 100).toFixed(1)}%` : '0%']);
 
     autoFitColumns(worksheet);
 
@@ -161,15 +162,18 @@ export const exportMonthlyAttendance = async (
     // Student data
     if (data.students) {
         const headerRow = worksheet.addRow([
-            '#', 'Student ID', 'Class', 'Present', 'Absent', 'Late', 'Leave', 'Total', 'Percentage'
+            '#', 'Roll No', 'Student ID', 'Student Name', 'Class', 'Section', 'Present', 'Absent', 'Late', 'Leave', 'Total', 'Percentage'
         ]);
         applyHeaderStyle(headerRow);
 
         data.students.byStudent.forEach((student, index) => {
             const row = worksheet.addRow([
                 index + 1,
+                student.rollNumber || '-',
                 student.studentId,
-                student.classId || '-',
+                student.studentName || '-',
+                student.className || student.classId || '-',
+                student.sectionName || student.sectionId || 'All',
                 student.present || 0,
                 student.absent || 0,
                 student.late || 0,
@@ -181,7 +185,7 @@ export const exportMonthlyAttendance = async (
             row.eachCell((cell, colNumber) => {
                 applyCellStyle(cell);
                 // Color the percentage cell based on value
-                if (colNumber === 9) {
+                if (colNumber === 12) {
                     const pct = parseFloat(student.percentage || '0');
                     if (pct >= 75) {
                         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4CAF50' } };
@@ -203,6 +207,70 @@ export const exportMonthlyAttendance = async (
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, fileName || `monthly_report_${data.month}_${data.year}.xlsx`);
+};
+
+export const exportClassWiseAttendance = async (
+    data: ClassWiseReport[],
+    date: string,
+    fileName?: string
+) => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'School Management System';
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet('Class-wise Report');
+
+    // Title
+    worksheet.mergeCells('A1:G1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = `Class-wise Attendance Report - ${new Date(date).toLocaleDateString()}`;
+    titleCell.font = { bold: true, size: 16 };
+    titleCell.alignment = { horizontal: 'center' };
+    worksheet.getRow(1).height = 30;
+
+    worksheet.addRow([]);
+
+    // Headers
+    const headerRow = worksheet.addRow(['#', 'Class Name', 'Section Name', 'Present', 'Absent', 'Late', 'Total', 'Percentage']);
+    applyHeaderStyle(headerRow);
+
+    // Data
+    data.forEach((row, index) => {
+        const excelRow = worksheet.addRow([
+            index + 1,
+            row.className || row.classId,
+            row.sectionName || row.sectionId || 'All',
+            row.present,
+            row.absent,
+            row.late,
+            row.total,
+            `${row.percentage}%`
+        ]);
+
+        excelRow.eachCell((cell, colNumber) => {
+            applyCellStyle(cell);
+            // Color percentage
+            if (colNumber === 8) {
+                const pct = parseFloat(row.percentage.toString());
+                if (pct >= 90) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4CAF50' } };
+                    cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+                } else if (pct >= 75) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF9800' } };
+                    cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+                } else {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF44336' } };
+                    cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+                }
+            }
+        });
+    });
+
+    autoFitColumns(worksheet);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, fileName || `classwise_attendance_${date}.xlsx`);
 };
 
 /**

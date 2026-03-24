@@ -622,8 +622,12 @@ export interface DailyReport {
 
 export interface MonthlyReportStudent {
   studentId: string;
+  studentName?: string;
+  rollNumber?: string;
   classId: string;
+  className?: string;
   sectionId?: string;
+  sectionName?: string;
   present: number;
   absent: number;
   late: number;
@@ -635,6 +639,7 @@ export interface MonthlyReportStudent {
 
 export interface MonthlyReportTeacher {
   teacherId: string;
+  teacherName?: string;
   present: number;
   absent: number;
   late: number;
@@ -663,7 +668,9 @@ export interface MonthlyReport {
 
 export interface ClassWiseReport {
   classId: string;
+  className?: string;
   sectionId?: string;
+  sectionName?: string;
   present: number;
   absent: number;
   late: number;
