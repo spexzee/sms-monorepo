@@ -287,7 +287,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                             labelHint={isEditMode ? 'Leave blank to keep current' : ''} />
 
                         <Divider sx={{ my: 1 }} />
-                        
+
                         <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                             Contact & Occupation
                         </Typography>
@@ -299,7 +299,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                             onChange={handleChange} multiline rows={2} />
 
                         <Divider sx={{ my: 1 }} />
-                        
+
                         <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                             Student Connectivity
                         </Typography>
@@ -351,7 +351,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                         />
 
                         <Divider sx={{ my: 1 }} />
-                        
+
                         <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                             Status & Identification
                         </Typography>
@@ -386,7 +386,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                                 folder={IMAGEKIT_FOLDERS.SIGNATURES}
                                 fileName={isEditMode && editData ? `${editData.parentId}_signature` : `new_parent_signature_${Date.now()}`}
                                 currentImage={formData.signature}
-                                label="Signature Approval"
+                                label="Signature"
                                 authEndpoint="school"
                                 size="small"
                                 onUploadSuccess={(result) => {
