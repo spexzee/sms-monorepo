@@ -506,7 +506,7 @@ const TeacherDialog: React.FC<TeacherDialogProps> = ({
                 folder={IMAGEKIT_FOLDERS.SIGNATURES}
                 fileName={isEditMode && editData ? `${editData.teacherId}_signature` : `new_teacher_signature_${Date.now()}`}
                 currentImage={formData.signature}
-                label="Signature Approval"
+                label="Signature"
                 authEndpoint="school"
                 size="small"
                 onUploadSuccess={(result) => {

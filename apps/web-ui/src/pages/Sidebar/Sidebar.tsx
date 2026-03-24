@@ -22,6 +22,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import type { SideBarMenuItemType } from "./SidebarUtils";
 import TokenService from "../../queries/token/tokenService";
 import { useUserStore } from "../../stores/userStore";
+import LogoutConfirmDialog from "./LogoutConfirmDialog";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
   const [closingItem, setClosingItem] = useState<string | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [hoveredSubItem, setHoveredSubItem] = useState<string | null>(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -340,7 +342,7 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
                         animate={{
                           height:
                             expandedItem === item.name ||
-                            closingItem === item.name
+                              closingItem === item.name
                               ? "auto"
                               : 0,
                           opacity: expandedItem === item.name ? 1 : 0,
@@ -371,9 +373,8 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
                             return (
                               <div
                                 key={subItem.name}
-                                className={`sub-item ${
-                                  isSubItemActive ? "selected" : ""
-                                }`}
+                                className={`sub-item ${isSubItemActive ? "selected" : ""
+                                  }`}
                                 onClick={() => {
                                   if (subItem.path) {
                                     navigate(subItem.path);
@@ -438,39 +439,58 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
 
           {/* Logout Button at Bottom */}
           {onLogout && (
-            <div style={{ padding: "16px" }}>
-              <Divider sx={{ borderColor: "#334155", mb: 2 }} />
+            <div style={{ padding: "20px" }}>
+              <Divider sx={{ borderColor: "rgba(182, 160, 255, 0.1)", mb: 2 }} />
               <div
-                onClick={onLogout}
-                className="menu-item"
+                onClick={() => setShowLogoutDialog(true)}
+                className="menu-item logout-button"
                 style={{
-                  background: "transparent",
-                  borderRadius: "8px",
-                  padding: "12px 16px",
+                  background: "rgba(239, 68, 68, 0.05)",
+                  borderRadius: "12px",
+                  padding: "12px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  color: "#ef4444",
-                  transition: "all 0.2s ease",
+                  color: "#ff6e84",
+                  transition: "all 0.3s ease",
                   whiteSpace: "nowrap",
+                  border: '1px solid rgba(239, 68, 68, 0.1)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.05)";
+                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.1)";
                 }}
               >
                 <span
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "12px",
+                    gap: "14px",
                     flex: 1,
+                    fontFamily: 'Lexend, sans-serif',
+                    fontWeight: 500,
                   }}
                 >
-                  <LogoutIcon />
-                  <span>Logout</span>
+                  <LogoutIcon sx={{ fontSize: '1.2rem' }} />
+                  <span>Sign Out</span>
                 </span>
               </div>
             </div>
           )}
         </motion.div>
       </motion.div>
+      <LogoutConfirmDialog
+        open={showLogoutDialog}
+        onClose={() => setShowLogoutDialog(false)}
+        onConfirm={() => {
+          setShowLogoutDialog(false);
+          if (onLogout) onLogout();
+        }}
+      />
     </>
   );
 };
