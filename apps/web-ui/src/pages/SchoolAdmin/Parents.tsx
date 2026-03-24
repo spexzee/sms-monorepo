@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Box, IconButton, Tooltip } from "@mui/material";
-import { Edit as EditIcon, Block as BlockIcon } from "@mui/icons-material";
+import { Box, IconButton, Tooltip, Switch } from "@mui/material";
+import { Edit as EditIcon } from "@mui/icons-material";
 import DataTable, { StatusChip } from "../../components/Table/DataTable";
 import type { Column } from "../../components/Table/DataTable";
 import ParentDialog from "../../components/Dialogs/AddParentDialog";
@@ -8,10 +8,12 @@ import { useGetParents, useUpdateParent } from "../../queries/Parent";
 import type { Parent } from "../../types";
 import TokenService from "../../queries/token/tokenService";
 import { useAuth } from "../../context/AuthContext";
+import { useNotificationStore } from "../../stores/notificationStore";
 
 const ParentsPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editData, setEditData] = useState<Parent | null>(null);
+  const { showNotification } = useNotificationStore();
 
   const schoolId = TokenService.getSchoolId() || "";
   const { page, setPage, limit, setLimit } = useAuth();
@@ -34,12 +36,14 @@ const ParentsPage = () => {
   const handleToggleStatus = async (parent: Parent) => {
     const newStatus = parent.status === "active" ? "inactive" : "active";
     try {
-      await updateMutation.mutateAsync({
+      const result = await updateMutation.mutateAsync({
         parentId: parent.parentId,
         data: { status: newStatus },
       });
+      showNotification(result.message || `Parent status updated to ${newStatus}`, "success");
     } catch (err) {
       console.error("Failed to update status:", err);
+      showNotification((err as any)?.message || "Failed to update status", "error");
     }
   };
 
@@ -95,17 +99,16 @@ const ParentsPage = () => {
             </IconButton>
           </Tooltip>
           <Tooltip title={row.status === "active" ? "Deactivate" : "Activate"}>
-            <IconButton
+            <Switch
               size="small"
-              color={row.status === "active" ? "error" : "success"}
-              onClick={(e) => {
+              checked={row.status === "active"}
+              onChange={(e) => {
                 e.stopPropagation();
                 handleToggleStatus(row);
               }}
               disabled={updateMutation.isPending}
-            >
-              <BlockIcon fontSize="small" />
-            </IconButton>
+              color="success"
+            />
           </Tooltip>
         </Box>
       ),

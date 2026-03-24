@@ -4,7 +4,6 @@ import {
     Typography,
     Button,
     Alert,
-    Snackbar,
     CircularProgress,
     Paper,
 } from '@mui/material';
@@ -12,6 +11,7 @@ import { Save as SaveIcon } from '@mui/icons-material';
 import LocationPicker from '../../components/LocationPicker';
 import { useGetSchoolById, useUpdateSchool } from '../../queries/School';
 import TokenService from '../../queries/token/tokenService';
+import { useNotificationStore } from '../../stores/notificationStore';
 
 const SchoolLocation = () => {
     const schoolId = TokenService.getSchoolId() || '';
@@ -26,12 +26,7 @@ const SchoolLocation = () => {
         longitude: number;
         radiusMeters: number;
     } | null>(null);
-
-    const [snackbar, setSnackbar] = useState({
-        open: false,
-        message: '',
-        severity: 'success' as 'success' | 'error',
-    });
+    const { showNotification } = useNotificationStore();
 
     // Initialize location from school data
     useEffect(() => {
@@ -50,11 +45,7 @@ const SchoolLocation = () => {
 
     const handleSave = async () => {
         if (!location) {
-            setSnackbar({
-                open: true,
-                message: 'Please select a location on the map',
-                severity: 'error',
-            });
+            showNotification('Please select a location on the map', 'error');
             return;
         }
 
@@ -64,18 +55,10 @@ const SchoolLocation = () => {
                 data: { location },
             });
             console.log('Location save result:', result);
-            setSnackbar({
-                open: true,
-                message: 'School location saved successfully!',
-                severity: 'success',
-            });
+            showNotification(result.message || 'School location saved successfully!', 'success');
         } catch (error) {
             console.error('Location save error:', error);
-            setSnackbar({
-                open: true,
-                message: 'Failed to save location',
-                severity: 'error',
-            });
+            showNotification((error as any)?.message || 'Failed to save location', 'error');
         }
     };
 
@@ -143,17 +126,6 @@ const SchoolLocation = () => {
                     Save Location
                 </Button>
             </Box>
-
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={4000}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            >
-                <Alert severity={snackbar.severity} variant="filled">
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     );
 };

@@ -14,14 +14,13 @@ import {
     Button,
     Paper,
     TableContainer,
+    Switch,
 } from '@mui/material';
 import {
     Edit as EditIcon,
-    Block as BlockIcon,
     ExpandMore as ExpandMoreIcon,
     ExpandLess as ExpandLessIcon,
     Add as AddIcon,
-    Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { StatusChip } from '../../components/Table/DataTable';
 import ClassDialog from '../../components/Dialogs/AddClassDialog';
@@ -29,11 +28,13 @@ import { useGetClasses, useUpdateClass, useRemoveSection } from '../../queries/C
 import { useGetTeachers } from '../../queries/Teacher';
 import type { Class, Teacher } from '../../types';
 import TokenService from '../../queries/token/tokenService';
+import { useNotificationStore } from '../../stores/notificationStore';
 
 const ClassesPage = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editData, setEditData] = useState<Class | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+    const { showNotification } = useNotificationStore();
 
     const schoolId = TokenService.getSchoolId() || '';
     const { data, isLoading, error } = useGetClasses(schoolId);
@@ -63,12 +64,14 @@ const ClassesPage = () => {
     const handleToggleStatus = async (classItem: Class) => {
         const newStatus = classItem.status === 'active' ? 'inactive' : 'active';
         try {
-            await updateMutation.mutateAsync({
+            const result = await updateMutation.mutateAsync({
                 classId: classItem.classId,
                 data: { status: newStatus },
             });
+            showNotification(result.message || `Class status updated to ${newStatus}`, 'success');
         } catch (err) {
             console.error('Failed to update status:', err);
+            showNotification((err as any)?.message || 'Failed to update status', 'error');
         }
     };
 
@@ -84,9 +87,11 @@ const ClassesPage = () => {
 
     const handleRemoveSection = async (classId: string, sectionId: string) => {
         try {
-            await removeSectionMutation.mutateAsync({ classId, sectionId });
+            const result = await removeSectionMutation.mutateAsync({ classId, sectionId });
+            showNotification(result.message || 'Section removed successfully', 'success');
         } catch (err) {
             console.error('Failed to remove section:', err);
+            showNotification((err as any)?.message || 'Failed to remove section', 'error');
         }
     };
 
@@ -168,7 +173,11 @@ const ClassesPage = () => {
                         ) : (
                             classes.map((classItem: Class) => (
                                 <>
-                                    <TableRow hover key={classItem.classId}>
+                                <TableRow 
+                                    hover 
+                                    key={classItem.classId}
+                                    sx={{ '& td': { py: 1 } }} // Keep row height stable
+                                >
                                         <TableCell>
                                             <IconButton
                                                 size="small"
@@ -198,14 +207,13 @@ const ClassesPage = () => {
                                                     </IconButton>
                                                 </Tooltip>
                                                 <Tooltip title={classItem.status === 'active' ? 'Deactivate' : 'Activate'}>
-                                                    <IconButton
+                                                    <Switch
                                                         size="small"
-                                                        color={classItem.status === 'active' ? 'error' : 'success'}
-                                                        onClick={() => handleToggleStatus(classItem)}
+                                                        checked={classItem.status === 'active'}
+                                                        onChange={() => handleToggleStatus(classItem)}
                                                         disabled={updateMutation.isPending}
-                                                    >
-                                                        <BlockIcon fontSize="small" />
-                                                    </IconButton>
+                                                        color="success"
+                                                    />
                                                 </Tooltip>
                                             </Box>
                                         </TableCell>
@@ -234,20 +242,19 @@ const ClassesPage = () => {
                                                             </TableHead>
                                                             <TableBody>
                                                                 {classItem.sections.map((section) => (
-                                                                    <TableRow key={section.sectionId}>
+                                                                    <TableRow key={section.sectionId} sx={{ '& td': { py: 0.5 } }}>
                                                                         <TableCell>{section.sectionId}</TableCell>
                                                                         <TableCell>{section.name}</TableCell>
                                                                         <TableCell>{getTeacherName(section.classTeacherId)}</TableCell>
                                                                         <TableCell align="center">
                                                                             <Tooltip title="Remove Section">
-                                                                                <IconButton
+                                                                                <Switch
                                                                                     size="small"
-                                                                                    color="error"
-                                                                                    onClick={() => handleRemoveSection(classItem.classId, section.sectionId)}
+                                                                                    checked={true}
+                                                                                    onChange={() => handleRemoveSection(classItem.classId, section.sectionId)}
                                                                                     disabled={removeSectionMutation.isPending}
-                                                                                >
-                                                                                    <DeleteIcon fontSize="small" />
-                                                                                </IconButton>
+                                                                                    color="error"
+                                                                                />
                                                                             </Tooltip>
                                                                         </TableCell>
                                                                     </TableRow>
