@@ -18,8 +18,15 @@ const generateAttendanceId = () => {
 };
 
 // Get today's date at midnight for comparisons
-const getDateOnly = (date = new Date()) => {
-    const d = new Date(date);
+const getDateOnly = (dateArg = new Date()) => {
+    let d;
+    if (typeof dateArg === "string" && dateArg.includes("-")) {
+        const [year, month, day] = dateArg.split("-").map(Number);
+        d = new Date();
+        d.setFullYear(year, month - 1, day);
+    } else {
+        d = new Date(dateArg);
+    }
     d.setHours(0, 0, 0, 0);
     return d;
 };

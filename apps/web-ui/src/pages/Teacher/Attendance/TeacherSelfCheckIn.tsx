@@ -17,6 +17,7 @@ import {
     LocationOn as LocationIcon,
     LocationOff as LocationOffIcon,
     Refresh as RefreshIcon,
+    AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material';
 import { useGetTeacherStatus, useTeacherCheckIn, useTeacherCheckOut } from '../../../queries/Attendance';
 import { useGetSchoolById } from '../../../queries/School';
@@ -48,8 +49,12 @@ const TeacherSelfCheckIn = () => {
     // Fetch teacher's current attendance status
     const { data: statusData, isLoading: statusLoading, refetch: refetchStatus } = useGetTeacherStatus(schoolId);
     const attendanceStatus = statusData?.data as TeacherAttendance | { checkedIn: boolean } | undefined;
-    const isCheckedIn = attendanceStatus && 'checkInTime' in attendanceStatus && !!attendanceStatus.checkInTime;
+    
+    const isPresent = attendanceStatus && 'status' in attendanceStatus && (attendanceStatus.status === 'present' || attendanceStatus.status === 'late' || attendanceStatus.status === 'half_day');
+    const isAbsOrLeave = attendanceStatus && 'status' in attendanceStatus && (attendanceStatus.status === 'absent' || attendanceStatus.status === 'leave');
+    const isCheckedIn = attendanceStatus && (('checkInTime' in attendanceStatus && !!attendanceStatus.checkInTime) || isPresent);
     const isCheckedOut = attendanceStatus && 'checkOutTime' in attendanceStatus && !!attendanceStatus.checkOutTime;
+    const isMarkedByAdmin = attendanceStatus && 'markedByRole' in attendanceStatus && attendanceStatus.markedByRole === 'sch_admin';
 
     const checkInMutation = useTeacherCheckIn(schoolId);
     const checkOutMutation = useTeacherCheckOut(schoolId);
@@ -201,8 +206,20 @@ const TeacherSelfCheckIn = () => {
                 Mark your daily attendance by checking in and out.
             </Typography>
 
+            {/* Admin Update Message */}
+            {isMarkedByAdmin && (
+                <Alert severity="warning" icon={<AdminIcon />} sx={{ mb: 3 }}>
+                    <Typography variant="body2" fontWeight={600}>
+                        Admin updated your attendance
+                    </Typography>
+                    <Typography variant="caption">
+                        Your attendance for today was marked by the school administrator.
+                    </Typography>
+                </Alert>
+            )}
+
             {/* Location Status */}
-            {schoolHasLocation && (
+            {schoolHasLocation && !isCheckedIn && (
                 <Paper sx={{ p: 2, mb: 3, bgcolor: location.error ? 'error.50' : 'success.50' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {location.loading ? (
@@ -232,7 +249,7 @@ const TeacherSelfCheckIn = () => {
                 </Paper>
             )}
 
-            {!schoolHasLocation && (
+            {!schoolHasLocation && !isCheckedIn && (
                 <Alert severity="info" sx={{ mb: 3 }}>
                     Location verification is not configured for your school. You can check in without location.
                 </Alert>
@@ -253,7 +270,7 @@ const TeacherSelfCheckIn = () => {
                             <Typography variant="body1">Check-In Time:</Typography>
                             {isCheckedIn ? (
                                 <Chip
-                                    label={formatTime((attendanceStatus as TeacherAttendance)?.checkInTime)}
+                                    label={formatTime((attendanceStatus as TeacherAttendance)?.checkInTime || (attendanceStatus as TeacherAttendance)?.updatedAt)}
                                     color="success"
                                     size="small"
                                 />
@@ -275,12 +292,12 @@ const TeacherSelfCheckIn = () => {
                             )}
                         </Box>
 
-                        {isCheckedIn && (
+                        {(isCheckedIn || isAbsOrLeave) && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Typography variant="body1">Status:</Typography>
                                 <Chip
                                     label={(attendanceStatus as TeacherAttendance)?.status?.toUpperCase() || 'PRESENT'}
-                                    color={isCheckedOut ? 'success' : 'info'}
+                                    color={isAbsOrLeave ? 'error' : (isCheckedOut ? 'success' : 'info')}
                                     size="small"
                                 />
                             </Box>
@@ -298,7 +315,7 @@ const TeacherSelfCheckIn = () => {
 
             {/* Action Buttons */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {!isCheckedIn ? (
+                {(!isCheckedIn && !isAbsOrLeave) ? (
                     <Button
                         variant="contained"
                         color="success"
@@ -311,7 +328,7 @@ const TeacherSelfCheckIn = () => {
                     >
                         {checkInMutation.isPending ? 'Checking In...' : 'Check In'}
                     </Button>
-                ) : !isCheckedOut ? (
+                ) : (!isCheckedOut && isPresent && !isMarkedByAdmin) ? (
                     <Button
                         variant="contained"
                         color="primary"
@@ -325,10 +342,18 @@ const TeacherSelfCheckIn = () => {
                         {checkOutMutation.isPending ? 'Checking Out...' : 'Check Out'}
                     </Button>
                 ) : (
-                    <Alert severity="success" icon={false} sx={{ textAlign: 'center', py: 2 }}>
-                        <Typography variant="h6">✓ Attendance Complete for Today</Typography>
+                    <Alert severity={isAbsOrLeave ? 'info' : 'success'} icon={false} sx={{ textAlign: 'center', py: 2 }}>
+                        <Typography variant="h6">
+                            {isAbsOrLeave ? '✓ Attendance Marked' : '✓ Attendance Complete for Today'}
+                        </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            You have checked in and checked out successfully.
+                            {isMarkedByAdmin 
+                                ? `Your status was set to ${((attendanceStatus as TeacherAttendance)?.status || 'present').toUpperCase()} by admin.`
+                                : (isCheckedOut 
+                                    ? 'You have checked in and checked out successfully.'
+                                    : `You are currently marked as ${((attendanceStatus as TeacherAttendance)?.status || 'present').toUpperCase()}.`
+                                )
+                            }
                         </Typography>
                     </Alert>
                 )}

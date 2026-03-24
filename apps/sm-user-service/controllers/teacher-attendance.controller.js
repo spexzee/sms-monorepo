@@ -18,8 +18,15 @@ const generateAttendanceId = () => {
 };
 
 // Get today's date at midnight
-const getDateOnly = (date = new Date()) => {
-    const d = new Date(date);
+const getDateOnly = (dateArg = new Date()) => {
+    let d;
+    if (typeof dateArg === "string" && dateArg.includes("-")) {
+        const [year, month, day] = dateArg.split("-").map(Number);
+        d = new Date();
+        d.setFullYear(year, month - 1, day);
+    } else {
+        d = new Date(dateArg);
+    }
     d.setHours(0, 0, 0, 0);
     return d;
 };
@@ -53,6 +60,8 @@ const teacherCheckIn = async (req, res) => {
     try {
         const { schoolId } = req.params;
         const teacherId = req.user?.teacherId || req.body.teacherId;
+        const today = getDateOnly();
+        console.log("[DEBUG teacherCheckIn] schoolId:", schoolId, "teacherId:", teacherId, "today:", today.toISOString(), "now:", new Date().toISOString());
         const { latitude, longitude } = req.body;
 
         if (!teacherId) {
@@ -99,13 +108,14 @@ const teacherCheckIn = async (req, res) => {
         }
 
         const AttendanceModel = await getAttendanceModel(schoolId);
-        const today = getDateOnly();
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
         const now = new Date();
 
         // Check if already checked in
         let attendance = await AttendanceModel.findOne({
             teacherId,
-            date: today,
+            date: { $gte: today, $lte: endOfDay },
         });
 
         if (attendance && attendance.checkInTime) {
@@ -173,11 +183,13 @@ const teacherCheckOut = async (req, res) => {
 
         const AttendanceModel = await getAttendanceModel(schoolId);
         const today = getDateOnly();
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
         const now = new Date();
 
         const attendance = await AttendanceModel.findOne({
             teacherId,
-            date: today,
+            date: { $gte: today, $lte: endOfDay },
         });
 
         if (!attendance || !attendance.checkInTime) {
@@ -226,11 +238,17 @@ const getTeacherStatus = async (req, res) => {
 
         const AttendanceModel = await getAttendanceModel(schoolId);
         const today = getDateOnly();
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        console.log("[DEBUG getTeacherStatus] schoolId:", schoolId, "teacherId:", teacherId, "today:", today.toISOString(), "endOfDay:", endOfDay.toISOString());
 
         const attendance = await AttendanceModel.findOne({
             teacherId,
-            date: today,
+            date: { $gte: today, $lte: endOfDay },
         });
+
+        console.log("[DEBUG getTeacherStatus] Found:", attendance ? JSON.stringify({ teacherId: attendance.teacherId, date: attendance.date, status: attendance.status }) : "null");
 
         res.status(200).json({
             success: true,
@@ -265,6 +283,9 @@ const markTeacherAttendance = async (req, res) => {
 
         const AttendanceModel = await getAttendanceModel(schoolId);
         const attendanceDate = getDateOnly(date || new Date());
+        const startOfDay = new Date(attendanceDate);
+        const endOfDay = new Date(attendanceDate);
+        endOfDay.setHours(23, 59, 59, 999);
         const markedBy = req.user?.userId;
         const markedByRole = req.user?.role || "sch_admin";
 
@@ -275,7 +296,7 @@ const markTeacherAttendance = async (req, res) => {
             try {
                 let attendance = await AttendanceModel.findOne({
                     teacherId: record.teacherId,
-                    date: attendanceDate,
+                    date: { $gte: startOfDay, $lte: endOfDay },
                 });
 
                 if (attendance) {
@@ -332,10 +353,19 @@ const getTeachersAttendance = async (req, res) => {
 
         const AttendanceModel = await getAttendanceModel(schoolId);
         const attendanceDate = getDateOnly(date);
+        
+        // Use date range query for robustness (start of day to end of day)
+        const startOfDay = new Date(attendanceDate);
+        const endOfDay = new Date(attendanceDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        console.log("[DEBUG getTeachersAttendance] schoolId:", schoolId, "dateParam:", date, "startOfDay:", startOfDay.toISOString(), "endOfDay:", endOfDay.toISOString());
 
         const attendance = await AttendanceModel.find({
-            date: attendanceDate,
+            date: { $gte: startOfDay, $lte: endOfDay },
         }).lean();
+
+        console.log("[DEBUG getTeachersAttendance] Found", attendance.length, "records. Records:", JSON.stringify(attendance.map(a => ({ teacherId: a.teacherId, date: a.date, status: a.status }))));
 
         // Summary
         const summary = {

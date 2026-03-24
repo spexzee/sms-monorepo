@@ -15,7 +15,7 @@ import {
   ToggleButtonGroup,
   Alert,
 } from "@mui/material";
-import { Save as SaveIcon } from "@mui/icons-material";
+import { Save as SaveIcon, Refresh as RefreshIcon } from "@mui/icons-material";
 import { useGetTeachers } from "../../../queries/Teacher";
 import { AppButton } from "../../../components/ui/AppButton";
 import { AppDatePicker } from "../../../components/ui/AppDatePicker";
@@ -37,6 +37,9 @@ interface AttendanceRecord {
   status: AttendanceStatus;
   leaveType?: "casual" | "sick" | "earned" | "unpaid" | "other";
   remarks?: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  markedByRole?: string;
 }
 
 const TeacherAttendancePage = () => {
@@ -53,9 +56,10 @@ const TeacherAttendancePage = () => {
     useGetTeachers(schoolId);
   const teachers = teachersData?.data || [];
 
-  const { data: existingData, isLoading: attendanceLoading } =
+  const { data: existingData, isLoading: attendanceLoading, refetch: refetchAttendance, dataUpdatedAt } =
     useGetTeachersAttendance(schoolId, selectedDate);
   const existingAttendance = existingData?.data?.attendance || [];
+  console.log("[DEBUG Admin UI] selectedDate:", selectedDate, "existingAttendance:", existingAttendance.length, "dataUpdatedAt:", dataUpdatedAt);
   const summary = existingData?.data?.summary;
 
   const markAttendance = useMarkTeacherAttendance(schoolId);
@@ -69,6 +73,9 @@ const TeacherAttendancePage = () => {
           teacherId: a.teacherId,
           status: a.status,
           leaveType: a.leaveType,
+          checkInTime: a.checkInTime,
+          checkOutTime: a.checkOutTime,
+          markedByRole: a.markedByRole,
         };
       });
       setAttendance(existing);
@@ -100,6 +107,7 @@ const TeacherAttendancePage = () => {
         attendanceRecords: Object.values(attendance),
       });
       notify.success(res.message);
+      refetchAttendance(); // Refetch to get updated metadata
     } catch (err: any) {
       notify.error(err.message || "Failed to save attendance");
     }
@@ -112,6 +120,11 @@ const TeacherAttendancePage = () => {
       attendance[teacherId] ||
       existingAttendance.find((a: TeacherAttType) => a.teacherId === teacherId)
     );
+  };
+
+  const formatTime = (time?: string) => {
+    if (!time) return "-";
+    return new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -151,6 +164,15 @@ const TeacherAttendancePage = () => {
           >
             Mark All Absent
           </AppButton>
+          <AppButton
+            size="small"
+            variant="outlined"
+            color="primary"
+            startIcon={<RefreshIcon />}
+            onClick={() => refetchAttendance()}
+          >
+            Refresh
+          </AppButton>
         </Box>
       </Paper>
 
@@ -180,6 +202,8 @@ const TeacherAttendancePage = () => {
                 <TableCell>#</TableCell>
                 <TableCell>Teacher ID</TableCell>
                 <TableCell>Name</TableCell>
+                <TableCell align="center">Check-In</TableCell>
+                <TableCell align="center">Check-Out</TableCell>
                 <TableCell align="center">Status</TableCell>
               </TableRow>
             </TableHead>
@@ -191,7 +215,24 @@ const TeacherAttendancePage = () => {
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>{teacher.teacherId}</TableCell>
                     <TableCell>
-                      {teacher.firstName} {teacher.lastName}
+                      <Typography variant="body2" fontWeight={500}>
+                        {teacher.firstName} {teacher.lastName}
+                      </Typography>
+                      {att?.markedByRole && (
+                        <Typography variant="caption" color="text.secondary">
+                          Marked by {att.markedByRole === 'sch_admin' ? 'Admin' : 'Self'}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      {att?.checkInTime ? (
+                        <Chip label={formatTime(att.checkInTime)} size="small" color="success" variant="outlined" />
+                      ) : "-"}
+                    </TableCell>
+                    <TableCell align="center">
+                      {att?.checkOutTime ? (
+                        <Chip label={formatTime(att.checkOutTime)} size="small" color="primary" variant="outlined" />
+                      ) : "-"}
                     </TableCell>
                     <TableCell align="center">
                       <ToggleButtonGroup
@@ -223,6 +264,7 @@ const TeacherAttendancePage = () => {
           </Table>
         </TableContainer>
       )}
+
 
       {/* Save */}
       {teachers.length > 0 && (
