@@ -5,8 +5,60 @@ const {
     AttendanceSimpleSchema: attendanceSimpleSchema,
     AttendancePeriodSchema: attendancePeriodSchema,
     AttendanceCheckinSchema: attendanceCheckinSchema,
-    TeacherAttendanceSchema: teacherAttendanceSchema
+    TeacherAttendanceSchema: teacherAttendanceSchema,
+    StudentSchema: studentSchema,
+    TeacherSchema: teacherSchema,
+    ClassSchema: classSchema
 } = require("@sms/shared");
+
+/**
+ * Helper to populate names (Student, Teacher, Class, Section) in attendance records
+ */
+const populateNames = async (schoolDb, attendanceData) => {
+    if (!attendanceData || (Array.isArray(attendanceData) && attendanceData.length === 0)) return attendanceData;
+
+    const dataArray = Array.isArray(attendanceData) ? attendanceData : [attendanceData];
+    
+    const StudentModel = schoolDb.model("Student", studentSchema);
+    const TeacherModel = schoolDb.model("Teacher", teacherSchema);
+    const ClassModel = schoolDb.model("Class", classSchema);
+
+    const studentIds = [...new Set(dataArray.map(a => a.studentId || (a.userType === "student" ? a.userId : null)).filter(Boolean))];
+    const teacherIds = [...new Set(dataArray.map(a => a.teacherId || (a.userType === "teacher" ? a.userId : null)).filter(Boolean))];
+    const classIds = [...new Set(dataArray.map(a => a.classId).filter(Boolean))];
+
+    const [students, teachers, classes] = await Promise.all([
+        StudentModel.find({ studentId: { $in: studentIds } }).select("studentId firstName lastName rollNumber").lean(),
+        TeacherModel.find({ teacherId: { $in: teacherIds } }).select("teacherId firstName lastName").lean(),
+        ClassModel.find({ classId: { $in: classIds } }).select("classId name sections").lean()
+    ]);
+
+    const studentMap = Object.fromEntries(students.map(s => [s.studentId, { name: `${s.firstName} ${s.lastName}`, rollNumber: s.rollNumber }]));
+    const teacherMap = Object.fromEntries(teachers.map(t => [t.teacherId, `${t.firstName} ${t.lastName}`]));
+    const classMap = Object.fromEntries(classes.map(c => [c.classId, c.name]));
+    const sectionMap = {};
+    classes.forEach(c => {
+        if (c.sections) {
+            c.sections.forEach(s => {
+                sectionMap[`${c.classId}#${s.sectionId}`] = s.name;
+            });
+        }
+    });
+
+    const populated = dataArray.map(a => {
+        const studentInfo = studentMap[a.studentId || (a.userType === "student" ? a.userId : null)];
+        return {
+            ...a,
+            studentName: studentInfo?.name || null,
+            rollNumber: studentInfo?.rollNumber || null,
+            teacherName: teacherMap[a.teacherId || (a.userType === "teacher" ? a.userId : null)] || null,
+            className: classMap[a.classId] || a.classId,
+            sectionName: sectionMap[`${a.classId}#${a.sectionId}`] || a.sectionId
+        };
+    });
+
+    return Array.isArray(attendanceData) ? populated : populated[0];
+};
 
 // Get today's date at midnight
 const getDateOnly = (dateArg = new Date()) => {
@@ -46,81 +98,98 @@ const getDailyReport = async (req, res) => {
         // Get student attendance based on mode
         if (mode === "simple" || !mode) {
             const AttendanceModel = schoolDb.model("AttendanceSimple", attendanceSimpleSchema);
-            const query = { date: attendanceDate };
+            const query = { date: { $gte: attendanceDate, $lte: new Date(attendanceDate.getTime() + 24 * 60 * 60 * 1000 - 1) } };
             if (classId) query.classId = classId;
             if (sectionId) query.sectionId = sectionId;
 
             const attendance = await AttendanceModel.find(query).lean();
+            const populatedAttendance = await populateNames(schoolDb, attendance);
             studentData = {
-                attendance,
+                attendance: populatedAttendance,
                 summary: {
-                    total: attendance.length,
-                    present: attendance.filter((a) => a.status === "present").length,
-                    absent: attendance.filter((a) => a.status === "absent").length,
-                    late: attendance.filter((a) => a.status === "late").length,
-                    halfDay: attendance.filter((a) => a.status === "half_day").length,
-                    leave: attendance.filter((a) => a.status === "leave").length,
+                    total: populatedAttendance.length,
+                    present: populatedAttendance.filter((a) => a.status === "present").length,
+                    absent: populatedAttendance.filter((a) => a.status === "absent").length,
+                    late: populatedAttendance.filter((a) => a.status === "late").length,
+                    halfDay: populatedAttendance.filter((a) => a.status === "half_day").length,
+                    leave: populatedAttendance.filter((a) => a.status === "leave").length,
                 },
             };
         } else if (mode === "period_wise") {
             const AttendanceModel = schoolDb.model("AttendancePeriod", attendancePeriodSchema);
-            const query = { date: attendanceDate };
+            const query = { date: { $gte: attendanceDate, $lte: new Date(attendanceDate.getTime() + 24 * 60 * 60 * 1000 - 1) } };
             if (classId) query.classId = classId;
             if (sectionId) query.sectionId = sectionId;
 
             const attendance = await AttendanceModel.find(query).sort({ period: 1 }).lean();
+            const populatedAttendance = await populateNames(schoolDb, attendance);
 
             // Group by student and count unique attendance
             const studentAttendance = {};
-            attendance.forEach((a) => {
+            populatedAttendance.forEach((a) => {
                 if (!studentAttendance[a.studentId]) {
-                    studentAttendance[a.studentId] = { present: 0, absent: 0, late: 0, total: 0 };
+                    studentAttendance[a.studentId] = { 
+                        studentId: a.studentId, 
+                        studentName: a.studentName,
+                        className: a.className,
+                        sectionName: a.sectionName,
+                        present: 0, 
+                        absent: 0, 
+                        late: 0, 
+                        total: 0 
+                    };
                 }
                 studentAttendance[a.studentId][a.status]++;
                 studentAttendance[a.studentId].total++;
             });
 
             studentData = {
-                attendance,
+                attendance: populatedAttendance,
                 byStudent: studentAttendance,
                 summary: {
-                    totalRecords: attendance.length,
-                    present: attendance.filter((a) => a.status === "present").length,
-                    absent: attendance.filter((a) => a.status === "absent").length,
-                    late: attendance.filter((a) => a.status === "late").length,
+                    totalRecords: populatedAttendance.length,
+                    present: populatedAttendance.filter((a) => a.status === "present").length,
+                    absent: populatedAttendance.filter((a) => a.status === "absent").length,
+                    late: populatedAttendance.filter((a) => a.status === "late").length,
                 },
             };
         } else if (mode === "check_in_out") {
             const AttendanceModel = schoolDb.model("AttendanceCheckin", attendanceCheckinSchema);
-            const query = { date: attendanceDate, userType: "student" };
+            const query = { 
+                date: { $gte: attendanceDate, $lte: new Date(attendanceDate.getTime() + 24 * 60 * 60 * 1000 - 1) }, 
+                userType: "student" 
+            };
             if (classId) query.classId = classId;
             if (sectionId) query.sectionId = sectionId;
 
             const attendance = await AttendanceModel.find(query).lean();
+            const populatedAttendance = await populateNames(schoolDb, attendance);
             studentData = {
-                attendance,
+                attendance: populatedAttendance,
                 summary: {
-                    total: attendance.length,
-                    present: attendance.filter((a) => a.status === "present").length,
-                    late: attendance.filter((a) => a.status === "late").length,
-                    halfDay: attendance.filter((a) => a.status === "half_day").length,
-                    pending: attendance.filter((a) => a.status === "pending").length,
+                    total: populatedAttendance.length,
+                    present: populatedAttendance.filter((a) => a.status === "present").length,
+                    late: populatedAttendance.filter((a) => a.status === "late").length,
+                    halfDay: populatedAttendance.filter((a) => a.status === "half_day").length,
+                    pending: populatedAttendance.filter((a) => a.status === "pending").length,
                 },
             };
         }
 
         // Get teacher attendance (always simple mode)
         const TeacherAttendanceModel = schoolDb.model("TeacherAttendance", teacherAttendanceSchema);
-        const teacherAttendance = await TeacherAttendanceModel.find({ date: attendanceDate }).lean();
+        const query = { date: { $gte: attendanceDate, $lte: new Date(attendanceDate.getTime() + 24 * 60 * 60 * 1000 - 1) } };
+        const teacherAttendance = await TeacherAttendanceModel.find(query).lean();
+        const populatedTeacherAttendance = await populateNames(schoolDb, teacherAttendance);
         teacherData = {
-            attendance: teacherAttendance,
+            attendance: populatedTeacherAttendance,
             summary: {
-                total: teacherAttendance.length,
-                present: teacherAttendance.filter((a) => a.status === "present").length,
-                absent: teacherAttendance.filter((a) => a.status === "absent").length,
-                late: teacherAttendance.filter((a) => a.status === "late").length,
-                halfDay: teacherAttendance.filter((a) => a.status === "half_day").length,
-                leave: teacherAttendance.filter((a) => a.status === "leave").length,
+                total: populatedTeacherAttendance.length,
+                present: populatedTeacherAttendance.filter((a) => a.status === "present").length,
+                absent: populatedTeacherAttendance.filter((a) => a.status === "absent").length,
+                late: populatedTeacherAttendance.filter((a) => a.status === "late").length,
+                halfDay: populatedTeacherAttendance.filter((a) => a.status === "half_day").length,
+                leave: populatedTeacherAttendance.filter((a) => a.status === "leave").length,
             },
         };
 
@@ -190,16 +259,20 @@ const getMonthlyReport = async (req, res) => {
             if (mode === "check_in_out") query.userType = "student";
 
             const attendance = await AttendanceModel.find(query).lean();
+            const populatedAttendance = await populateNames(schoolDb, attendance);
 
             // Group by student
             const byStudent = {};
-            attendance.forEach((a) => {
+            populatedAttendance.forEach((a) => {
                 const sid = a.studentId || a.userId;
                 if (!byStudent[sid]) {
                     byStudent[sid] = {
                         studentId: sid,
+                        studentName: a.studentName,
                         classId: a.classId,
+                        className: a.className,
                         sectionId: a.sectionId,
+                        sectionName: a.sectionName,
                         present: 0,
                         absent: 0,
                         late: 0,
@@ -221,8 +294,8 @@ const getMonthlyReport = async (req, res) => {
 
             report.students = {
                 byStudent: Object.values(byStudent),
-                totalRecords: attendance.length,
-                workingDays: [...new Set(attendance.map((a) => a.date.toISOString().split("T")[0]))].length,
+                totalRecords: populatedAttendance.length,
+                workingDays: [...new Set(populatedAttendance.map((a) => a.date.toISOString().split("T")[0]))].length,
             };
         }
 
@@ -232,13 +305,15 @@ const getMonthlyReport = async (req, res) => {
             const teacherAttendance = await TeacherAttendanceModel.find({
                 date: { $gte: startDate, $lte: endDate },
             }).lean();
+            const populatedTeacherAttendance = await populateNames(schoolDb, teacherAttendance);
 
             // Group by teacher
             const byTeacher = {};
-            teacherAttendance.forEach((a) => {
+            populatedTeacherAttendance.forEach((a) => {
                 if (!byTeacher[a.teacherId]) {
                     byTeacher[a.teacherId] = {
                         teacherId: a.teacherId,
+                        teacherName: a.teacherName,
                         present: 0,
                         absent: 0,
                         late: 0,
@@ -384,7 +459,7 @@ const getDateRangeReport = async (req, res) => {
 const getClassWiseReport = async (req, res) => {
     try {
         const { schoolId } = req.params;
-        const { date, mode } = req.query;
+        const { date, mode, classId, sectionId } = req.query;
 
         const schoolDb = await getSchoolDb(schoolId);
         const attendanceDate = getDateOnly(date || new Date());
@@ -398,19 +473,24 @@ const getClassWiseReport = async (req, res) => {
             AttendanceModel = schoolDb.model("AttendanceSimple", attendanceSimpleSchema);
         }
 
-        const query = { date: attendanceDate };
+        const query = { date: { $gte: attendanceDate, $lte: new Date(attendanceDate.getTime() + 24 * 60 * 60 * 1000 - 1) } };
+        if (classId) query.classId = classId;
+        if (sectionId) query.sectionId = sectionId;
         if (mode === "check_in_out") query.userType = "student";
 
         const attendance = await AttendanceModel.find(query).lean();
+        const populatedAttendance = await populateNames(schoolDb, attendance);
 
         // Group by class and section
         const byClass = {};
-        attendance.forEach((a) => {
+        populatedAttendance.forEach((a) => {
             const key = `${a.classId}|${a.sectionId || "all"}`;
             if (!byClass[key]) {
                 byClass[key] = {
                     classId: a.classId,
                     sectionId: a.sectionId,
+                    className: a.className,
+                    sectionName: a.sectionName,
                     present: 0,
                     absent: 0,
                     late: 0,
