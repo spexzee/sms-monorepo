@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Grid, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Grid, CircularProgress, Alert, Avatar } from '@mui/material';
 import {
     School as ClassIcon,
     Assessment as ResultsIcon,
@@ -8,11 +8,13 @@ import {
     Schedule as TimetableIcon,
     Help as RequestIcon,
 } from '@mui/icons-material';
-import DashboardCard from '../../components/Dashboard/DashboardCard';
+import { useNavigate } from 'react-router-dom';
+import { AppCard } from '../../components/ui/AppCard';
 import TokenService from '../../queries/token/tokenService';
 import { useGetSimpleStudentAttendance } from '../../queries/Attendance';
 
 const StudentDashboard: React.FC = () => {
+    const navigate = useNavigate();
     const user = TokenService.getUser();
     const userName = `${user?.firstName} ${user?.lastName}`;
     const schoolId = TokenService.getSchoolId() || '';
@@ -36,18 +38,22 @@ const StudentDashboard: React.FC = () => {
 
     return (
         <Box sx={{ p: { xs: 2, sm: 3 } }}>
-            {/* Welcome Header */}
-            <Box sx={{ mb: 3 }}>
+            {/* Welcome Header with improved typography */}
+            <Box sx={{ mb: { xs: 4, md: 6 }, mt: 2 }}>
                 <Typography
-                    variant="h4"
-                    fontWeight={600}
-                    gutterBottom
-                    color="#1e293b"
-                    sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}
+                    variant="h3"
+                    fontWeight={800}
+                    sx={{ 
+                        mb: 1,
+                        background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        fontSize: { xs: '2.25rem', md: '3rem' }
+                    }}
                 >
                     Welcome, {userName}!
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ opacity: 0.8 }}>
                     Here's your academic overview for today.
                 </Typography>
             </Box>
@@ -65,84 +71,39 @@ const StudentDashboard: React.FC = () => {
             )}
 
             {/* Dashboard Grid */}
-            <Grid container spacing={{ xs: 2, sm: 3 }}>
-                {/* Attendance Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="My Attendance"
-                        value={`${percentage}%`}
-                        subtitle={`${presentDays} of ${totalDays} days present`}
-                        icon={<AttendanceIcon sx={{ fontSize: 28 }} />}
-                        color="#10b981"
-                        bgColor="#ecfdf5"
-                        to="/student/attendance"
-                    />
-                </Grid>
-
-                {/* Timetable Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="Timetable"
-                        value={summary?.total || '-'}
-                        subtitle="School days this month"
-                        icon={<TimetableIcon sx={{ fontSize: 28 }} />}
-                        color="#3b82f6"
-                        bgColor="#eff6ff"
-                        to="/student/timetable"
-                    />
-                </Grid>
-
-                {/* Exams Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="My Exams"
-                        value={summary?.absent || 0}
-                        subtitle="Days absent this month"
-                        icon={<ResultsIcon sx={{ fontSize: 28 }} />}
-                        color="#8b5cf6"
-                        bgColor="#f5f3ff"
-                        to="/student/exam/my-exams"
-                    />
-                </Grid>
-
-                {/* Leave Requests Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="Leave Requests"
-                        value={summary?.leave || 0}
-                        subtitle="Days on leave"
-                        icon={<LeaveIcon sx={{ fontSize: 28 }} />}
-                        color="#f59e0b"
-                        bgColor="#fffbeb"
-                        to="/student/leave/apply"
-                    />
-                </Grid>
-
-                {/* My Requests Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="My Requests"
-                        value={summary?.late || 0}
-                        subtitle="Days late this month"
-                        icon={<RequestIcon sx={{ fontSize: 28 }} />}
-                        color="#ec4899"
-                        bgColor="#fdf2f8"
-                        to="/student/my-requests"
-                    />
-                </Grid>
-
-                {/* My Profile Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                    <DashboardCard
-                        title="My Profile"
-                        value={presentDays}
-                        subtitle="Days present this month"
-                        icon={<ClassIcon sx={{ fontSize: 28 }} />}
-                        color="#06b6d4"
-                        bgColor="#ecfeff"
-                        to="/student/profile"
-                    />
-                </Grid>
+            <Grid container spacing={3}>
+                {[
+                    { title: 'My Attendance', value: `${percentage}%`, subtitle: `${presentDays} of ${totalDays} days present`, icon: <AttendanceIcon />, color: '#10b981', to: '/student/attendance' },
+                    { title: 'Timetable', value: summary?.total || '-', subtitle: 'School days this month', icon: <TimetableIcon />, color: '#3b82f6', to: '/student/timetable' },
+                    { title: 'My Exams', value: summary?.absent || 0, subtitle: 'Days absent this month', icon: <ResultsIcon />, color: '#8b5cf6', to: '/student/exam/my-exams' },
+                    { title: 'Leave Requests', value: summary?.leave || 0, subtitle: 'Days on leave', icon: <LeaveIcon />, color: '#f59e0b', to: '/student/leave/apply' },
+                    { title: 'My Requests', value: summary?.late || 0, subtitle: 'Days late this month', icon: <RequestIcon />, color: '#ec4899', to: '/student/my-requests' },
+                    { title: 'My Profile', value: presentDays, subtitle: 'Days present this month', icon: <ClassIcon />, color: '#06b6d4', to: '/student/profile' },
+                ].map((item) => (
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.title}>
+                        <AppCard 
+                            onClick={() => navigate(item.to)}
+                            sx={{ 
+                                p: 3, 
+                                height: '100%',
+                                borderRadius: 4,
+                                backdropFilter: 'blur(10px)',
+                                bgcolor: 'rgba(255, 255, 255, 0.7)',
+                                border: '1px solid rgba(255, 255, 255, 0.3)',
+                                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: `${item.color}15`, color: item.color, width: 48, height: 48, borderRadius: 2 }}>
+                                    {React.cloneElement(item.icon as any, { sx: { fontSize: 24 } })}
+                                </Avatar>
+                            </Box>
+                            <Typography variant="h4" fontWeight={800} sx={{ mb: 0.5 }}>{item.value}</Typography>
+                            <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 0.5 }}>{item.title}</Typography>
+                            <Typography variant="caption" color="text.secondary" fontWeight={500}>{item.subtitle}</Typography>
+                        </AppCard>
+                    </Grid>
+                ))}
             </Grid>
         </Box>
     );

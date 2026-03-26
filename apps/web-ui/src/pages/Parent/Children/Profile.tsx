@@ -67,10 +67,10 @@ const ChildProfile: React.FC = () => {
         <Box sx={{ p: 3 }}>
             <Button
                 startIcon={<ArrowBackIcon />}
-                onClick={() => navigate('/parent/children')}
+                onClick={() => navigate('/parent/dashboard')}
                 sx={{ mb: 2 }}
             >
-                Back to Children
+                Back to Dashboard
             </Button>
 
             {loadingProfile ? (

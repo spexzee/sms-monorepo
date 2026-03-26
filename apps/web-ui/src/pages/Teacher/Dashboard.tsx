@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography, Grid, Avatar, Stack, Skeleton, Alert, Chip } from '@mui/material';
+import { format } from 'date-fns';
 import {
     People as StudentsIcon,
     Schedule as ScheduleIcon,
@@ -24,12 +25,22 @@ const TeacherDashboard: React.FC = () => {
 
     return (
         <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
-            {/* Professional Greeting */}
-            <Box sx={{ mb: 6, mt: 2 }}>
-                <Typography variant="h3" color="primary" sx={{ mb: 1 }}>
+            {/* Professional Greeting with improved typography */}
+            <Box sx={{ mb: { xs: 4, md: 6 }, mt: 2 }}>
+                <Typography 
+                    variant="h3" 
+                    fontWeight={800}
+                    sx={{ 
+                        mb: 1,
+                        background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        fontSize: { xs: '2.25rem', md: '3rem' }
+                    }}
+                >
                     Good morning, {user?.firstName || 'Teacher'}!
                 </Typography>
-                <Typography variant="h6" color="text.secondary" fontWeight={400}>
+                <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ opacity: 0.8 }}>
                     You have {stats?.periodsToday || 0} classes scheduled for today.
                 </Typography>
             </Box>
@@ -44,17 +55,27 @@ const TeacherDashboard: React.FC = () => {
             <Grid container spacing={3} sx={{ mb: 6 }}>
                 {[
                     { label: 'Total Students', value: stats?.totalStudents || 0, icon: <StudentsIcon />, color: '#6366f1' },
-                    { label: 'Today\'s Attendance', value: '94%', icon: <AttendanceIcon />, color: '#10b981' },
+                    { label: 'Today\'s Attendance', value: stats?.attendancePercentage || '0%', icon: <AttendanceIcon />, color: '#10b981' },
                     { label: 'Pending Leaves', value: stats?.pendingLeaveRequests || 0, icon: <EventIcon />, color: '#f59e0b' },
                 ].map((stat) => (
-                    <Grid size={{ xs: 12, md: 4 }} key={stat.label}>
-                        <AppCard sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 3, border: '1px solid', borderColor: 'divider' }}>
-                            <Avatar sx={{ bgcolor: `${stat.color}15`, color: stat.color, width: 56, height: 56 }}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={stat.label}>
+                        <AppCard sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 3, 
+                            p: 3, 
+                            borderRadius: 4,
+                            backdropFilter: 'blur(10px)',
+                            bgcolor: 'rgba(255, 255, 255, 0.7)',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
+                        }}>
+                            <Avatar sx={{ bgcolor: `${stat.color}15`, color: stat.color, width: 56, height: 56, border: '1px solid', borderColor: `${stat.color}20` }}>
                                 {stat.icon}
                             </Avatar>
                             <Box>
-                                <Typography variant="h4" fontWeight={700}>{stat.value}</Typography>
-                                <Typography variant="body2" color="text.secondary">{stat.label}</Typography>
+                                <Typography variant="h4" fontWeight={800}>{stat.value}</Typography>
+                                <Typography variant="body2" color="text.secondary" fontWeight={500}>{stat.label}</Typography>
                             </Box>
                         </AppCard>
                     </Grid>
@@ -76,27 +97,42 @@ const TeacherDashboard: React.FC = () => {
                             <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 4 }} />
                         ) : (
                             <Grid container spacing={2}>
-                                {stats?.periodsToday ? (
-                                    // Dummy data for visual representation of the redesign based on StitchMCP
-                                    [
-                                        { time: '09:00 AM', subject: 'Mathematics', class: 'Grade 10-A' },
-                                        { time: '11:00 AM', subject: 'Algebra', class: 'Grade 9-C' },
-                                    ].map((period, i) => (
-                                        <Grid size={{ xs: 12, md: 6 }} key={i}>
+                                {stats?.todaySchedule && stats.todaySchedule.length > 0 ? (
+                                    stats.todaySchedule.map((period, i) => (
+                                        <Grid size={{ xs: 12, sm: 6 }} key={i}>
                                             <Box sx={{ 
-                                                p: 2, 
-                                                borderRadius: 3, 
+                                                p: 2.5, 
+                                                borderRadius: 4, 
                                                 border: '1px solid', 
-                                                borderColor: 'divider',
+                                                borderColor: 'rgba(255, 255, 255, 0.4)',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: 2,
-                                                bgcolor: 'background.default'
+                                                bgcolor: 'rgba(255, 255, 255, 0.5)',
+                                                backdropFilter: 'blur(4px)',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                                                transition: 'all 0.2s ease',
+                                                '&:hover': {
+                                                    transform: 'translateY(-2px)',
+                                                    boxShadow: '0 8px 16px rgba(0,0,0,0.06)'
+                                                }
                                             }}>
-                                                <Typography variant="subtitle2" color="primary" fontWeight={700}>{period.time}</Typography>
+                                                <Box sx={{ 
+                                                    p: 1.5, 
+                                                    borderRadius: 2, 
+                                                    bgcolor: 'primary.light', 
+                                                    color: 'primary.dark',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    minWidth: 80
+                                                }}>
+                                                    <Typography variant="caption" fontWeight={700}>PERIOD</Typography>
+                                                    <Typography variant="body2" fontWeight={800}>#{period.periodNumber}</Typography>
+                                                </Box>
                                                 <Box>
-                                                    <Typography variant="subtitle1" fontWeight={600}>{period.subject}</Typography>
-                                                    <Typography variant="caption" color="text.secondary">{period.class}</Typography>
+                                                    <Typography variant="subtitle1" fontWeight={700} color="text.primary">{period.subject}</Typography>
+                                                    <Typography variant="caption" color="text.secondary" fontWeight={500}>{period.class}</Typography>
                                                 </Box>
                                             </Box>
                                         </Grid>
@@ -113,32 +149,37 @@ const TeacherDashboard: React.FC = () => {
 
                     <AppSection title="Pending Tasks">
                         <Stack spacing={2}>
-                            {[
-                                { task: 'Take Attendance for 10-A', deadline: 'Today, 10:30 AM', priority: 'high' },
-                                { task: 'Grade Math Assignment', deadline: 'Tomorrow', priority: 'medium' },
-                            ].map((task, i) => (
-                                <Box key={i} sx={{ 
-                                    p: 2, 
-                                    borderRadius: 3, 
-                                    bgcolor: 'background.default',
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                }}>
-                                    <Box>
-                                        <Typography variant="body1" fontWeight={500}>{task.task}</Typography>
-                                        <Typography variant="caption" color="text.secondary">Due: {task.deadline}</Typography>
+                            {stats?.pendingTasks && stats.pendingTasks.length > 0 ? (
+                                stats.pendingTasks.map((task, i) => (
+                                    <Box key={i} sx={{ 
+                                        p: 2, 
+                                        borderRadius: 3, 
+                                        bgcolor: 'background.default',
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}>
+                                        <Box>
+                                            <Typography variant="body1" fontWeight={500}>{task.task}</Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Due: {format(new Date(task.deadline), 'MMM dd, yyyy')}
+                                            </Typography>
+                                        </Box>
+                                        <Chip 
+                                            size="small" 
+                                            label={task.priority.toUpperCase()} 
+                                            color={task.priority === 'high' ? 'error' : 'primary'} 
+                                            variant="filled"
+                                        />
                                     </Box>
-                                    <Chip 
-                                        size="small" 
-                                        label={task.priority.toUpperCase()} 
-                                        color={task.priority === 'high' ? 'error' : 'primary'} 
-                                        variant="filled"
-                                    />
+                                ))
+                            ) : (
+                                <Box sx={{ py: 3, textAlign: 'center', opacity: 0.6 }}>
+                                    <Typography variant="body2">No pending tasks</Typography>
                                 </Box>
-                            ))}
+                            )}
                         </Stack>
                     </AppSection>
                 </Grid>

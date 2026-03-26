@@ -13,6 +13,18 @@ export interface TeacherDashboardStats {
     periodsToday: number;
     pendingLeaveRequests: number;
     totalAnnouncements: number;
+    attendancePercentage: string;
+    todaySchedule: Array<{
+        time: string;
+        subject: string;
+        class: string;
+        periodNumber: number;
+    }>;
+    pendingTasks: Array<{
+        task: string;
+        deadline: string;
+        priority: 'high' | 'medium' | 'low';
+    }>;
 }
 
 // Query Keys
