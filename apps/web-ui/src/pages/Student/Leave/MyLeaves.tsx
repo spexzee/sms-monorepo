@@ -51,11 +51,15 @@ const MyLeaves: React.FC = () => {
     const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-    const { data, isLoading, error } = useGetMyLeaves(schoolId, { status: statusFilter || undefined });
+    const { data, isLoading, error } = useGetMyLeaves(schoolId);
     const cancelMutation = useCancelLeave(schoolId);
 
-    const leaves = data?.data?.leaves || [];
+    const allLeaves = data?.data?.leaves || [];
     const summary = data?.data?.summary;
+
+    const leaves = statusFilter 
+        ? allLeaves.filter(leave => leave.status === statusFilter)
+        : allLeaves;
 
     const handleCancel = async (leaveId: string) => {
         try {

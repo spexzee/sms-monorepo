@@ -101,7 +101,7 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    loginMutation.mutate(formData, {
+    loginMutation.mutate({ ...formData, rememberMe }, {
       onSuccess: async (res: any) => {
         if (res?.data?.token) {
           login(res.data.token);

@@ -4,6 +4,7 @@ import useApi from "../useApi";
 interface LoginPayload {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 interface LoginResponse {

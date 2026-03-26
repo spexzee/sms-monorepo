@@ -6,8 +6,8 @@ import {
     Assignment as AssignmentIcon,
     Announcement as AnnouncementIcon,
     AccessTime as AccessTimeIcon,
-    Payments as PaymentsIcon,
-    Chat as ChatIcon
+    // Payments as PaymentsIcon,
+    // Chat as ChatIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import TokenService from '../../queries/token/tokenService';
@@ -54,12 +54,22 @@ const ParentDashboard = () => {
 
     return (
         <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
-            {/* Header */}
-            <Box sx={{ mb: 6, mt: 2 }}>
-                <Typography variant="h3" color="primary" sx={{ mb: 1 }}>
+            {/* Header with improved typography */}
+            <Box sx={{ mb: { xs: 4, md: 6 }, mt: 2 }}>
+                <Typography
+                    variant="h3"
+                    fontWeight={800}
+                    sx={{
+                        mb: 1,
+                        background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        fontSize: { xs: '2rem', md: '3rem' }
+                    }}
+                >
                     Welcome, {dashboard?.parentName || `${user?.firstName} ${user?.lastName}`}!
                 </Typography>
-                <Typography variant="h6" color="text.secondary" fontWeight={400}>
+                <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ opacity: 0.8 }}>
                     Hope your children are having a great day.
                 </Typography>
             </Box>
@@ -67,8 +77,8 @@ const ParentDashboard = () => {
             <Grid container spacing={4}>
                 {/* Children Overview Section */}
                 <Grid size={{ xs: 12, lg: 8 }}>
-                    <AppSection 
-                        title="My Children" 
+                    <AppSection
+                        title="My Children"
                         action={
                             <AppButton size="small" variant="text" onClick={() => navigate('/parent/children')}>
                                 View All
@@ -84,38 +94,57 @@ const ParentDashboard = () => {
                                 ))
                             ) : (
                                 dashboard?.children?.map((child: ChildStats) => (
-                                    <Grid size={{ xs: 12, md: 6 }} key={child.studentId}>
-                                        <AppCard 
+                                    <Grid size={{ xs: 12, sm: 6 }} key={child.studentId}>
+                                        <AppCard
                                             onClick={() => navigate(`/parent/children/${child.studentId}`)}
-                                            sx={{ p: 3, border: '1px solid', borderColor: 'divider' }}
+                                            sx={{
+                                                p: { xs: 2, sm: 3 },
+                                                borderRadius: 4,
+                                                backdropFilter: 'blur(10px)',
+                                                bgcolor: 'rgba(255, 255, 255, 0.7)',
+                                                border: '1px solid',
+                                                borderColor: 'rgba(255, 255, 255, 0.3)',
+                                                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
+                                            }}
                                         >
-                                            <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
+                                            <Box sx={{ display: 'flex', gap: { xs: 2, sm: 2.5 }, alignItems: 'center' }}>
                                                 <Avatar
                                                     src={child.profileImage}
                                                     alt={child.name}
-                                                    sx={{ width: 80, height: 80, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                                    sx={{
+                                                        width: { xs: 60, sm: 80 },
+                                                        height: { xs: 60, sm: 80 },
+                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                                        border: '3px solid #fff'
+                                                    }}
                                                 >
                                                     {child.firstName?.[0]}
                                                 </Avatar>
-                                                <Box sx={{ flex: 1 }}>
-                                                    <Typography variant="h6" sx={{ mb: 0.5 }}>
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    <Typography variant="h6" fontWeight={700} noWrap sx={{ mb: 0.1 }}>
                                                         {child.name}
                                                     </Typography>
-                                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5, opacity: 0.8 }}>
                                                         Grade {child.className}-{child.sectionName} • Roll No: {child.rollNumber}
                                                     </Typography>
-                                                    
-                                                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                                                        <Chip 
-                                                            size="small" 
-                                                            label={`${child.attendancePercentage}% Attendance`} 
+
+                                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                        <Chip
+                                                            size="small"
+                                                            label={`${child.attendancePercentage}% Attendance`}
                                                             color={getAttendanceColor(child.attendancePercentage)}
-                                                            variant="filled"
+                                                            sx={{ borderRadius: 1.5, fontWeight: 600 }}
                                                         />
                                                         {child.pendingLeaves > 0 && (
-                                                            <Chip size="small" label={`${child.pendingLeaves} Leave Pending`} color="warning" variant="outlined" />
+                                                            <Chip
+                                                                size="small"
+                                                                label={`${child.pendingLeaves} Leave Pending`}
+                                                                color="warning"
+                                                                variant="outlined"
+                                                                sx={{ borderRadius: 1.5, fontWeight: 600, bgcolor: 'warning.light', color: 'warning.dark', border: 'none' }}
+                                                            />
                                                         )}
-                                                    </Stack>
+                                                    </Box>
                                                 </Box>
                                             </Box>
                                         </AppCard>
@@ -160,9 +189,9 @@ const ParentDashboard = () => {
                                 ) : (
                                     <Stack spacing={2}>
                                         {announcements.slice(0, 3).map((ann: Announcement) => (
-                                            <Box key={ann.announcementId} sx={{ 
-                                                p: 2, 
-                                                borderRadius: 2, 
+                                            <Box key={ann.announcementId} sx={{
+                                                p: 2,
+                                                borderRadius: 2,
                                                 bgcolor: ann.priority === 'urgent' ? 'error.light' : 'background.default',
                                                 borderLeft: 4,
                                                 borderColor: ann.priority === 'urgent' ? 'error.main' : 'primary.main'
@@ -185,18 +214,28 @@ const ParentDashboard = () => {
                         {[
                             { label: 'Apply Leave', icon: <AccessTimeIcon />, path: '/parent/leave/apply', color: '#f59e0b' },
                             { label: 'View Results', icon: <SchoolIcon />, path: '/parent/results', color: '#10b981' },
-                            { label: 'Pay Fees', icon: <PaymentsIcon />, path: '/parent/fees', color: '#6366f1' },
-                            { label: 'Message Teacher', icon: <ChatIcon />, path: '/parent/messages', color: '#ec4899' },
+                            // { label: 'Pay Fees', icon: <PaymentsIcon />, path: '/parent/fees', color: '#6366f1' },
+                            // { label: 'Message Teacher', icon: <ChatIcon />, path: '/parent/messages', color: '#ec4899' },
                         ].map((action) => (
                             <Grid size={{ xs: 6 }} key={action.label}>
-                                <AppCard 
-                                    sx={{ py: 4, textAlign: 'center', cursor: 'pointer', height: '100%', borderColor: 'transparent' }}
+                                <AppCard
+                                    sx={{
+                                        py: 3,
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        height: '100%',
+                                        borderRadius: 4,
+                                        backdropFilter: 'blur(8px)',
+                                        bgcolor: 'rgba(255,255,255,0.6)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        transition: 'all 0.3s ease'
+                                    }}
                                     onClick={() => navigate(action.path)}
                                 >
-                                    <Avatar sx={{ bgcolor: action.color, mb: 2, mx: 'auto', width: 56, height: 56 }}>
-                                        {React.cloneElement(action.icon as any, { sx: { fontSize: 32 } })}
+                                    <Avatar sx={{ bgcolor: `${action.color}15`, color: action.color, mb: 2, mx: 'auto', width: 56, height: 56, border: '1px solid', borderColor: `${action.color}30` }}>
+                                        {React.cloneElement(action.icon as any, { sx: { fontSize: 28 } })}
                                     </Avatar>
-                                    <Typography variant="subtitle2" fontWeight={600}>{action.label}</Typography>
+                                    <Typography variant="subtitle2" fontWeight={700} color="text.primary">{action.label}</Typography>
                                 </AppCard>
                             </Grid>
                         ))}
