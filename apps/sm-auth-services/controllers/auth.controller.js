@@ -12,7 +12,7 @@ const { TeacherSchema: teacherSchema, StudentSchema: studentSchema, ParentSchema
  */
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, rememberMe } = req.body;
 
         // Validate input
         if (!email || !password) {
@@ -212,7 +212,7 @@ const login = async (req, res) => {
         const token = jwt.sign(
             tokenPayload,
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+            { expiresIn: rememberMe ? "30d" : (process.env.JWT_EXPIRES_IN || "7d") }
         );
 
         return res.status(200).json({
