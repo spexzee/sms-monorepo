@@ -19,6 +19,7 @@ export interface TeacherDashboardStats {
         subject: string;
         class: string;
         periodNumber: number;
+        periodName: string;
     }>;
     pendingTasks: Array<{
         task: string;

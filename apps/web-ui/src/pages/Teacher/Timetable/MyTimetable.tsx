@@ -233,7 +233,7 @@ const MyTimetable = () => {
             </Box>
 
             {/* Today's Schedule Card */}
-            <Card sx={{ mb: 3, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+            <Card sx={{ mb: 3, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
                 <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                         <TodayIcon />
@@ -248,7 +248,7 @@ const MyTimetable = () => {
                                 return (
                                     <Chip
                                         key={entry.entryId}
-                                        label={`P${entry.periodNumber} (${period?.startTime || ''}): ${entry.subject?.name || entry.subjectId} - ${entry.class?.name || entry.classId} ${entry.class?.section || ''}`}
+                                        label={`P${entry.displayPeriodNumber || entry.periodNumber} (${period?.startTime || ''}): ${entry.subject?.name || entry.subjectId} - ${entry.class?.name || entry.classId} ${entry.class?.section || ''}`}
                                         sx={{ bgcolor: 'white', color: 'primary.main' }}
                                     />
                                 );
@@ -300,7 +300,9 @@ const MyTimetable = () => {
                                 {regularPeriods.map((period) => (
                                     <tr key={period.periodNumber}>
                                         <td style={{ fontWeight: 600, backgroundColor: '#f5f5f5' }}>
-                                            <Typography variant="body2" fontWeight={600}>{period.name}</Typography>
+                                            <Typography variant="body2" fontWeight={600}>
+                                                {period.displayPeriodNumber ? `P${period.displayPeriodNumber} - ` : ''}{period.name}
+                                            </Typography>
                                             <Typography variant="caption" color="text.secondary">
                                                 {period.startTime} - {period.endTime}
                                             </Typography>
@@ -449,7 +451,7 @@ const MyTimetable = () => {
 
                         {/* Today's Free Periods Highlight */}
                         {freePeriods.freePeriods?.[todayDayName] && (
-                            <Card sx={{ mb: 3, bgcolor: 'success.light', color: 'success.contrastText' }}>
+                            <Card sx={{ mb: 3, bgcolor: 'success.main', color: 'success.contrastText' }}>
                                 <CardContent>
                                     <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
                                         Today's Free Periods ({todayDayName.charAt(0).toUpperCase() + todayDayName.slice(1)})

@@ -39,6 +39,24 @@ const generateEntryId = async (TimetableEntryModel) => {
     return `TTE${String(nextNumber).padStart(5, "0")}`;
 };
 
+/**
+ * Helper to generate a mapping from absolute period number to instructional display number
+ */
+const getDisplayPeriodMap = (config) => {
+    if (!config || !config.periods) return new Map();
+
+    const instructionalPeriods = config.periods
+        .filter(p => !["break", "lunch", "assembly"].includes(p.type))
+        .sort((a, b) => a.periodNumber - b.periodNumber);
+
+    const periodMap = new Map();
+    instructionalPeriods.forEach((p, index) => {
+        periodMap.set(p.periodNumber, index + 1);
+    });
+
+    return periodMap;
+};
+
 // ==========================================
 // CONFLICT DETECTION FUNCTIONS
 // ==========================================
@@ -318,6 +336,7 @@ const getClassTimetable = async (req, res) => {
 
         // Get active config for period structure
         const config = await TimetableConfig.findOne({ schoolId, isActive: true });
+        const periodMap = getDisplayPeriodMap(config);
 
         // Get all entries for this class/section
         const entries = await TimetableEntry.find({
@@ -334,16 +353,25 @@ const getClassTimetable = async (req, res) => {
                 const subject = await Subject.findOne({ subjectId: entry.subjectId });
                 return {
                     ...entry.toObject(),
+                    displayPeriodNumber: periodMap.get(entry.periodNumber) || entry.periodNumber,
                     teacher: teacher ? { teacherId: teacher.teacherId, name: `${teacher.firstName} ${teacher.lastName}` } : null,
                     subject: subject ? { subjectId: subject.subjectId, name: subject.name, code: subject.code } : null,
                 };
             })
         );
 
+        let processedConfig = config ? config.toObject() : null;
+        if (processedConfig && processedConfig.periods) {
+            processedConfig.periods = processedConfig.periods.map(p => ({
+                ...p,
+                displayPeriodNumber: periodMap.get(p.periodNumber) || p.periodNumber
+            }));
+        }
+
         res.status(200).json({
             success: true,
             data: {
-                config: config || null,
+                config: processedConfig,
                 entries: populatedEntries,
             },
         });
@@ -367,6 +395,7 @@ const getTeacherTimetable = async (req, res) => {
 
         // Get active config for period structure
         const config = await TimetableConfig.findOne({ schoolId, isActive: true });
+        const periodMap = getDisplayPeriodMap(config);
 
         // Get all entries for this teacher
         const entries = await TimetableEntry.find({
@@ -383,16 +412,25 @@ const getTeacherTimetable = async (req, res) => {
                 const subject = await Subject.findOne({ subjectId: entry.subjectId });
                 return {
                     ...entry.toObject(),
+                    displayPeriodNumber: periodMap.get(entry.periodNumber) || entry.periodNumber,
                     class: classDoc ? { classId: classDoc.classId, name: classDoc.name, section: section?.name || entry.sectionId } : null,
                     subject: subject ? { subjectId: subject.subjectId, name: subject.name, code: subject.code } : null,
                 };
             })
         );
 
+        let processedConfig = config ? config.toObject() : null;
+        if (processedConfig && processedConfig.periods) {
+            processedConfig.periods = processedConfig.periods.map(p => ({
+                ...p,
+                displayPeriodNumber: periodMap.get(p.periodNumber) || p.periodNumber
+            }));
+        }
+
         res.status(200).json({
             success: true,
             data: {
-                config: config || null,
+                config: processedConfig,
                 entries: populatedEntries,
             },
         });
@@ -692,10 +730,29 @@ const getConflictReport = async (req, res) => {
         for (const [key, entries] of Object.entries(teacherSlots)) {
             if (entries.length > 1) {
                 const teacher = await Teacher.findOne({ teacherId: entries[0].teacherId });
+
+                // Enrich each entry with Class, Section and Subject info
+                const enrichedEntries = await Promise.all(entries.map(async (e) => {
+                    const classDoc = await Class.findOne({ classId: e.classId });
+                    const section = classDoc?.sections?.find(s => s.sectionId === e.sectionId);
+                    const subject = await Subject.findOne({ subjectId: e.subjectId });
+                    return {
+                        entryId: e.entryId,
+                        teacherId: e.teacherId,
+                        teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : e.teacherId,
+                        classId: e.classId,
+                        className: classDoc?.name || e.classId,
+                        sectionId: e.sectionId,
+                        sectionName: section?.name || e.sectionId,
+                        subjectId: e.subjectId,
+                        subjectName: subject?.name || e.subjectId,
+                    };
+                }));
+
                 conflicts.push({
                     type: "teacher",
-                    description: `Teacher "${teacher?.firstName || entries[0].teacherId}" assigned to multiple classes`,
-                    entries: entries.map((e) => e.entryId),
+                    description: `Teacher "${teacher?.firstName} ${teacher?.lastName}" assigned to multiple classes`,
+                    entries: enrichedEntries,
                     dayOfWeek: entries[0].dayOfWeek,
                     periodNumber: entries[0].periodNumber,
                 });
@@ -717,10 +774,29 @@ const getConflictReport = async (req, res) => {
 
         for (const [key, entries] of Object.entries(roomSlots)) {
             if (entries.length > 1) {
+                // Enrich each entry with Class, Section and Subject info
+                const enrichedEntries = await Promise.all(entries.map(async (e) => {
+                    const classDoc = await Class.findOne({ classId: e.classId });
+                    const section = classDoc?.sections?.find(s => s.sectionId === e.sectionId);
+                    const subject = await Subject.findOne({ subjectId: e.subjectId });
+                    const teacher = await Teacher.findOne({ teacherId: e.teacherId });
+                    return {
+                        entryId: e.entryId,
+                        teacherId: e.teacherId,
+                        teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : e.teacherId,
+                        classId: e.classId,
+                        className: classDoc?.name || e.classId,
+                        sectionId: e.sectionId,
+                        sectionName: section?.name || e.sectionId,
+                        subjectId: e.subjectId,
+                        subjectName: subject?.name || e.subjectId,
+                    };
+                }));
+
                 conflicts.push({
                     type: "room",
                     description: `Room "${entries[0].roomId}" double-booked`,
-                    entries: entries.map((e) => e.entryId),
+                    entries: enrichedEntries,
                     dayOfWeek: entries[0].dayOfWeek,
                     periodNumber: entries[0].periodNumber,
                 });
@@ -825,7 +901,7 @@ const copyClassTimetable = async (req, res) => {
         }
 
         const copiedEntries = [];
-        
+
         for (const entry of sourceEntries) {
             const entryId = await generateEntryId(TimetableEntry);
             const newEntry = new TimetableEntry({

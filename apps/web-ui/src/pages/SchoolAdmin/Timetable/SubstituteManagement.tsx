@@ -161,16 +161,16 @@ const SubstituteManagement = () => {
             </Box>
 
             {/* Summary Card */}
-            <Card sx={{ mb: 3, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+            <Card sx={{ mb: 3, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
                 <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <TodayIcon />
-                        <Typography variant="h6">Today's Substitutes</Typography>
+                        <TodayIcon sx={{ color: 'inherit' }} />
+                        <Typography variant="h6" color="inherit">Today's Substitutes</Typography>
                     </Box>
-                    <Typography variant="h3" fontWeight={600}>
+                    <Typography variant="h3" fontWeight={600} color="inherit">
                         {substitutes.filter((s: any) => s.date === new Date().toISOString().split('T')[0]).length}
                     </Typography>
-                    <Typography variant="body2">Active substitute assignments for today</Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, color: 'inherit' }}>Active substitute assignments for today</Typography>
                 </CardContent>
             </Card>
 

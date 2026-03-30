@@ -193,6 +193,29 @@ const getTeacherDashboardStats = async (req, res) => {
     const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
     const today = days[new Date().getDay()];
     
+    // Fetch active timetable config to handle breaks and extract actual times
+    const TimetableConfig = schoolDb.models.TimetableConfig || schoolDb.model("TimetableConfig", require("@sms/shared").TimetableConfigSchema);
+    const timetableConfig = await TimetableConfig.findOne({ schoolId, status: "active" });
+    
+    // Create period mapping (Skip breaks, lunch, assembly)
+    const periodMap = {};
+    if (timetableConfig && timetableConfig.periods) {
+      let instructionalCount = 0;
+      // Sort periods by number just in case they aren't
+      const sortedPeriods = [...timetableConfig.periods].sort((a, b) => a.periodNumber - b.periodNumber);
+      
+      sortedPeriods.forEach(p => {
+        if (!["break", "lunch", "assembly"].includes(p.type)) {
+          instructionalCount++;
+          periodMap[p.periodNumber] = {
+            displayNumber: instructionalCount,
+            time: `${p.startTime} - ${p.endTime}`,
+            name: p.name
+          };
+        }
+      });
+    }
+    
     const timetableEntries = await TimetableEntry.find({
       schoolId,
       teacherId,
@@ -202,14 +225,17 @@ const getTeacherDashboardStats = async (req, res) => {
 
     const scheduleWithDetails = await Promise.all(timetableEntries.map(async (entry) => {
       const subject = await Subject.findOne({ subjectId: entry.subjectId }).select("name");
-      const classInfo = await Class.findOne({ classId: entry.classId }).select("className sections");
-      const sectionName = classInfo?.sections?.find(s => s.sectionId === entry.sectionId)?.sectionName || "";
+      const classInfo = await Class.findOne({ classId: entry.classId }).select("name sections");
+      const sectionName = classInfo?.sections?.find(s => s.sectionId === entry.sectionId)?.name || "";
+      
+      const periodInfo = periodMap[entry.periodNumber];
       
       return {
-        time: `${entry.periodNumber}:00`, // Simplified time logic
+        time: periodInfo?.time || `${entry.periodNumber}:00`,
         subject: subject?.name || "Subject",
-        class: `${classInfo?.className}-${sectionName}`,
-        periodNumber: entry.periodNumber
+        class: `${classInfo?.name || "Class"}-${sectionName || "Section"}`,
+        periodNumber: periodInfo?.displayNumber || entry.periodNumber,
+        periodName: periodInfo?.name || "Period"
       };
     }));
 
