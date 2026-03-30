@@ -6,6 +6,7 @@
 
 export interface Period {
   periodNumber: number;
+  displayPeriodNumber?: number;
   name: string;
   startTime: string;
   endTime: string;
@@ -134,6 +135,7 @@ export interface TimetableEntry {
   status: "active" | "inactive";
   createdAt: string;
   updatedAt: string;
+  displayPeriodNumber: any;
   // Populated fields
   teacher?: {
     teacherId: string;
@@ -248,13 +250,13 @@ export interface Room {
   name: string;
   code: string;
   type:
-    | "classroom"
-    | "lab"
-    | "hall"
-    | "playground"
-    | "library"
-    | "auditorium"
-    | "other";
+  | "classroom"
+  | "lab"
+  | "hall"
+  | "playground"
+  | "library"
+  | "auditorium"
+  | "other";
   capacity: number;
   floor?: string;
   building?: string;
@@ -396,6 +398,7 @@ export interface ExportTimetableData {
 
 export interface FreePeriod {
   periodNumber: number;
+  displayPeriodNumber?: number;
   name: string;
   startTime: string;
   endTime: string;
@@ -416,10 +419,22 @@ export interface FreeTeacher {
 // CONFLICT REPORT
 // ==========================================
 
+export interface EnrichedTimetableEntry {
+  entryId: string;
+  teacherId: string;
+  teacherName: string;
+  classId: string;
+  className: string;
+  sectionId: string;
+  sectionName: string;
+  subjectId: string;
+  subjectName: string;
+}
+
 export interface ConflictItem {
   type: "teacher" | "room";
   description: string;
-  entries: string[];
+  entries: EnrichedTimetableEntry[];
   dayOfWeek: string;
   periodNumber: number;
 }

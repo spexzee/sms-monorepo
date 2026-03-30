@@ -27,10 +27,10 @@ const TeacherDashboard: React.FC = () => {
         <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
             {/* Professional Greeting with improved typography */}
             <Box sx={{ mb: { xs: 4, md: 6 }, mt: 2 }}>
-                <Typography 
-                    variant="h3" 
+                <Typography
+                    variant="h3"
                     fontWeight={800}
-                    sx={{ 
+                    sx={{
                         mb: 1,
                         background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
                         WebkitBackgroundClip: 'text',
@@ -59,11 +59,11 @@ const TeacherDashboard: React.FC = () => {
                     { label: 'Pending Leaves', value: stats?.pendingLeaveRequests || 0, icon: <EventIcon />, color: '#f59e0b' },
                 ].map((stat) => (
                     <Grid size={{ xs: 12, sm: 6, md: 4 }} key={stat.label}>
-                        <AppCard sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 3, 
-                            p: 3, 
+                        <AppCard sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 3,
+                            p: 3,
                             borderRadius: 4,
                             backdropFilter: 'blur(10px)',
                             bgcolor: 'rgba(255, 255, 255, 0.7)',
@@ -85,7 +85,7 @@ const TeacherDashboard: React.FC = () => {
             <Grid container spacing={4}>
                 {/* Main Content: Schedule & Tasks */}
                 <Grid size={{ xs: 12, lg: 8 }}>
-                    <AppSection 
+                    <AppSection
                         title="Today's Schedule"
                         action={
                             <AppButton size="small" variant="text" onClick={() => navigate('/teacher/timetable')}>
@@ -100,10 +100,10 @@ const TeacherDashboard: React.FC = () => {
                                 {stats?.todaySchedule && stats.todaySchedule.length > 0 ? (
                                     stats.todaySchedule.map((period, i) => (
                                         <Grid size={{ xs: 12, sm: 6 }} key={i}>
-                                            <Box sx={{ 
-                                                p: 2.5, 
-                                                borderRadius: 4, 
-                                                border: '1px solid', 
+                                            <Box sx={{
+                                                p: 2.5,
+                                                borderRadius: 4,
+                                                border: '1px solid',
                                                 borderColor: 'rgba(255, 255, 255, 0.4)',
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -117,20 +117,25 @@ const TeacherDashboard: React.FC = () => {
                                                     boxShadow: '0 8px 16px rgba(0,0,0,0.06)'
                                                 }
                                             }}>
-                                                <Box sx={{ 
-                                                    p: 1.5, 
-                                                    borderRadius: 2, 
-                                                    bgcolor: 'primary.light', 
+                                                <Box sx={{
+                                                    p: 1.5,
+                                                    borderRadius: 2,
+                                                    bgcolor: 'primary.light',
                                                     color: 'primary.dark',
                                                     display: 'flex',
                                                     flexDirection: 'column',
                                                     alignItems: 'center',
-                                                    minWidth: 80
+                                                    minWidth: 100,
+                                                    textAlign: 'center'
                                                 }}>
-                                                    <Typography variant="caption" fontWeight={700}>PERIOD</Typography>
-                                                    <Typography variant="body2" fontWeight={800}>#{period.periodNumber}</Typography>
+                                                    <Typography variant="caption" fontWeight={800} sx={{ textTransform: 'uppercase', fontSize: '0.9rem', opacity: 0.8 }}>
+                                                        {'Period'} <b>#{period.periodNumber}</b>
+                                                    </Typography>
+                                                    <Typography variant="caption" fontWeight={700} sx={{ mt: 0.5, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                                                        {period.time}
+                                                    </Typography>
                                                 </Box>
-                                                <Box>
+                                                <Box sx={{ flexGrow: 1 }}>
                                                     <Typography variant="subtitle1" fontWeight={700} color="text.primary">{period.subject}</Typography>
                                                     <Typography variant="caption" color="text.secondary" fontWeight={500}>{period.class}</Typography>
                                                 </Box>
@@ -151,9 +156,9 @@ const TeacherDashboard: React.FC = () => {
                         <Stack spacing={2}>
                             {stats?.pendingTasks && stats.pendingTasks.length > 0 ? (
                                 stats.pendingTasks.map((task, i) => (
-                                    <Box key={i} sx={{ 
-                                        p: 2, 
-                                        borderRadius: 3, 
+                                    <Box key={i} sx={{
+                                        p: 2,
+                                        borderRadius: 3,
                                         bgcolor: 'background.default',
                                         border: '1px solid',
                                         borderColor: 'divider',
@@ -167,10 +172,10 @@ const TeacherDashboard: React.FC = () => {
                                                 Due: {format(new Date(task.deadline), 'MMM dd, yyyy')}
                                             </Typography>
                                         </Box>
-                                        <Chip 
-                                            size="small" 
-                                            label={task.priority.toUpperCase()} 
-                                            color={task.priority === 'high' ? 'error' : 'primary'} 
+                                        <Chip
+                                            size="small"
+                                            label={task.priority.toUpperCase()}
+                                            color={task.priority === 'high' ? 'error' : 'primary'}
                                             variant="filled"
                                         />
                                     </Box>
@@ -188,30 +193,30 @@ const TeacherDashboard: React.FC = () => {
                 <Grid size={{ xs: 12, lg: 4 }}>
                     <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Quick Actions</Typography>
                     <Stack spacing={2}>
-                        <AppButton 
-                            variant="contained" 
-                            fullWidth 
-                            size="large" 
+                        <AppButton
+                            variant="contained"
+                            fullWidth
+                            size="large"
                             startIcon={<AddIcon />}
                             onClick={() => navigate('/teacher/homework/add')}
                             sx={{ py: 2 }}
                         >
                             Add Homework
                         </AppButton>
-                        <AppButton 
-                            variant="outlined" 
-                            fullWidth 
-                            size="large" 
+                        <AppButton
+                            variant="outlined"
+                            fullWidth
+                            size="large"
                             startIcon={<ScheduleIcon />}
                             onClick={() => navigate('/teacher/exam/book')}
                             sx={{ py: 2 }}
                         >
                             Book Exam
                         </AppButton>
-                        <AppButton 
-                            variant="text" 
-                            fullWidth 
-                            size="large" 
+                        <AppButton
+                            variant="text"
+                            fullWidth
+                            size="large"
                             startIcon={<EventIcon />}
                             onClick={() => navigate('/teacher/leave/apply')}
                             sx={{ py: 2, color: 'text.secondary' }}
