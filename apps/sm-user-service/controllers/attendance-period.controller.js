@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { getSchoolDbConnection } = require("../configs/db");
 const { getSchoolDbName } = require("../utils/schoolDbHelper");
 const { SchoolModel: School, AttendancePeriodSchema: attendancePeriodSchema, StudentSchema: studentSchema } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 // Helper to get the model for a specific school
 const getAttendanceModel = async (schoolId) => {
@@ -97,11 +98,26 @@ const markPeriodAttendance = async (req, res) => {
             }
         }
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: `Period ${period} attendance marked for ${results.length} students`,
             data: { results, errors },
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(await getSchoolDbName(schoolId)),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "Attendance",
+            entityId: `${classId}-${sectionId}-${period}`,
+            entityLabel: `Class ${classId} - Period ${period}`,
+            description: `Marked period ${period} attendance for Class ${classId} (${results.length} students)`,
+            metadata: { classId, sectionId, period, date: attendanceDate, count: results.length }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error marking period attendance:", error);
         res.status(500).json({

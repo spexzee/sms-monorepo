@@ -1028,3 +1028,8 @@ export interface AbsentRecord {
   leaveApplied: boolean;
   leaveStatus?: LeaveStatus;
 }
+
+// ==========================================
+// ACTIVITY LOG TYPES
+// ==========================================
+export * from "./activity";

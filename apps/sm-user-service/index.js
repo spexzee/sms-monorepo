@@ -16,8 +16,10 @@ const uploadRoutes = require('./routes/upload.routes');
 const parentPortalRoutes = require('./routes/parent-portal.routes');
 const announcementRoutes = require('./routes/announcement.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const activityLogRoutes = require('./routes/activityLog.routes');
 const emailTemplateRoutes = require('./routes/emailTemplate.routes');
 const testEmailRoutes = require('./routes/testEmail.routes');
+const { initCronJobs } = require('./utils/cronJobs');
 
 const app = express();
 
@@ -63,6 +65,7 @@ app.use('/api/school/:schoolId/leave', leaveRoutes);
 app.use('/api/school/:schoolId/parent-portal', parentPortalRoutes);
 app.use('/api/school/:schoolId/announcements', announcementRoutes);
 app.use('/api/school/:schoolId/notifications', notificationRoutes);
+app.use('/api/school/:schoolId/logs', activityLogRoutes);
 app.use('/api/school/:schoolId/email-templates', emailTemplateRoutes);
 app.use('/api/test', testEmailRoutes);
 app.use('/api/school/upload', uploadRoutes);
@@ -82,6 +85,8 @@ connectDB()
     .then(() => {
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
+            // Initialize cron jobs
+            initCronJobs();
         });
     })
     .catch((error) => {

@@ -5,6 +5,7 @@ const {
     TimetableEntrySchema: timetableEntrySchema,
     TeacherSchema: teacherSchema,
 } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 // Get models for a specific school database
 const getModels = (schoolDbName) => {
@@ -137,7 +138,7 @@ const createSubstitute = async (req, res) => {
         const originalTeacher = await Teacher.findOne({ teacherId: originalEntry.teacherId });
         const substituteTeacher = await Teacher.findOne({ teacherId: substituteTeacherId });
 
-        res.status(201).json({
+        const response = res.status(201).json({
             success: true,
             message: "Substitute assignment created successfully",
             data: {
@@ -146,6 +147,21 @@ const createSubstitute = async (req, res) => {
                 substituteTeacher: substituteTeacher ? `${substituteTeacher.firstName} ${substituteTeacher.lastName}` : null,
             },
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "CREATE",
+            entity: "Substitute",
+            entityId: newSubstitute.substituteId,
+            entityLabel: substituteTeacher ? `${substituteTeacher.firstName} ${substituteTeacher.lastName}` : substituteTeacherId,
+            description: `Assigned ${substituteTeacher ? `${substituteTeacher.firstName} ${substituteTeacher.lastName}` : substituteTeacherId} as substitute for ${originalTeacher ? `${originalTeacher.firstName} ${originalTeacher.lastName}` : originalEntry.teacherId} on ${date}`,
+            metadata: { substituteId: newSubstitute.substituteId, date }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error creating substitute:", error);
         res.status(500).json({
@@ -287,11 +303,24 @@ const cancelSubstitute = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Substitute assignment cancelled successfully",
             data: substitute,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "DELETE",
+            entity: "Substitute",
+            entityId: substituteId,
+            description: `Cancelled substitute assignment ${substituteId}`
+        });
+
+        return response;
     } catch (error) {
         console.error("Error cancelling substitute:", error);
         res.status(500).json({
@@ -331,11 +360,24 @@ const updateSubstituteStatus = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Substitute status updated successfully",
             data: substitute,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "Substitute",
+            entityId: substituteId,
+            description: `Updated substitute ${substituteId} status to ${status}`
+        });
+
+        return response;
     } catch (error) {
         console.error("Error updating substitute status:", error);
         res.status(500).json({

@@ -9,6 +9,7 @@ const {
     ParentSchema: parentSchema,
     NotificationSchema: notificationSchema,
 } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 // Get models for a specific school database
 const getModels = (schoolDbName) => {
@@ -90,11 +91,26 @@ const createHomework = async (req, res) => {
             teacherData ? `${teacherData.firstName} ${teacherData.lastName}` : 'Teacher'
         );
 
-        res.status(201).json({
+        const response = res.status(201).json({
             success: true,
             message: "Homework created successfully",
             data: newHomework
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "CREATE",
+            entity: "Homework",
+            entityId: newHomework.homeworkId,
+            entityLabel: newHomework.title,
+            description: `Assigned new homework: ${newHomework.title} for ${classData?.name || classId}`,
+            metadata: { homeworkId: newHomework.homeworkId, title: newHomework.title }
+        });
+
+        return response;
     } catch (error) {
         console.error("Create Homework Error:", error);
         res.status(500).json({
@@ -530,11 +546,26 @@ const updateHomework = async (req, res) => {
 
         await homework.save();
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Homework updated successfully",
             data: homework
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "Homework",
+            entityId: homeworkId,
+            entityLabel: homework.title,
+            description: `Updated homework: ${homework.title}`,
+            metadata: { updates }
+        });
+
+        return response;
     } catch (error) {
         console.error("Update Homework Error:", error);
         res.status(500).json({
@@ -578,10 +609,24 @@ const deleteHomework = async (req, res) => {
         homework.status = 'cancelled';
         await homework.save();
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Homework deleted successfully"
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "DELETE",
+            entity: "Homework",
+            entityId: homeworkId,
+            entityLabel: homework.title,
+            description: `Cancelled homework: ${homework.title}`
+        });
+
+        return response;
     } catch (error) {
         console.error("Delete Homework Error:", error);
         res.status(500).json({

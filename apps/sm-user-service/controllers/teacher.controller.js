@@ -8,6 +8,7 @@ const {
   getPaginationParams,
   formatPaginationResponse,
 } = require("../utils/pagination");
+const { logActivity } = require("@sms/shared/utils");
 
 /**
  * Get Teacher model for a specific school database
@@ -141,28 +142,28 @@ const createTeacher = async (req, res) => {
       );
     }
 
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "CREATE",
+      entity: "Teacher",
+      entityId: savedTeacher.teacherId,
+      entityLabel: `${savedTeacher.firstName} ${savedTeacher.lastName}`,
+      description: `Created new teacher: ${savedTeacher.firstName} ${savedTeacher.lastName} (${savedTeacher.teacherId})`
+    });
+
     return res.status(201).json({
       success: true,
       message: "Teacher created successfully",
-      data: {
-        teacherId: savedTeacher.teacherId,
-        schoolId: savedTeacher.schoolId,
-        firstName: savedTeacher.firstName,
-        lastName: savedTeacher.lastName,
-        email: savedTeacher.email,
-        phone: savedTeacher.phone,
-        department: savedTeacher.department,
-        subjects: savedTeacher.subjects,
-        classes: savedTeacher.classes,
-        status: savedTeacher.status,
-        classTeacherSectionId: savedTeacher.classTeacherSectionId,
-      },
+      data: savedTeacher,
     });
   } catch (error) {
     console.error("Error creating teacher:", error);
     return res.status(500).json({
       success: false,
-      message: "Error creating teacher",
+      message: "Server error creating teacher",
       error: error.message,
     });
   }
@@ -481,11 +482,26 @@ const updateTeacherById = async (req, res) => {
       },
     ).select("-password");
 
-    return res.status(200).json({
+    const response = res.status(200).json({
       success: true,
       message: "Teacher updated successfully",
       data: updatedTeacher,
     });
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "UPDATE",
+      entity: "Teacher",
+      entityId: teacherId,
+      entityLabel: `${updatedTeacher.firstName} ${updatedTeacher.lastName}`,
+      description: `Updated teacher record: ${updatedTeacher.firstName} ${updatedTeacher.lastName} (${teacherId})`,
+      metadata: { updateData }
+    });
+
+    return response;
   } catch (error) {
     console.error("Error updating teacher:", error);
     return res.status(500).json({
@@ -549,11 +565,25 @@ const deleteTeacherById = async (req, res) => {
       );
     }
 
-    return res.status(200).json({
+    const response = res.status(200).json({
       success: true,
       message: "Teacher deleted successfully (soft delete)",
       data: deletedTeacher,
     });
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "DELETE",
+      entity: "Teacher",
+      entityId: teacherId,
+      entityLabel: `${deletedTeacher.firstName} ${deletedTeacher.lastName}`,
+      description: `Soft deleted teacher: ${deletedTeacher.firstName} ${deletedTeacher.lastName} (${teacherId})`
+    });
+
+    return response;
   } catch (error) {
     console.error("Error deleting teacher:", error);
     return res.status(500).json({

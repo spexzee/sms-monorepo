@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 const { getSchoolDbConnection } = require("../configs/db");
 const { getSchoolDbName } = require("../utils/schoolDbHelper");
 const {
-    LeaveRequestSchema: leaveRequestSchema,
     ParentSchema: parentSchema,
     StudentSchema: studentSchema,
 } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 // Helper to get the model for a specific school
 const getLeaveModel = async (schoolId) => {
@@ -115,11 +115,24 @@ const applyLeave = async (req, res) => {
 
         await newLeave.save();
 
-        res.status(201).json({
-            success: true,
             message: "Leave application submitted successfully",
             data: newLeave,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(await getSchoolDbName(schoolId)),
+            schoolId,
+            actor: req.user,
+            action: "CREATE",
+            entity: "Leave",
+            entityId: newLeave.leaveId,
+            entityLabel: `Leave for ${applicantName}`,
+            description: `${applicantName} applied for ${leaveType} leave from ${start.toDateString()} to ${end.toDateString()}`,
+            metadata: { leaveId: newLeave.leaveId, leaveType, startDate: start, endDate: end }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error applying leave:", error);
         res.status(500).json({
@@ -267,11 +280,26 @@ const processLeave = async (req, res) => {
 
         await leave.save();
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: `Leave request ${leave.status}`,
             data: leave,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(await getSchoolDbName(schoolId)),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "Leave",
+            entityId: leaveId,
+            entityLabel: `Leave for ${leave.applicantName}`,
+            description: `${action === "approve" ? "Approved" : "Rejected"} leave request for ${leave.applicantName} (${leaveId})`,
+            metadata: { leaveId, action, remarks }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error processing leave:", error);
         res.status(500).json({

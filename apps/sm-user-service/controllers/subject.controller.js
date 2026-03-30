@@ -3,6 +3,7 @@ const {
   SchoolModel: School,
   SubjectSchema: subjectSchema,
 } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 /**
  * Get Subject model for a specific school database
@@ -89,11 +90,25 @@ const createSubject = async (req, res) => {
 
     const savedSubject = await newSubject.save();
 
-    return res.status(201).json({
+    const response = res.status(201).json({
       success: true,
       message: "Subject created successfully",
       data: savedSubject,
     });
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "CREATE",
+      entity: "Subject",
+      entityId: savedSubject.subjectId,
+      entityLabel: savedSubject.name,
+      description: `Created new subject: ${savedSubject.name} (${savedSubject.code})`
+    });
+
+    return response;
   } catch (error) {
     console.error("Error creating subject:", error);
     return res.status(500).json({
@@ -275,11 +290,26 @@ const updateSubjectById = async (req, res) => {
       { new: true, runValidators: true },
     );
 
-    return res.status(200).json({
+    const response = res.status(200).json({
       success: true,
       message: "Subject updated successfully",
       data: updatedSubject,
     });
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "UPDATE",
+      entity: "Subject",
+      entityId: subjectId,
+      entityLabel: updatedSubject.name,
+      description: `Updated subject details: ${updatedSubject.name} (${subjectId})`,
+      metadata: { updateData }
+    });
+
+    return response;
   } catch (error) {
     console.error("Error updating subject:", error);
     return res.status(500).json({
@@ -319,11 +349,25 @@ const deleteSubjectById = async (req, res) => {
       { new: true },
     );
 
-    return res.status(200).json({
+    const response = res.status(200).json({
       success: true,
       message: "Subject deleted successfully (soft delete)",
       data: deletedSubject,
     });
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "DELETE",
+      entity: "Subject",
+      entityId: subjectId,
+      entityLabel: deletedSubject.name,
+      description: `Soft deleted subject: ${deletedSubject.name} (${subjectId})`
+    });
+
+    return response;
   } catch (error) {
     console.error("Error deleting subject:", error);
     return res.status(500).json({

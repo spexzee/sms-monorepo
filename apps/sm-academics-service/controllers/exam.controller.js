@@ -10,6 +10,7 @@ const {
     TeacherSchema: teacherSchema,
     RoomSchema: roomSchema,
 } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 const getModels = (schoolDbName) => {
     const schoolDb = getSchoolDbConnection(schoolDbName);
@@ -65,7 +66,22 @@ const createExam = async (req, res) => {
         });
 
         await newExam.save();
-        res.status(201).json({ success: true, data: newExam, message: "Exam created successfully" });
+        const response = res.status(201).json({ success: true, data: newExam, message: "Exam created successfully" });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "CREATE",
+            entity: "Exam",
+            entityId: newExam.examId,
+            entityLabel: newExam.name,
+            description: `Created new exam: ${newExam.name} (${newExam.examId})`,
+            metadata: { examData }
+        });
+
+        return response;
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -112,7 +128,22 @@ const updateExam = async (req, res) => {
             return res.status(404).json({ success: false, message: "Exam not found" });
         }
 
-        res.status(200).json({ success: true, data: updatedExam, message: "Exam updated successfully" });
+        const response = res.status(200).json({ success: true, data: updatedExam, message: "Exam updated successfully" });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "Exam",
+            entityId: examId,
+            entityLabel: updatedExam.name,
+            description: `Updated exam details: ${updatedExam.name} (${examId})`,
+            metadata: { updateData }
+        });
+
+        return response;
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -138,7 +169,21 @@ const deleteExam = async (req, res) => {
         // Also deactivate all related schedules
         await ExamSchedule.updateMany({ schoolId, examId }, { $set: { isActive: false } });
 
-        res.status(200).json({ success: true, message: "Exam deleted successfully" });
+        const response = res.status(200).json({ success: true, message: "Exam deleted successfully" });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "DELETE",
+            entity: "Exam",
+            entityId: examId,
+            entityLabel: exam.name,
+            description: `Soft deleted exam and its schedules: ${exam.name} (${examId})`
+        });
+
+        return response;
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -324,7 +369,22 @@ const scheduleExamSubject = async (req, res) => {
             await schedule.save();
         }
 
-        res.status(200).json({ success: true, data: schedule, message: "Exam scheduled successfully" });
+        const response = res.status(200).json({ success: true, data: schedule, message: "Exam scheduled successfully" });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: scheduleData._id ? "UPDATE" : "CREATE",
+            entity: "ExamSchedule",
+            entityId: schedule._id.toString(),
+            entityLabel: `Schedule for ${schedule.subjectId} (Class ${schedule.classId})`,
+            description: `${scheduleData._id ? "Updated" : "Created"} exam schedule for ${schedule.subjectId} on ${new Date(schedule.date).toDateString()}`,
+            metadata: { scheduleData: schedulePayload }
+        });
+
+        return response;
 
     } catch (error) {
         console.error("Schedule exam error:", error);
