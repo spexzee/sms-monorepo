@@ -43,4 +43,7 @@ module.exports = {
 
     // Backup
     BackupSchema: require('./backup.schema'),
+
+    // Logs
+    ActivityLogSchema: require('./activity-log.model'),
 };

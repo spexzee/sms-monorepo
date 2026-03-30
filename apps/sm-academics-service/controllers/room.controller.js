@@ -4,6 +4,7 @@ const {
     RoomSchema: roomSchema,
     TimetableEntrySchema: timetableEntrySchema,
 } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 // Get models for a specific school database
 const getModels = (schoolDbName) => {
@@ -74,11 +75,26 @@ const createRoom = async (req, res) => {
 
         await newRoom.save();
 
-        res.status(201).json({
+        const response = res.status(201).json({
             success: true,
             message: "Room created successfully",
             data: newRoom,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "CREATE",
+            entity: "Room",
+            entityId: newRoom.roomId,
+            entityLabel: newRoom.name,
+            description: `Created new room: ${newRoom.name} (${newRoom.code})`,
+            metadata: { roomId: newRoom.roomId, name: newRoom.name }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error creating room:", error);
         res.status(500).json({
@@ -172,11 +188,26 @@ const updateRoom = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Room updated successfully",
             data: room,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "Room",
+            entityId: roomId,
+            entityLabel: room.name,
+            description: `Updated room details: ${room.name}`,
+            metadata: { updates }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error updating room:", error);
         res.status(500).json({
@@ -207,10 +238,24 @@ const deleteRoom = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Room deleted successfully",
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "DELETE",
+            entity: "Room",
+            entityId: roomId,
+            entityLabel: room.name,
+            description: `Deactivated room: ${room.name}`
+        });
+
+        return response;
     } catch (error) {
         console.error("Error deleting room:", error);
         res.status(500).json({

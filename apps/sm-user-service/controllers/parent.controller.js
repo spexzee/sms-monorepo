@@ -9,6 +9,7 @@ const {
   getPaginationParams,
   formatPaginationResponse,
 } = require("../utils/pagination");
+const { logActivity } = require("@sms/shared/utils");
 
 /**
  * Get Parent model for a specific school database
@@ -158,7 +159,7 @@ const createParent = async (req, res) => {
       }
     }
 
-    return res.status(201).json({
+    const response = res.status(201).json({
       success: true,
       message: "Parent created successfully",
       data: {
@@ -173,6 +174,20 @@ const createParent = async (req, res) => {
         status: savedParent.status,
       },
     });
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "CREATE",
+      entity: "Parent",
+      entityId: savedParent.parentId,
+      entityLabel: `${savedParent.firstName} ${savedParent.lastName}`,
+      description: `Created new parent: ${savedParent.firstName} ${savedParent.lastName} (${savedParent.parentId})`
+    });
+
+    return response;
   } catch (error) {
     console.error("Error creating parent:", error);
     return res.status(500).json({
@@ -416,11 +431,26 @@ const updateParentById = async (req, res) => {
       }
     }
 
-    return res.status(200).json({
+    const response = res.status(200).json({
       success: true,
       message: "Parent updated successfully",
       data: updatedParent,
     });
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "UPDATE",
+      entity: "Parent",
+      entityId: parentId,
+      entityLabel: `${updatedParent.firstName} ${updatedParent.lastName}`,
+      description: `Updated parent record: ${updatedParent.firstName} ${updatedParent.lastName} (${parentId})`,
+      metadata: { updateData }
+    });
+
+    return response;
   } catch (error) {
     console.error("Error updating parent:", error);
     return res.status(500).json({
@@ -467,11 +497,25 @@ const deleteParentById = async (req, res) => {
       { status: "inactive" },
     );
 
-    return res.status(200).json({
+    const response = res.status(200).json({
       success: true,
       message: "Parent deleted successfully (soft delete)",
       data: deletedParent,
     });
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "DELETE",
+      entity: "Parent",
+      entityId: parentId,
+      entityLabel: `${deletedParent.firstName} ${deletedParent.lastName}`,
+      description: `Soft deleted parent: ${deletedParent.firstName} ${deletedParent.lastName} (${parentId})`
+    });
+
+    return response;
   } catch (error) {
     console.error("Error deleting parent:", error);
     return res.status(500).json({

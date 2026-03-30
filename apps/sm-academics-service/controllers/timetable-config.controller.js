@@ -3,6 +3,7 @@ const { getSchoolDbName } = require("../utils/schoolDbHelper");
 const {
     TimetableConfigSchema: timetableConfigSchema,
 } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 // Get TimetableConfig model for a specific school database
 const getTimetableConfigModel = (schoolDbName) => {
@@ -78,11 +79,26 @@ const createConfig = async (req, res) => {
 
         await newConfig.save();
 
-        res.status(201).json({
+        const response = res.status(201).json({
             success: true,
             message: "Timetable configuration created successfully",
             data: newConfig,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "CREATE",
+            entity: "TimetableConfig",
+            entityId: newConfig.configId,
+            entityLabel: newConfig.academicYear,
+            description: `Created new timetable configuration for academic year ${newConfig.academicYear}`,
+            metadata: { configId: newConfig.configId, academicYear: newConfig.academicYear }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error creating timetable config:", error);
         res.status(500).json({
@@ -208,11 +224,26 @@ const updateConfig = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Timetable configuration updated successfully",
             data: config,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "TimetableConfig",
+            entityId: configId,
+            entityLabel: config.academicYear,
+            description: `Updated timetable configuration for ${config.academicYear}`,
+            metadata: { updates }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error updating timetable config:", error);
         res.status(500).json({
@@ -250,11 +281,25 @@ const setActiveConfig = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Timetable configuration set as active",
             data: config,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "TimetableConfig",
+            entityId: configId,
+            entityLabel: config.academicYear,
+            description: `Activated timetable configuration for ${config.academicYear}`
+        });
+
+        return response;
     } catch (error) {
         console.error("Error setting active config:", error);
         res.status(500).json({
@@ -516,13 +561,29 @@ const toggleTimetableDisable = async (req, res) => {
 
         await config.save();
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: config.temporarilyDisabled
                 ? "Timetable temporarily disabled"
                 : "Timetable enabled",
             data: config,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "TimetableConfig",
+            entityId: config.configId,
+            entityLabel: config.academicYear,
+            description: config.temporarilyDisabled 
+                ? `Temporarily disabled timetable for ${config.academicYear}: ${config.disabledReason || "No reason provided"}`
+                : `Re-enabled timetable for ${config.academicYear}`
+        });
+
+        return response;
     } catch (error) {
         console.error("Error toggling timetable disable:", error);
         res.status(500).json({

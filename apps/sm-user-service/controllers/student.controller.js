@@ -15,6 +15,7 @@ const {
   getBackups,
   restoreBackup,
 } = require("../utils/backupHelper");
+const { logActivity } = require("@sms/shared/utils");
 
 /**
  * Get Student model for a specific school database
@@ -176,6 +177,18 @@ const createStudent = async (req, res) => {
         );
       }
     }
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "CREATE",
+      entity: "Student",
+      entityId: savedStudent.studentId,
+      entityLabel: `${savedStudent.firstName} ${savedStudent.lastName}`,
+      description: `Created new student: ${savedStudent.firstName} ${savedStudent.lastName} (${savedStudent.studentId})`
+    });
 
     return res.status(201).json({
       success: true,
@@ -603,6 +616,19 @@ const updateStudentById = async (req, res) => {
       }
     }
 
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "UPDATE",
+      entity: "Student",
+      entityId: studentId,
+      entityLabel: `${updatedStudent.firstName} ${updatedStudent.lastName}`,
+      description: `Updated student record: ${updatedStudent.firstName} ${updatedStudent.lastName} (${studentId})`,
+      metadata: { updateData }
+    });
+
     return res.status(200).json({
       success: true,
       message: "Student updated successfully",
@@ -654,6 +680,18 @@ const deleteStudentById = async (req, res) => {
         { status: "inactive" },
       );
     }
+
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(schoolDbName),
+      schoolId,
+      actor: req.user,
+      action: "DELETE",
+      entity: "Student",
+      entityId: studentId,
+      entityLabel: `${deletedStudent.firstName} ${deletedStudent.lastName}`,
+      description: `Soft deleted student: ${deletedStudent.firstName} ${deletedStudent.lastName} (${studentId})`
+    });
 
     return res.status(200).json({
       success: true,

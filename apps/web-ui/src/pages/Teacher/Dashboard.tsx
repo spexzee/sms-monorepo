@@ -27,22 +27,31 @@ const TeacherDashboard: React.FC = () => {
         <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
             {/* Professional Greeting with improved typography */}
             <Box sx={{ mb: { xs: 4, md: 6 }, mt: 2 }}>
-                <Typography
-                    variant="h3"
-                    fontWeight={800}
-                    sx={{
-                        mb: 1,
-                        background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        fontSize: { xs: '2.25rem', md: '3rem' }
-                    }}
-                >
-                    Good morning, {user?.firstName || 'Teacher'}!
-                </Typography>
-                <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ opacity: 0.8 }}>
-                    You have {stats?.periodsToday || 0} classes scheduled for today.
-                </Typography>
+                {isLoading ? (
+                    <>
+                        <Skeleton variant="text" width="60%" height={80} sx={{ borderRadius: 2 }} />
+                        <Skeleton variant="text" width="40%" height={32} sx={{ mt: 1 }} />
+                    </>
+                ) : (
+                    <>
+                        <Typography
+                            variant="h3"
+                            fontWeight={800}
+                            sx={{
+                                mb: 1,
+                                background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                fontSize: { xs: '2.25rem', md: '3rem' }
+                            }}
+                        >
+                            Good morning, {user?.firstName || 'Teacher'}!
+                        </Typography>
+                        <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ opacity: 0.8 }}>
+                            You have {stats?.periodsToday || 0} classes scheduled for today.
+                        </Typography>
+                    </>
+                )}
             </Box>
 
             {error && (
@@ -52,34 +61,42 @@ const TeacherDashboard: React.FC = () => {
             )}
 
             {/* Quick Stats Grid */}
-            <Grid container spacing={3} sx={{ mb: 6 }}>
-                {[
-                    { label: 'Total Students', value: stats?.totalStudents || 0, icon: <StudentsIcon />, color: '#6366f1' },
-                    { label: 'Today\'s Attendance', value: stats?.attendancePercentage || '0%', icon: <AttendanceIcon />, color: '#10b981' },
-                    { label: 'Pending Leaves', value: stats?.pendingLeaveRequests || 0, icon: <EventIcon />, color: '#f59e0b' },
-                ].map((stat) => (
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={stat.label}>
-                        <AppCard sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 3,
-                            p: 3,
-                            borderRadius: 4,
-                            backdropFilter: 'blur(10px)',
-                            bgcolor: 'rgba(255, 255, 255, 0.7)',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
-                        }}>
-                            <Avatar sx={{ bgcolor: `${stat.color}15`, color: stat.color, width: 56, height: 56, border: '1px solid', borderColor: `${stat.color}20` }}>
-                                {stat.icon}
-                            </Avatar>
-                            <Box>
-                                <Typography variant="h4" fontWeight={800}>{stat.value}</Typography>
-                                <Typography variant="body2" color="text.secondary" fontWeight={500}>{stat.label}</Typography>
-                            </Box>
-                        </AppCard>
-                    </Grid>
-                ))}
+            <Grid container spacing={3} sx={{ mb: 6 }} component="div">
+                {isLoading ? (
+                    [1, 2, 3].map((i) => (
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i} component="div">
+                            <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 4 }} />
+                        </Grid>
+                    ))
+                ) : (
+                    [
+                        { label: 'Total Students', value: stats?.totalStudents || 0, icon: <StudentsIcon />, color: '#6366f1' },
+                        { label: 'Today\'s Attendance', value: stats?.attendancePercentage || '0%', icon: <AttendanceIcon />, color: '#10b981' },
+                        { label: 'Pending Leaves', value: stats?.pendingLeaveRequests || 0, icon: <EventIcon />, color: '#f59e0b' },
+                    ].map((stat) => (
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={stat.label} component="div">
+                            <AppCard sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 3,
+                                p: 3,
+                                borderRadius: 4,
+                                backdropFilter: 'blur(10px)',
+                                bgcolor: 'rgba(255, 255, 255, 0.7)',
+                                border: '1px solid rgba(255, 255, 255, 0.3)',
+                                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
+                            }}>
+                                <Avatar sx={{ bgcolor: `${stat.color}15`, color: stat.color, width: 56, height: 56, border: '1px solid', borderColor: `${stat.color}20` }}>
+                                    {stat.icon}
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h4" fontWeight={800}>{stat.value}</Typography>
+                                    <Typography variant="body2" color="text.secondary" fontWeight={500}>{stat.label}</Typography>
+                                </Box>
+                            </AppCard>
+                        </Grid>
+                    ))
+                )}
             </Grid>
 
             <Grid container spacing={4}>
@@ -154,7 +171,9 @@ const TeacherDashboard: React.FC = () => {
 
                     <AppSection title="Pending Tasks">
                         <Stack spacing={2}>
-                            {stats?.pendingTasks && stats.pendingTasks.length > 0 ? (
+                            {isLoading ? (
+                                [1, 2, 3].map((i) => <Skeleton key={i} variant="rectangular" height={70} sx={{ borderRadius: 3 }} />)
+                            ) : stats?.pendingTasks && stats.pendingTasks.length > 0 ? (
                                 stats.pendingTasks.map((task, i) => (
                                     <Box key={i} sx={{
                                         p: 2,

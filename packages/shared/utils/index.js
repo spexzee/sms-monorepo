@@ -8,4 +8,5 @@ module.exports = {
   ...placeholderResolver,
   ...emailStyleTemplates,
   ...pagination,
+  ...require("./activityLogger"),
 };

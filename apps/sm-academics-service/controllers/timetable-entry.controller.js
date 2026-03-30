@@ -8,6 +8,7 @@ const {
     SubjectSchema: subjectSchema,
     RoomSchema: roomSchema,
 } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 // Get models for a specific school database
 const getModels = (schoolDbName) => {
@@ -238,11 +239,26 @@ const createEntry = async (req, res) => {
 
         await newEntry.save();
 
-        res.status(201).json({
+        const response = res.status(201).json({
             success: true,
             message: "Timetable entry created successfully",
             data: newEntry,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "CREATE",
+            entity: "TimetableEntry",
+            entityId: newEntry.entryId,
+            entityLabel: `${newEntry.dayOfWeek} - P${newEntry.periodNumber}`,
+            description: `Scheduled ${subjectData?.name || subjectId} for ${classData?.name || classId} on ${newEntry.dayOfWeek} Period ${newEntry.periodNumber}`,
+            metadata: { entryId: newEntry.entryId, classId, subjectId }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error creating timetable entry:", error);
         res.status(500).json({
@@ -538,11 +554,26 @@ const updateEntry = async (req, res) => {
             { new: true, runValidators: true }
         );
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Timetable entry updated successfully",
             data: entry,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "TimetableEntry",
+            entityId: entryId,
+            entityLabel: `${entry.dayOfWeek} - P${entry.periodNumber}`,
+            description: `Updated timetable entry: ${entry.dayOfWeek} Period ${entry.periodNumber}`,
+            metadata: { updates }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error updating timetable entry:", error);
         res.status(500).json({
@@ -574,10 +605,24 @@ const deleteEntry = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Timetable entry deleted successfully",
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "DELETE",
+            entity: "TimetableEntry",
+            entityId: entryId,
+            entityLabel: `${entry.dayOfWeek} - P${entry.periodNumber}`,
+            description: `Removed timetable entry for ${entry.dayOfWeek} Period ${entry.periodNumber}`
+        });
+
+        return response;
     } catch (error) {
         console.error("Error deleting timetable entry:", error);
         res.status(500).json({

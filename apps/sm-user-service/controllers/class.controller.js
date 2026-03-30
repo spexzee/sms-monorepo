@@ -1,5 +1,5 @@
-const { getSchoolDbConnection } = require("../configs/db");
 const { SchoolModel: School, ClassSchema: classSchema } = require("@sms/shared");
+const { logActivity } = require("@sms/shared/utils");
 
 /**
  * Get Class model for a specific school database
@@ -110,11 +110,25 @@ const createClass = async (req, res) => {
 
         const savedClass = await newClass.save();
 
-        return res.status(201).json({
+        const response = res.status(201).json({
             success: true,
             message: "Class created successfully",
             data: savedClass,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "CREATE",
+            entity: "Class",
+            entityId: savedClass.classId,
+            entityLabel: savedClass.name,
+            description: `Created new class: ${savedClass.name} (${savedClass.classId})`
+        });
+
+        return response;
     } catch (error) {
         console.error("Error creating class:", error);
         return res.status(500).json({
@@ -250,11 +264,26 @@ const updateClassById = async (req, res) => {
             { new: true, runValidators: true }
         );
 
-        return res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Class updated successfully",
             data: updatedClass,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "Class",
+            entityId: classId,
+            entityLabel: updatedClass.name,
+            description: `Updated class details: ${updatedClass.name} (${classId})`,
+            metadata: { updateData }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error updating class:", error);
         return res.status(500).json({
@@ -294,11 +323,25 @@ const deleteClassById = async (req, res) => {
             { new: true }
         );
 
-        return res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Class deleted successfully (soft delete)",
             data: deletedClass,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "DELETE",
+            entity: "Class",
+            entityId: classId,
+            entityLabel: deletedClass.name,
+            description: `Soft deleted class: ${deletedClass.name} (${classId})`
+        });
+
+        return response;
     } catch (error) {
         console.error("Error deleting class:", error);
         return res.status(500).json({
@@ -361,11 +404,26 @@ const addSection = async (req, res) => {
         classData.sections.push(newSection);
         await classData.save();
 
-        return res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Section added successfully",
             data: classData,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "Class",
+            entityId: classId,
+            entityLabel: `${classData.name} - Section ${name}`,
+            description: `Added section ${name} to class ${classData.name}`,
+            metadata: { sectionId, name }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error adding section:", error);
         return res.status(500).json({
@@ -412,11 +470,26 @@ const removeSection = async (req, res) => {
         classData.sections.splice(sectionIndex, 1);
         await classData.save();
 
-        return res.status(200).json({
+        const response = res.status(200).json({
             success: true,
             message: "Section removed successfully",
             data: classData,
         });
+
+        // Integrated Logging
+        logActivity({
+            schoolDb: getSchoolDbConnection(schoolDbName),
+            schoolId,
+            actor: req.user,
+            action: "UPDATE",
+            entity: "Class",
+            entityId: classId,
+            entityLabel: classData.name,
+            description: `Removed section ${sectionId} from class ${classData.name}`,
+            metadata: { sectionId }
+        });
+
+        return response;
     } catch (error) {
         console.error("Error removing section:", error);
         return res.status(500).json({

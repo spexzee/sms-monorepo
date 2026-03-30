@@ -19,14 +19,15 @@ const SchoolAdminDashboard = lazy(() => import("../pages/SchoolAdmin/Dashboard")
 const School = lazy(() => import("../pages/SchoolAdmin/School"));
 const Teachers = lazy(() => import("../pages/SchoolAdmin/Teachers"));
 const SchoolAdminStudents = lazy(() => import("../pages/SchoolAdmin/Students"));
+const SchoolAdminNotificationsPage = lazy(() => import("../pages/SchoolAdmin/Notifications"));
 const Parents = lazy(() => import("../pages/SchoolAdmin/Parents"));
+const SchoolLocation = lazy(() => import("../pages/SchoolAdmin/SchoolLocation"));
 const SchoolAdminProfile = lazy(() => import("../pages/SchoolAdmin/Profile"));
 const Requests = lazy(() => import("../pages/SchoolAdmin/Requests"));
 const SchoolAdminClasses = lazy(() => import("../pages/SchoolAdmin/Classes"));
 const SchoolAdminSubjects = lazy(() => import("../pages/SchoolAdmin/Subjects"));
 const SchoolAdminAttendance = lazy(() => import("../pages/SchoolAdmin/Attendance"));
 const SchoolAdminLeaveRequests = lazy(() => import("../pages/SchoolAdmin/Leave/Requests"));
-const SchoolLocation = lazy(() => import("../pages/SchoolAdmin/SchoolLocation"));
 
 const TimetableConfig = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableConfig"));
 const TimetableMaster = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableMaster"));
@@ -162,8 +163,8 @@ const MainRouters = () => {
           <Route path="/school-admin/email-templates" element={<EmailTemplateList />} />
           <Route path="/school-admin/email-templates/:id" element={<EmailTemplateEditor />} />
 
-          {/* Notifications */}
-          <Route path="/school-admin/notifications" element={<NotificationsPage />} />
+          {/* Notifications & Activity Logs */}
+          <Route path="/school-admin/notifications" element={<SchoolAdminNotificationsPage />} />
 
           <Route path="/school-admin/location" element={<SchoolLocation />} />
           <Route path="/school-admin/profile" element={<SchoolAdminProfile />} />
