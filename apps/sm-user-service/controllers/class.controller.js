@@ -1,3 +1,4 @@
+const { getSchoolDbConnection } = require("../configs/db");
 const { SchoolModel: School, ClassSchema: classSchema } = require("@sms/shared");
 const { logActivity } = require("@sms/shared/utils");
 
