@@ -1,12 +1,9 @@
-const { checkAuth, Authenticated } = require("./auth");
-const { authorizeRoles, checkRole } = require("./authorizeRole");
+const auth = require("./auth");
+const authorizeRole = require("./authorizeRole");
+const rateLimiter = require("./rateLimiter");
 
 module.exports = {
-    // Authentication
-    checkAuth,
-    Authenticated,
-
-    // Authorization
-    authorizeRoles,
-    checkRole
+  ...auth,
+  ...authorizeRole,
+  ...rateLimiter,
 };

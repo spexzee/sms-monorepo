@@ -290,7 +290,7 @@ export const exportToExcel = async <T extends Record<string, unknown>>(
 
     // Title
     const colCount = columns.length;
-    worksheet.mergeCells(1, 1, 1, colCount);
+    worksheet.mergeCells(1, 1, 1, colCount + 1);
     const titleCell = worksheet.getCell('A1');
     titleCell.value = title;
     titleCell.font = { bold: true, size: 16 };

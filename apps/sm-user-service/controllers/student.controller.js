@@ -616,12 +616,6 @@ const updateStudentById = async (req, res) => {
       }
     }
 
-    return res.status(200).json({
-      success: true,
-      message: "Student updated successfully",
-      data: updatedStudent,
-    });
-
     // Integrated Logging
     logActivity({
       schoolDb: getSchoolDbConnection(schoolDbName),
@@ -635,7 +629,11 @@ const updateStudentById = async (req, res) => {
       metadata: { updateData }
     });
 
-    return response;
+    return res.status(200).json({
+      success: true,
+      message: "Student updated successfully",
+      data: updatedStudent,
+    });
   } catch (error) {
     console.error("Error updating student:", error);
     return res.status(500).json({
@@ -683,12 +681,6 @@ const deleteStudentById = async (req, res) => {
       );
     }
 
-    return res.status(200).json({
-      success: true,
-      message: "Student deleted successfully (soft delete)",
-      data: deletedStudent,
-    });
-
     // Integrated Logging
     logActivity({
       schoolDb: getSchoolDbConnection(schoolDbName),
@@ -701,7 +693,11 @@ const deleteStudentById = async (req, res) => {
       description: `Soft deleted student: ${deletedStudent.firstName} ${deletedStudent.lastName} (${studentId})`
     });
 
-    return response;
+    return res.status(200).json({
+      success: true,
+      message: "Student deleted successfully (soft delete)",
+      data: deletedStudent,
+    });
   } catch (error) {
     console.error("Error deleting student:", error);
     return res.status(500).json({

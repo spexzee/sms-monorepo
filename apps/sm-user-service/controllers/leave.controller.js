@@ -113,26 +113,24 @@ const applyLeave = async (req, res) => {
             status: "pending",
         });
 
-        await newLeave.save();
+    // Integrated Logging
+    logActivity({
+      schoolDb: getSchoolDbConnection(await getSchoolDbName(schoolId)),
+      schoolId,
+      actor: req.user,
+      action: "CREATE",
+      entity: "Leave",
+      entityId: newLeave.leaveId,
+      entityLabel: `Leave for ${applicantName}`,
+      description: `${applicantName} applied for ${leaveType} leave from ${start.toDateString()} to ${end.toDateString()}`,
+      metadata: { leaveId: newLeave.leaveId, leaveType, startDate: start, endDate: end }
+    });
 
-            message: "Leave application submitted successfully",
-            data: newLeave,
-        });
-
-        // Integrated Logging
-        logActivity({
-            schoolDb: getSchoolDbConnection(await getSchoolDbName(schoolId)),
-            schoolId,
-            actor: req.user,
-            action: "CREATE",
-            entity: "Leave",
-            entityId: newLeave.leaveId,
-            entityLabel: `Leave for ${applicantName}`,
-            description: `${applicantName} applied for ${leaveType} leave from ${start.toDateString()} to ${end.toDateString()}`,
-            metadata: { leaveId: newLeave.leaveId, leaveType, startDate: start, endDate: end }
-        });
-
-        return response;
+    return res.status(201).json({
+      success: true,
+      message: "Leave application submitted successfully",
+      data: newLeave,
+    });
     } catch (error) {
         console.error("Error applying leave:", error);
         res.status(500).json({

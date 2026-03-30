@@ -1,7 +1,7 @@
 const { getSchoolDbConnection } = require("../configs/db");
 const { getSchoolDbName } = require("../utils/schoolDbHelper");
 const { ActivityLogSchema, SchoolModel: School, AdminModel: Admin } = require("@sms/shared");
-const { sendEmail } = require("@sms/shared/utils/emailService");
+const { sendEmail } = require("@sms/shared/utils");
 
 /**
  * Get ActivityLog model for a specific school

@@ -56,22 +56,31 @@ const ParentDashboard = () => {
         <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
             {/* Header with improved typography */}
             <Box sx={{ mb: { xs: 4, md: 6 }, mt: 2 }}>
-                <Typography
-                    variant="h3"
-                    fontWeight={800}
-                    sx={{
-                        mb: 1,
-                        background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        fontSize: { xs: '2rem', md: '3rem' }
-                    }}
-                >
-                    Welcome, {dashboard?.parentName || `${user?.firstName} ${user?.lastName}`}!
-                </Typography>
-                <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ opacity: 0.8 }}>
-                    Hope your children are having a great day.
-                </Typography>
+                {loadingDashboard ? (
+                    <>
+                        <Skeleton variant="text" width="60%" height={80} sx={{ borderRadius: 2 }} />
+                        <Skeleton variant="text" width="40%" height={32} sx={{ mt: 1 }} />
+                    </>
+                ) : (
+                    <>
+                        <Typography
+                            variant="h3"
+                            fontWeight={800}
+                            sx={{
+                                mb: 1,
+                                background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                fontSize: { xs: '2rem', md: '3rem' }
+                            }}
+                        >
+                            Welcome, {dashboard?.parentName || `${user?.firstName} ${user?.lastName}`}!
+                        </Typography>
+                        <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ opacity: 0.8 }}>
+                            Hope your children are having a great day.
+                        </Typography>
+                    </>
+                )}
             </Box>
 
             <Grid container spacing={4}>

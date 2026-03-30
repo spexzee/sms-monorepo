@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Grid, Skeleton, Alert } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import SchoolIcon from '@mui/icons-material/School';
 import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
@@ -31,11 +31,7 @@ const SchoolAdminDashboard = () => {
                 Welcome to your School Dashboard. Manage teachers, students, and parents.
             </Typography>
 
-            {isLoading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                    <CircularProgress />
-                </Box>
-            )}
+            {/* Removed CircularProgress as we now use Skeletons in the grid */}
 
             {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
@@ -43,13 +39,20 @@ const SchoolAdminDashboard = () => {
                 </Alert>
             )}
 
-            {stats && (
-                <Grid container spacing={{ xs: 2, sm: 3 }}>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid container spacing={{ xs: 2, sm: 3 }}>
+                {isLoading ? (
+                    [1, 2, 3, 4].map((i) => (
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
+                            <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 4 }} />
+                        </Grid>
+                    ))
+                ) : (
+                    <>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <DashboardCard
                             title="Teachers"
-                            value={stats.totalTeachers}
-                            subtitle={`${stats.activeTeachers} active`}
+                            value={stats?.totalTeachers || 0}
+                            subtitle={`${stats?.activeTeachers || 0} active`}
                             icon={<PeopleIcon sx={{ fontSize: 28 }} />}
                             color="#3b82f6"
                             bgColor="#eff6ff"
@@ -59,8 +62,8 @@ const SchoolAdminDashboard = () => {
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <DashboardCard
                             title="Students"
-                            value={stats.totalStudents}
-                            subtitle={`${stats.activeStudents} active`}
+                            value={stats?.totalStudents || 0}
+                            subtitle={`${stats?.activeStudents || 0} active`}
                             icon={<SchoolIcon sx={{ fontSize: 28 }} />}
                             color="#10b981"
                             bgColor="#ecfdf5"
@@ -70,8 +73,8 @@ const SchoolAdminDashboard = () => {
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <DashboardCard
                             title="Parents"
-                            value={stats.totalParents}
-                            subtitle={`${stats.activeParents} active`}
+                            value={stats?.totalParents || 0}
+                            subtitle={`${stats?.activeParents || 0} active`}
                             icon={<FamilyRestroomIcon sx={{ fontSize: 28 }} />}
                             color="#8b5cf6"
                             bgColor="#f5f3ff"
@@ -88,9 +91,10 @@ const SchoolAdminDashboard = () => {
                             bgColor="#fffbeb"
                             to="/school-admin/leave"
                         />
-                    </Grid>
-                </Grid>
-            )}
+                        </Grid>
+                    </>
+                )}
+            </Grid>
         </Box>
     );
 };

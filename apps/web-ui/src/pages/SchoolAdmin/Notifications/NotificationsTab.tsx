@@ -38,6 +38,7 @@ import {
   useDeleteNotification
 } from "../../../queries/Notification";
 import TokenService from "../../../queries/token/tokenService";
+import ConfirmationDialog from "../../../components/Dialogs/ConfirmationDialog";
 import type { Notification, NotificationType } from "../../../types";
 
 const getNotificationIcon = (type: NotificationType) => {
@@ -67,6 +68,7 @@ const NotificationsTab: React.FC = () => {
 
   const [tabValue, setTabValue] = useState(0);
   const [page, setPage] = useState(1);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const limit = 10;
 
   const isReadFilter = tabValue === 1 ? true : tabValue === 2 ? false : undefined;
@@ -89,9 +91,12 @@ const NotificationsTab: React.FC = () => {
     refetch();
   };
 
-  const handleDelete = async (notificationId: string) => {
-    await deleteNotification.mutateAsync(notificationId);
-    refetch();
+  const confirmDelete = async () => {
+    if (deleteId) {
+      await deleteNotification.mutateAsync(deleteId);
+      setDeleteId(null);
+      refetch();
+    }
   };
 
   const handleNotificationClick = (notification: Notification) => {
@@ -222,7 +227,7 @@ const NotificationsTab: React.FC = () => {
                         color="error"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(notification.notificationId);
+                          setDeleteId(notification.notificationId);
                         }}
                         disabled={deleteNotification.isPending}
                       >
@@ -295,6 +300,18 @@ const NotificationsTab: React.FC = () => {
           />
         </Box>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={Boolean(deleteId)}
+        onClose={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="Delete Notification"
+        description="Are you sure you want to permanently delete this notification? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        isLoading={deleteNotification.isPending}
+      />
     </Box>
   );
 };

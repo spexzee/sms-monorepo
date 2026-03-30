@@ -7,6 +7,7 @@ const schoolRoutes = require('./routes/school.routes');
 const userRoutes = require('./routes/user.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const { commonRateLimiter } = require('@sms/shared/middlewares');
 
 const app = express();
 
@@ -42,6 +43,7 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+app.use(commonRateLimiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

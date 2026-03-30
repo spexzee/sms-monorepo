@@ -25,6 +25,14 @@ import {
   Pagination,
   alpha,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import {
   Notifications as NotificationsIcon,
@@ -39,9 +47,13 @@ import {
   TrendingUp as TrendingUpIcon,
   MoreVert as MoreIcon,
   Refresh as RefreshIcon,
+  ContentCopy as CopyIcon,
+  FilterList as FilterListIcon,
 } from "@mui/icons-material";
 import { useGetActivityLogs, useGetLogStats, useClearLogs } from "../../../queries/ActivityLog";
 import TokenService from "../../../queries/token/tokenService";
+import ConfirmationDialog from "../../../components/Dialogs/ConfirmationDialog";
+import { exportToExcel } from "../../../components/ExcelExport";
 import type { ActivityLog, ActivityLogFilters } from "../../../types";
 import NotificationsTab from "./NotificationsTab"; // We'll create this to wrap the notification logic
 
@@ -49,6 +61,11 @@ const SchoolAdminNotifications: React.FC = () => {
   const theme = useTheme();
   const schoolId = TokenService.getSchoolId() || "";
   const [activeTab, setActiveTab] = useState(0);
+  const [isPurgeDialogOpen, setIsPurgeDialogOpen] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [activeLog, setActiveLog] = useState<ActivityLog | null>(null);
 
   // Filters State
   const [filters, setFilters] = useState<ActivityLogFilters>({
@@ -82,14 +99,13 @@ const SchoolAdminNotifications: React.FC = () => {
     setFilters((prev) => ({ ...prev, [field]: value, page: 1 }));
   };
 
-  const getActionColor = (action: string) => {
-    switch (action) {
-      case "CREATE": return "success";
-      case "UPDATE": return "info";
-      case "DELETE": return "error";
-      case "LOGIN": return "secondary";
-      default: return "default";
-    }
+  const handlePurgeLogs = () => {
+    clearLogsMutation.mutate(undefined, {
+      onSuccess: () => {
+        setIsPurgeDialogOpen(false);
+        refetchLogs();
+      }
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -102,8 +118,78 @@ const SchoolAdminNotifications: React.FC = () => {
     });
   };
 
+  const handleExportExcel = async () => {
+    if (!logsData?.data || (logsData.data as ActivityLog[]).length === 0) return;
+
+    const columns = [
+      { header: "Date", key: "date" as any },
+      { header: "Time", key: "time" as any },
+      { header: "Actor", key: "actorName" as any },
+      { header: "Role", key: "actorRole" as any },
+      { header: "Action", key: "action" as any, statusField: true },
+      { header: "Entity", key: "entity" as any },
+      { header: "Record", key: "entityLabel" as any },
+      { header: "Description", key: "description" as any }
+    ];
+
+    const exportData = (logsData.data as ActivityLog[]).map(log => ({
+      ...log,
+      date: formatDate(log.createdAt).split(",")[0],
+      time: formatDate(log.createdAt).split(",")[1].trim(),
+      actorRole: log.actorRole.replace("sch_", "").toUpperCase()
+    }));
+
+    await exportToExcel(
+      exportData, 
+      columns, 
+      `Activity Logs Report - ${new Date().toLocaleDateString()}`,
+      `Activity_Logs_${new Date().toISOString().split("T")[0]}`
+    );
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, log: ActivityLog) => {
+    setAnchorEl(event.currentTarget);
+    setActiveLog(log);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setActiveLog(null);
+  };
+
+  const handleCopyId = () => {
+    if (activeLog) {
+      navigator.clipboard.writeText(activeLog.logId);
+      handleMenuClose();
+    }
+  };
+
+  const handleCopyMetadata = () => {
+    if (activeLog && activeLog.metadata) {
+      navigator.clipboard.writeText(JSON.stringify(activeLog.metadata, null, 2));
+      handleMenuClose();
+    }
+  };
+
+  const handleFilterByEntity = () => {
+    if (activeLog) {
+      handleFilterChange("entity", activeLog.entity);
+      handleMenuClose();
+    }
+  };
+
+  const getActionColor = (action: string) => {
+    switch (action) {
+      case "CREATE": return "success";
+      case "UPDATE": return "info";
+      case "DELETE": return "error";
+      case "LOGIN": return "secondary";
+      default: return "default";
+    }
+  };
+
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: "1600px", margin: "0 auto" }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, width: "100%" }}>
       {/* Header Section */}
       <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <Box>
@@ -181,10 +267,10 @@ const SchoolAdminNotifications: React.FC = () => {
         {activeTab === 0 ? (
           <NotificationsTab />
         ) : (
-          <Grid container spacing={3} component="div">
+          <Grid container spacing={3}>
             {/* Stats Cards */}
-            <Grid size={{ xs: 12, md: 3 }} component="div">
-              <Card sx={{ borderRadius: 3, height: "100%", position: "relative", overflow: "hidden" }}>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Card sx={{ borderRadius: 3, height: "100%", position: "relative", overflow: "hidden", border: `1px solid ${alpha(theme.palette.divider, 0.08)}` }}>
                 <Box sx={{ 
                     position: "absolute", top: -20, right: -20, opacity: 0.1, 
                     transform: "rotate(-15deg)", pointerEvents: "none" 
@@ -206,8 +292,8 @@ const SchoolAdminNotifications: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 5 }} component="div">
-              <Card sx={{ borderRadius: 3, height: "100%" }}>
+            <Grid size={{ xs: 12, md: 5 }}>
+              <Card sx={{ borderRadius: 3, height: "100%", border: `1px solid ${alpha(theme.palette.divider, 0.08)}` }}>
                 <CardContent sx={{ p: 3 }}>
                   <Typography variant="overline" sx={{ fontWeight: 700, color: "text.secondary", letterSpacing: 1 }}>
                     Most Active Performer
@@ -233,7 +319,7 @@ const SchoolAdminNotifications: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 4 }} component="div">
+            <Grid size={{ xs: 12, md: 4 }}>
               <Card sx={{ borderRadius: 3, height: "100%", bgcolor: alpha(theme.palette.warning.main, 0.05), border: `1px dashed ${alpha(theme.palette.warning.main, 0.3)}` }}>
                 <CardContent sx={{ p: 3 }}>
                   <Typography variant="overline" sx={{ fontWeight: 700, color: "warning.dark", letterSpacing: 1 }}>
@@ -249,7 +335,7 @@ const SchoolAdminNotifications: React.FC = () => {
                       </Typography>
                     </Box>
                     <Tooltip title="View Policy Details">
-                      <IconButton size="small" color="warning">
+                      <IconButton size="small" color="warning" onClick={(e) => { e.stopPropagation(); }}>
                         <InfoIcon />
                       </IconButton>
                     </Tooltip>
@@ -259,10 +345,10 @@ const SchoolAdminNotifications: React.FC = () => {
             </Grid>
 
             {/* Filters & Actions Bar */}
-            <Grid size={{ xs: 12 }} component="div">
-              <Card sx={{ borderRadius: 3, px: 3, py: 2 }}>
-                <Grid container spacing={2} alignItems="center" component="div">
-                  <Grid size={{ xs: 12, md: 4 }} component="div">
+            <Grid size={{ xs: 12 }}>
+              <Card sx={{ borderRadius: 3, px: 3, py: 2, border: `1px solid ${alpha(theme.palette.divider, 0.08)}`, width: "100%" }}>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
                       size="small"
@@ -279,7 +365,7 @@ const SchoolAdminNotifications: React.FC = () => {
                       }}
                     />
                   </Grid>
-                  <Grid size={{ xs: 6, md: 2 }} component="div">
+                  <Grid size={{ xs: 6, md: 2 }}>
                     <TextField
                       select
                       fullWidth
@@ -298,7 +384,7 @@ const SchoolAdminNotifications: React.FC = () => {
                       <MenuItem value="Class">Class</MenuItem>
                     </TextField>
                   </Grid>
-                  <Grid size={{ xs: 6, md: 2 }} component="div">
+                  <Grid size={{ xs: 6, md: 2 }}>
                     <TextField
                       select
                       fullWidth
@@ -315,16 +401,12 @@ const SchoolAdminNotifications: React.FC = () => {
                       <MenuItem value="LOGIN">Auth</MenuItem>
                     </TextField>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 4 }} sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }} component="div">
+                  <Grid size={{ xs: 12, md: 4 }} sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
                     <Button
                       variant="outlined"
                       color="error"
                       startIcon={<DeleteIcon />}
-                      onClick={() => {
-                        if (window.confirm("Are you sure you want to clear ALL activity logs? This action cannot be undone.")) {
-                          clearLogsMutation.mutate();
-                        }
-                      }}
+                      onClick={() => setIsPurgeDialogOpen(true)}
                       disabled={clearLogsMutation.isPending}
                       sx={{ borderRadius: 2 }}
                     >
@@ -334,9 +416,10 @@ const SchoolAdminNotifications: React.FC = () => {
                       variant="outlined"
                       color="primary"
                       startIcon={<DownloadIcon />}
+                      onClick={handleExportExcel}
                       sx={{ borderRadius: 2 }}
                     >
-                      Export PDF
+                      Export Excel
                     </Button>
                   </Grid>
                 </Grid>
@@ -344,7 +427,7 @@ const SchoolAdminNotifications: React.FC = () => {
             </Grid>
 
             {/* Activity Table */}
-            <Grid size={{ xs: 12 }} component="div">
+            <Grid size={{ xs: 12 }}>
               <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: theme.shadows[1] }}>
                 <Table sx={{ minWidth: 650 }}>
                   <TableHead sx={{ bgcolor: alpha(theme.palette.common.black, 0.02) }}>
@@ -375,7 +458,7 @@ const SchoolAdminNotifications: React.FC = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      logsData?.data?.map((log: ActivityLog) => (
+                      (logsData?.data as ActivityLog[])?.map((log: ActivityLog) => (
                         <TableRow key={log.logId} hover sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                           <TableCell sx={{ whiteSpace: "nowrap" }}>
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatDate(log.createdAt).split(",")[0]}</Typography>
@@ -429,11 +512,21 @@ const SchoolAdminNotifications: React.FC = () => {
                           <TableCell align="right">
                             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
                               <Tooltip title="View Details">
-                                <IconButton size="small" sx={{ color: "primary.main" }}>
+                                <IconButton 
+                                  size="small" 
+                                  sx={{ color: "primary.main" }}
+                                  onClick={() => {
+                                    setSelectedLog(log);
+                                    setIsDetailsOpen(true);
+                                  }}
+                                >
                                   <ViewIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <IconButton size="small">
+                              <IconButton 
+                                size="small"
+                                onClick={(e) => handleMenuOpen(e, log)}
+                              >
                                 <MoreIcon fontSize="small" />
                               </IconButton>
                             </Box>
@@ -464,6 +557,151 @@ const SchoolAdminNotifications: React.FC = () => {
           </Grid>
         )}
       </Box>
+
+      {/* Confirmation Dialogs */}
+      <ConfirmationDialog
+        open={isPurgeDialogOpen}
+        onClose={() => setIsPurgeDialogOpen(false)}
+        onConfirm={handlePurgeLogs}
+        title="Purge Activity Logs"
+        description="Are you sure you want to clear ALL activity logs? This action cannot be undone and will permanently remove all audit trails from the system database."
+        confirmLabel="Purge All Logs"
+        variant="danger"
+        isLoading={clearLogsMutation.isPending}
+      />
+
+      {/* Activity Log Details Dialog */}
+      <Dialog 
+        open={isDetailsOpen} 
+        onClose={() => setIsDetailsOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3, boxShadow: theme.shadows[10] }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, pb: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box sx={{ 
+            p: 1, borderRadius: 2, 
+            bgcolor: alpha(theme.palette.primary.main, 0.1),
+            display: "flex"
+          }}>
+            <HistoryIcon color="primary" />
+          </Box>
+          Audit Log Details
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ p: 3 }}>
+          {selectedLog && (
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="overline" color="text.secondary" fontWeight={700}>Timestamp</Typography>
+                <Typography variant="body1" fontWeight={600}>{formatDate(selectedLog.createdAt)}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="overline" color="text.secondary" fontWeight={700}>Actor</Typography>
+                <Typography variant="body1" fontWeight={600}>{selectedLog.actorName} ({selectedLog.actorRole.replace("sch_", "")})</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="overline" color="text.secondary" fontWeight={700}>Action Type</Typography>
+                <Box sx={{ mt: 0.5 }}>
+                  <Chip 
+                    label={selectedLog.action} 
+                    size="small" 
+                    color={getActionColor(selectedLog.action) as any} 
+                    sx={{ fontWeight: 800, borderRadius: 1.5 }}
+                  />
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="overline" color="text.secondary" fontWeight={700}>Entity Impacted</Typography>
+                <Typography variant="body1" fontWeight={600}>{selectedLog.entity} {selectedLog.entityLabel ? `(${selectedLog.entityLabel})` : ""}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="overline" color="text.secondary" fontWeight={700}>Description</Typography>
+                <Typography variant="body1" sx={{ mt: 0.5, p: 2, bgcolor: alpha(theme.palette.grey[500], 0.05), borderRadius: 2, border: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
+                  {selectedLog.description}
+                </Typography>
+              </Grid>
+              
+              {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="overline" color="text.secondary" fontWeight={700}>Technical Metadata</Typography>
+                  <Box sx={{ 
+                    mt: 1, p: 2, 
+                    bgcolor: "#1e293b", 
+                    color: "#f8fafc", 
+                    borderRadius: 2,
+                    fontFamily: "monospace",
+                    fontSize: "0.85rem",
+                    overflowX: "auto",
+                    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)"
+                  }}>
+                    <pre style={{ margin: 0 }}>
+                      {JSON.stringify(selectedLog.metadata, null, 2)}
+                    </pre>
+                  </Box>
+                </Grid>
+              )}
+            </Grid>
+          )}
+        </DialogContent>
+        <Divider />
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button 
+            onClick={() => setIsDetailsOpen(false)} 
+            variant="contained"
+            sx={{ borderRadius: 2, px: 4 }}
+          >
+            Close Details
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 3-Dot Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        PaperProps={{
+          sx: {
+            minWidth: 180,
+            borderRadius: 2,
+            boxShadow: theme.shadows[4],
+            mt: 0.5,
+            "& .MuiMenuItem-root": {
+              px: 2,
+              py: 1,
+              borderRadius: 1,
+              mx: 1,
+              fontSize: "0.875rem",
+              fontWeight: 500
+            }
+          }
+        }}
+      >
+        <MenuItem onClick={handleCopyId}>
+          <ListItemIcon>
+            <CopyIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Copy Log ID</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleCopyMetadata} disabled={!activeLog?.metadata || Object.keys(activeLog.metadata).length === 0}>
+          <ListItemIcon>
+            <CopyIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Copy Metadata</ListItemText>
+        </MenuItem>
+        <Divider sx={{ my: 0.5 }} />
+        <MenuItem onClick={handleFilterByEntity}>
+          <ListItemIcon>
+            <FilterListIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Filter by {activeLog?.entity || "Entity"}</ListItemText>
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };

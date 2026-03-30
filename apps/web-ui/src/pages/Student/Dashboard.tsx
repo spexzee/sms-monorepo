@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Grid, CircularProgress, Alert, Avatar } from '@mui/material';
+import { Box, Typography, Grid, Skeleton, Alert, Avatar } from '@mui/material';
 import {
     School as ClassIcon,
     Assessment as ResultsIcon,
@@ -40,29 +40,34 @@ const StudentDashboard: React.FC = () => {
         <Box sx={{ p: { xs: 2, sm: 3 } }}>
             {/* Welcome Header with improved typography */}
             <Box sx={{ mb: { xs: 4, md: 6 }, mt: 2 }}>
-                <Typography
-                    variant="h3"
-                    fontWeight={800}
-                    sx={{ 
-                        mb: 1,
-                        background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        fontSize: { xs: '2.25rem', md: '3rem' }
-                    }}
-                >
-                    Welcome, {userName}!
-                </Typography>
-                <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ opacity: 0.8 }}>
-                    Here's your academic overview for today.
-                </Typography>
+                {isLoading ? (
+                    <>
+                        <Skeleton variant="text" width="60%" height={80} sx={{ borderRadius: 2 }} />
+                        <Skeleton variant="text" width="40%" height={32} sx={{ mt: 1 }} />
+                    </>
+                ) : (
+                    <>
+                        <Typography
+                            variant="h3"
+                            fontWeight={800}
+                            sx={{
+                                mb: 1,
+                                background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                fontSize: { xs: '2.25rem', md: '3rem' }
+                            }}
+                        >
+                            Welcome, {userName}!
+                        </Typography>
+                        <Typography variant="h6" color="text.secondary" fontWeight={400} sx={{ opacity: 0.8 }}>
+                            Here's your academic overview for today.
+                        </Typography>
+                    </>
+                )}
             </Box>
 
-            {isLoading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                    <CircularProgress />
-                </Box>
-            )}
+            {/* Removed CircularProgress as we now use Skeletons in the grid */}
 
             {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
@@ -72,15 +77,22 @@ const StudentDashboard: React.FC = () => {
 
             {/* Dashboard Grid */}
             <Grid container spacing={3}>
-                {[
-                    { title: 'My Attendance', value: `${percentage}%`, subtitle: `${presentDays} of ${totalDays} days present`, icon: <AttendanceIcon />, color: '#10b981', to: '/student/attendance' },
-                    { title: 'Timetable', value: summary?.total || '-', subtitle: 'School days this month', icon: <TimetableIcon />, color: '#3b82f6', to: '/student/timetable' },
-                    { title: 'My Exams', value: summary?.absent || 0, subtitle: 'Days absent this month', icon: <ResultsIcon />, color: '#8b5cf6', to: '/student/exam/my-exams' },
-                    { title: 'Leave Requests', value: summary?.leave || 0, subtitle: 'Days on leave', icon: <LeaveIcon />, color: '#f59e0b', to: '/student/leave/apply' },
-                    { title: 'My Requests', value: summary?.late || 0, subtitle: 'Days late this month', icon: <RequestIcon />, color: '#ec4899', to: '/student/my-requests' },
-                    { title: 'My Profile', value: presentDays, subtitle: 'Days present this month', icon: <ClassIcon />, color: '#06b6d4', to: '/student/profile' },
-                ].map((item) => (
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.title}>
+                {isLoading ? (
+                    [1, 2, 3, 4, 5, 6].map((i) => (
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
+                            <Skeleton variant="rectangular" height={160} sx={{ borderRadius: 4 }} />
+                        </Grid>
+                    ))
+                ) : (
+                    [
+                        { title: 'My Attendance', value: `${percentage}%`, subtitle: `${presentDays} of ${totalDays} days present`, icon: <AttendanceIcon />, color: '#10b981', to: '/student/attendance' },
+                        { title: 'Timetable', value: summary?.total || '-', subtitle: 'School days this month', icon: <TimetableIcon />, color: '#3b82f6', to: '/student/timetable' },
+                        { title: 'My Exams', value: summary?.absent || 0, subtitle: 'Days absent this month', icon: <ResultsIcon />, color: '#8b5cf6', to: '/student/exam/my-exams' },
+                        { title: 'Leave Requests', value: summary?.leave || 0, subtitle: 'Days on leave', icon: <LeaveIcon />, color: '#f59e0b', to: '/student/leave/apply' },
+                        { title: 'My Requests', value: summary?.late || 0, subtitle: 'Days late this month', icon: <RequestIcon />, color: '#ec4899', to: '/student/my-requests' },
+                        { title: 'My Profile', value: presentDays, subtitle: 'Days present this month', icon: <ClassIcon />, color: '#06b6d4', to: '/student/profile' },
+                    ].map((item) => (
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.title}>
                         <AppCard 
                             onClick={() => navigate(item.to)}
                             sx={{ 
@@ -103,7 +115,8 @@ const StudentDashboard: React.FC = () => {
                             <Typography variant="caption" color="text.secondary" fontWeight={500}>{item.subtitle}</Typography>
                         </AppCard>
                     </Grid>
-                ))}
+                ))
+            )}
             </Grid>
         </Box>
     );

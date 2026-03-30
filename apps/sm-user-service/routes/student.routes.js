@@ -51,7 +51,7 @@ router.post(
 router.post(
     "/",
     Authenticated,
-    authorizeRoles("super_admin", "sch_admin"),
+    authorizeRoles("super_admin", "sch_admin", "teacher"),
     createStudent
 );
 
@@ -75,7 +75,7 @@ router.get(
 router.put(
     "/:id",
     Authenticated,
-    authorizeRoles("super_admin", "sch_admin"),
+    authorizeRoles("super_admin", "sch_admin", "teacher"),
     updateStudentById
 );
 

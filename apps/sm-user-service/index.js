@@ -20,6 +20,7 @@ const activityLogRoutes = require('./routes/activityLog.routes');
 const emailTemplateRoutes = require('./routes/emailTemplate.routes');
 const testEmailRoutes = require('./routes/testEmail.routes');
 const { initCronJobs } = require('./utils/cronJobs');
+const { commonRateLimiter } = require('@sms/shared/middlewares');
 
 const app = express();
 
@@ -45,6 +46,7 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+app.use(commonRateLimiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

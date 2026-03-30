@@ -6,6 +6,7 @@ const { connectDB, ensureDbConnection } = require('./configs/db');
 const timetableRoutes = require('./routes/timetable.routes');
 const examRoutes = require('./routes/exam.routes');
 const homeworkRoutes = require('./routes/homework.routes');
+const { commonRateLimiter } = require('@sms/shared/middlewares');
 
 const app = express();
 
@@ -31,6 +32,7 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+app.use(commonRateLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
