@@ -476,7 +476,8 @@ const TimetableMaster = () => {
         file,
         config,
         selectedClass,
-        selectedSection
+        selectedSection,
+        subjects
       );
 
       const filteredEntries = parsedEntries.filter(parsed => {

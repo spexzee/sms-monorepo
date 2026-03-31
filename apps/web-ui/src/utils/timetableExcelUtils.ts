@@ -34,7 +34,7 @@ export const generateTimetableTemplate = async (
         const targetTeachers = assignedTeachers.length > 0 ? assignedTeachers : teachers;
 
         targetTeachers.forEach(teacher => {
-            const label = `${subject.name} [${subject.code}] (${subject.subjectId}) | ${teacher.firstName} ${teacher.lastName} (${teacher.teacherId})`;
+            const label = `${subject.name} (${subject.code}) | ${teacher.firstName} ${teacher.lastName} (${teacher.teacherId})`;
             dropdownOptions.push(label);
         });
     });
@@ -120,7 +120,7 @@ export const generateTimetableTemplate = async (
                     const subject = subjects.find(s => s.subjectId === entry.subjectId);
                     const teacher = teachers.find(t => t.teacherId === entry.teacherId);
                     if (subject && teacher) {
-                        cell.value = `${subject.name} [${subject.code}] (${subject.subjectId}) | ${teacher.firstName} ${teacher.lastName} (${teacher.teacherId})`;
+                        cell.value = `${subject.name} (${subject.code}) | ${teacher.firstName} ${teacher.lastName} (${teacher.teacherId})`;
                     }
                 }
 
@@ -171,7 +171,8 @@ export const parseTimetableTemplate = async (
     file: File,
     config: TimetableConfig,
     classId: string,
-    sectionId: string
+    sectionId: string,
+    subjects: Subject[]
 ): Promise<CreateTimetableEntryRequest[]> => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await file.arrayBuffer());
@@ -196,21 +197,41 @@ export const parseTimetableTemplate = async (
             const cellValue = row.getCell(colNum).value;
 
             if (cellValue && typeof cellValue === "string") {
-                // Extract Subject ID and Teacher ID from string "SubjectName (Code) | TeacherName (ID)"
-                // Regex matches: ... (SubjectID) | ... (TeacherID)
-                const subjectMatch = cellValue.match(/\(([^)]+)\)\s*\|/);
-                const teacherMatch = cellValue.match(/\|\s*.*?\(([^)]+)\)$/);
+                // Parse "Subject Name (Code) | Teacher Name (TeacherID)"
+                const parts = cellValue.split("|").map(p => p.trim());
+                if (parts.length === 2) {
+                    const subjectPart = parts[0];
+                    const teacherPart = parts[1];
 
-                if (subjectMatch && teacherMatch) {
-                    entries.push({
-                        classId,
-                        sectionId,
-                        subjectId: subjectMatch[1],
-                        teacherId: teacherMatch[1],
-                        dayOfWeek: day,
-                        periodNumber: period.periodNumber,
-                        periodType: period.type as any
-                    });
+                    // Match Subject by Name and Code: "Subject Name (Code)"
+                    const subMatch = subjectPart.match(/^(.*?)\s*\(([^)]+)\)$/);
+                    let foundSubjectId = "";
+
+                    if (subMatch) {
+                        const subName = subMatch[1].trim();
+                        const subCode = subMatch[2].trim();
+                        const subject = subjects.find(s => 
+                            s.name.trim() === subName && 
+                            s.code.trim() === subCode
+                        );
+                        if (subject) foundSubjectId = subject.subjectId;
+                    }
+
+                    // Extract Teacher ID from "(TCHXXXXX)"
+                    const teacherMatch = teacherPart.match(/\(([^)]+)\)$/);
+                    const teacherId = teacherMatch ? teacherMatch[1] : "";
+
+                    if (foundSubjectId && teacherId) {
+                        entries.push({
+                            classId,
+                            sectionId,
+                            subjectId: foundSubjectId,
+                            teacherId,
+                            dayOfWeek: day,
+                            periodNumber: period.periodNumber,
+                            periodType: period.type as any
+                        });
+                    }
                 }
             }
         });
