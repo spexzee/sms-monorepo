@@ -39,6 +39,15 @@ const HomeworkSchema = new Schema({
     attachmentUrl: {
         type: String
     },
+    referenceLinks: {
+        type: [String],
+        default: []
+    },
+    attachments: [{
+        url: { type: String, required: true },
+        fileName: { type: String, required: true },
+        fileType: { type: String }
+    }],
     assignedDate: {
         type: Date,
         default: Date.now

@@ -29,6 +29,8 @@ import {
   PictureAsPdf as PdfIcon,
   Warning as WarningIcon,
   SwapHoriz as SwapIcon,
+  Download as DownloadIcon,
+  FileUpload as UploadIcon,
 } from "@mui/icons-material";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -44,6 +46,7 @@ import {
   useGetActiveClasses,
   useCopyClassTimetable,
   useDeleteClassTimetable,
+  useBulkCreateEntries,
 } from "../../../queries/Timetable";
 import { useGetClasses } from "../../../queries/Class";
 import { useGetTeachers } from "../../../queries/Teacher";
@@ -56,6 +59,7 @@ import TokenService from "../../../queries/token/tokenService";
 import { useNotificationStore } from "../../../stores/notificationStore";
 import ConfirmationDialog from "../../../components/Dialogs/ConfirmationDialog";
 import { AppButton } from "../../../components/ui/AppButton";
+import { generateTimetableTemplate, parseTimetableTemplate } from "../../../utils/timetableExcelUtils";
 
 type ViewMode = "table" | "list";
 
@@ -309,6 +313,7 @@ const TimetableMaster = () => {
   const deleteEntry = useDeleteEntry(schoolId);
   const copyClassTimetable = useCopyClassTimetable(schoolId);
   const deleteClassTimetable = useDeleteClassTimetable(schoolId);
+  const bulkCreateEntries = useBulkCreateEntries(schoolId);
 
   const config = configData?.data;
   const classes = classesData?.data || [];
@@ -444,18 +449,85 @@ const TimetableMaster = () => {
     }
   };
 
-  const getEntryColor = (entry: TimetableEntry) => {
-    // Check if teacher is on leave - show warning color
-    if (teachersOnLeave.includes(entry.teacherId)) {
-      return "#ffcdd2"; // Light red for warning
+  const handleDownloadExcelTemplate = async () => {
+    if (!config || !selectedClass || !selectedSection) return;
+    try {
+      await generateTimetableTemplate(
+        config,
+        subjects,
+        teachers,
+        className,
+        sectionName,
+        entries
+      );
+      showNotification("Excel template generated successfully", "success");
+    } catch (error: any) {
+      console.error(error);
+      showNotification(`Failed to generate template: ${error?.message}`, "error");
     }
-    // Generate consistent color based on subject
-    const hash = entry.subjectId.split("").reduce((a, b) => {
-      a = (a << 5) - a + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 70%, 85%)`;
+  };
+
+  const handleUploadExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !config || !selectedClass || !selectedSection) return;
+
+    try {
+      const parsedEntries = await parseTimetableTemplate(
+        file,
+        config,
+        selectedClass,
+        selectedSection,
+        subjects
+      );
+
+      const filteredEntries = parsedEntries.filter(parsed => {
+        const exists = entries.find(existing => 
+            existing.dayOfWeek.toLowerCase() === parsed.dayOfWeek.toLowerCase() &&
+            existing.periodNumber === parsed.periodNumber &&
+            existing.subjectId === parsed.subjectId &&
+            existing.teacherId === parsed.teacherId
+        );
+        return !exists;
+      });
+
+      if (filteredEntries.length === 0) {
+        showNotification("No new or modified entries found in the file.", "info");
+        event.target.value = "";
+        return;
+      }
+
+      const response = await bulkCreateEntries.mutateAsync({ entries: filteredEntries });
+
+      const createdCount = response.data?.created?.length || 0;
+      const failedCount = response.data?.failed?.length || 0;
+
+      if (failedCount > 0) {
+        showNotification(
+          `Import partially successful: ${createdCount} created, ${failedCount} failed due to conflicts.`,
+          "warning"
+        );
+      } else {
+        showNotification(`Successfully imported ${createdCount} entries`, "success");
+      }
+
+      // Reset file input
+      event.target.value = "";
+    } catch (error: any) {
+      console.error(error);
+      showNotification(`Import failed: ${error?.message || "Invalid file format"}`, "error");
+    }
+  };
+
+  const getEntryColor = (entry: TimetableEntry) => {
+    // Only show leave warning if the entry day matches today
+    const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const todayIndex = new Date().getDay();
+    const todayName = days[todayIndex];
+
+    if (teachersOnLeave.includes(entry.teacherId) && entry.dayOfWeek.toLowerCase() === todayName) {
+      return "#ffc107"; // Amber warning color for leave today
+    }
+    return `#BEF4C8`;
   };
 
   // Export to PDF functionality
@@ -620,6 +692,31 @@ const TimetableMaster = () => {
               >
                 Export PDF
               </AppButton>
+              <AppButton
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                onClick={handleDownloadExcelTemplate}
+                size="small"
+                sx={{ mr: 1 }}
+              >
+                Excel Template
+              </AppButton>
+              <AppButton
+                variant="outlined"
+                component="label"
+                startIcon={<UploadIcon />}
+                size="small"
+                sx={{ mr: 1 }}
+                loading={bulkCreateEntries.isPending}
+              >
+                Upload Excel
+                <input
+                  type="file"
+                  hidden
+                  accept=".xlsx, .xls"
+                  onChange={handleUploadExcel}
+                />
+              </AppButton>
               {entries.length > 0 && (
                 <AppButton
                   variant="outlined"
@@ -634,7 +731,7 @@ const TimetableMaster = () => {
               )}
             </>
           )}
-          
+
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -689,6 +786,20 @@ const TimetableMaster = () => {
               </Select>
             </FormControl>
           </Grid>
+          {entries.some(entry => {
+            const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+            const todayName = days[new Date().getDay()];
+            return teachersOnLeave.includes(entry.teacherId) && entry.dayOfWeek.toLowerCase() === todayName;
+          }) && (
+            <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', ml: { md: 2 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 16, height: 16, bgcolor: '#ffc107', borderRadius: 0.5 }} />
+                  <Typography variant="caption" color="text.secondary">Teacher on Leave</Typography>
+                </Box>
+              </Box>
+            </Grid>
+          )}
         </Grid>
       </Paper>
 
@@ -897,7 +1008,7 @@ const TimetableMaster = () => {
                                       variant="body2"
                                       fontWeight={600}
                                     >
-                                      {entry.subject?.name || entry.subjectId}
+                                      {subjects.find(s => s.subjectId === entry.subjectId)?.name || entry.subject?.name || entry.subjectId}
                                     </Typography>
 
                                     <Typography
@@ -909,7 +1020,7 @@ const TimetableMaster = () => {
                                       }
                                       sx={
                                         hasSubstitute ||
-                                        (isOnLeave && day === todayDayName)
+                                          (isOnLeave && day === todayDayName)
                                           ? { textDecoration: "line-through" }
                                           : {}
                                       }

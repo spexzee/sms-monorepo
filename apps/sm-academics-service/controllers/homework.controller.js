@@ -42,7 +42,7 @@ const generateHomeworkId = async (HomeworkModel) => {
 const createHomework = async (req, res) => {
     try {
         const { schoolId } = req.params;
-        const { classId, sectionId, subjectId, title, description, attachmentUrl, dueDate } = req.body;
+        const { classId, sectionId, subjectId, title, description, attachmentUrl, referenceLinks, attachments, dueDate } = req.body;
         const { userId, teacherId } = req.user;
 
         // Validate required fields
@@ -75,6 +75,8 @@ const createHomework = async (req, res) => {
             title,
             description,
             attachmentUrl,
+            referenceLinks,
+            attachments,
             assignedDate: new Date(),
             dueDate: new Date(dueDate),
             status: 'active'
@@ -533,7 +535,7 @@ const updateHomework = async (req, res) => {
         }
 
         // Update allowed fields
-        const allowedUpdates = ['title', 'description', 'attachmentUrl', 'dueDate', 'status'];
+        const allowedUpdates = ['title', 'description', 'attachmentUrl', 'referenceLinks', 'attachments', 'dueDate', 'status'];
         allowedUpdates.forEach(field => {
             if (updates[field] !== undefined) {
                 if (field === 'dueDate') {
