@@ -886,6 +886,8 @@ export interface Homework {
   title: string;
   description: string;
   attachmentUrl?: string;
+  referenceLinks?: string[];
+  attachments?: AnnouncementAttachment[];
   assignedDate: string;
   dueDate: string;
   status: HomeworkStatus;
@@ -905,6 +907,8 @@ export interface CreateHomeworkPayload {
   title: string;
   description: string;
   attachmentUrl?: string;
+  referenceLinks?: string[];
+  attachments?: AnnouncementAttachment[];
   dueDate: string;
 }
 
@@ -912,6 +916,8 @@ export interface UpdateHomeworkPayload {
   title?: string;
   description?: string;
   attachmentUrl?: string;
+  referenceLinks?: string[];
+  attachments?: AnnouncementAttachment[];
   dueDate?: string;
   status?: HomeworkStatus;
 }

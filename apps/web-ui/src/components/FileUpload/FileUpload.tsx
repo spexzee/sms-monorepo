@@ -7,7 +7,10 @@ import {
     IconButton,
     Alert,
     Stack,
+    LinearProgress,
 } from '@mui/material';
+import axios from 'axios';
+import { AppCard } from '../ui/AppCard';
 import {
     CloudUpload as UploadIcon,
     Delete as DeleteIcon,
@@ -45,6 +48,15 @@ export interface FileUploadProps {
     maxFiles?: number;
 }
 
+interface UploadQueueItem {
+    id: string;
+    file: File;
+    status: 'uploading' | 'success' | 'error';
+    progress: number;
+    error?: string;
+    result?: AnnouncementAttachment;
+}
+
 const getFileIcon = (fileType: string) => {
     // Check if it's an image extension
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileType.toLowerCase()) || fileType === 'image') {
@@ -77,42 +89,106 @@ const FileUpload: React.FC<FileUploadProps> = ({
     authEndpoint = 'school',
     maxFiles = 5,
 }) => {
-    const [isUploading, setIsUploading] = useState(false);
     const [attachments, setAttachments] = useState<AnnouncementAttachment[]>(currentAttachments);
-    const [error, setError] = useState<string | null>(null);
+    const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+    const [globalError, setGlobalError] = useState<string | null>(null);
     const uploadRef = useRef<HTMLInputElement>(null);
-    const fileTypeRef = useRef<'image' | 'pdf' | 'document'>('document'); // Store file type in ref for reliable access
 
-    // Handle successful upload
-    const handleUploadSuccess = (response: { url: string; fileId: string; name: string }) => {
-        setIsUploading(false);
-        setError(null);
+    // Manual Upload Function
+    const uploadFile = async (item: UploadQueueItem): Promise<AnnouncementAttachment> => {
+        try {
+            const authenticator = getImageKitAuthenticator(authEndpoint);
+            const authParams = await authenticator();
 
-        console.log('[FileUpload] Upload successful. Using fileType:', fileTypeRef.current);
+            const formData = new FormData();
+            formData.append('file', item.file);
+            formData.append('fileName', `${baseFileName}_${Date.now()}_${item.file.name}`);
+            formData.append('folder', folder);
+            formData.append('publicKey', imagekitConfig.publicKey);
+            formData.append('signature', authParams.signature);
+            formData.append('expire', authParams.expire.toString());
+            formData.append('token', authParams.token);
 
-        const newAttachment: AnnouncementAttachment = {
-            url: response.url,
-            fileName: response.name,
-            fileType: fileTypeRef.current, // Use ref value which is set synchronously
-            uploadedAt: new Date().toISOString(),
-        };
+            const detectedType = getFileType(item.file.name);
 
-        const newAttachments = [...attachments, newAttachment];
-        setAttachments(newAttachments);
-        onUploadSuccess(newAttachments);
+            const uploadUrl = 'https://upload.imagekit.io/api/v1/files/upload';
+            const response = await axios.post(uploadUrl, formData, {
+                onUploadProgress: (progressEvent) => {
+                    const progress = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+                    setUploadQueue(prev => prev.map(q => 
+                        q.id === item.id ? { ...q, progress } : q
+                    ));
+                }
+            });
+
+            const result: AnnouncementAttachment = {
+                url: response.data.url,
+                fileName: response.data.name,
+                fileType: detectedType,
+                uploadedAt: new Date().toISOString(),
+            };
+
+            setUploadQueue(prev => prev.map(q => 
+                q.id === item.id ? { ...q, status: 'success', progress: 100, result } : q
+            ));
+
+            return result;
+        } catch (err: any) {
+            const errorMsg = err.response?.data?.message || err.message || 'Upload failed';
+            setUploadQueue(prev => prev.map(q => 
+                q.id === item.id ? { ...q, status: 'error', error: errorMsg } : q
+            ));
+            throw new Error(errorMsg);
+        }
     };
 
-    // Handle upload error
-    const handleUploadError = (err: Error) => {
-        setIsUploading(false);
-        setError(err.message || 'Upload failed');
-        onUploadError?.(err);
-    };
+    // Handle Change (Multiple Files)
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = Array.from(event.target.files || []);
+        if (selectedFiles.length === 0) return;
 
-    // Handle upload start
-    const handleUploadStart = () => {
-        setIsUploading(true);
-        setError(null);
+        // Check if adding these would exceed maxFiles
+        const currentTotal = attachments.length + uploadQueue.filter(q => q.status === 'uploading' || q.status === 'success').length;
+        if (currentTotal + selectedFiles.length > maxFiles) {
+            setGlobalError(`You can only upload a maximum of ${maxFiles} files.`);
+            return;
+        }
+
+        setGlobalError(null);
+
+        // Prepare items
+        const newItems: UploadQueueItem[] = selectedFiles.map(file => ({
+            id: Math.random().toString(36).substr(2, 9),
+            file,
+            status: 'uploading',
+            progress: 0,
+        }));
+
+        setUploadQueue(prev => [...prev, ...newItems]);
+
+        // Start Concurrent Uploads
+        const uploadPromises = newItems.map(item => uploadFile(item));
+        
+        const results = await Promise.allSettled(uploadPromises);
+
+        // Update main attachments list with successful ones
+        const successfulUploads = results
+            .filter((r): r is PromiseFulfilledResult<AnnouncementAttachment> => r.status === 'fulfilled')
+            .map(r => r.value);
+
+        if (successfulUploads.length > 0) {
+            const updatedAttachments = [...attachments, ...successfulUploads];
+            setAttachments(updatedAttachments);
+            onUploadSuccess(updatedAttachments);
+        }
+
+        // Keep errored items in queue for display, remove successful ones after 2 seconds
+        setTimeout(() => {
+            setUploadQueue(prev => prev.filter(q => q.status === 'error'));
+        }, 2000);
+
+        // Reset input for next batch
+        if (uploadRef.current) uploadRef.current.value = '';
     };
 
     // Handle remove attachment
@@ -142,123 +218,211 @@ const FileUpload: React.FC<FileUploadProps> = ({
             </Typography>
 
             {/* Upload Button */}
-            {attachments.length < maxFiles && !disabled && (
-                <Box
+            {(attachments.length + uploadQueue.length) < maxFiles && !disabled && (
+                <AppCard
                     sx={{
                         border: '2px dashed',
-                        borderColor: error ? 'error.main' : 'grey.300',
-                        borderRadius: 2,
-                        p: 2,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minHeight: 120,
-                        bgcolor: 'grey.50',
+                        borderColor: globalError ? 'error.main' : 'primary.200',
+                        textAlign: 'center',
+                        p: 4,
                         cursor: 'pointer',
-                        transition: 'all 0.2s',
+                        transition: 'all 0.3s ease',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
                         '&:hover': {
                             borderColor: 'primary.main',
-                            bgcolor: 'primary.50',
+                            background: 'rgba(25, 118, 210, 0.04)',
+                            transform: 'translateY(-2px)',
                         },
                     }}
                     onClick={triggerUpload}
+                    hover={false}
                 >
-                    {isUploading ? (
-                        <>
-                            <CircularProgress size={40} />
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                Uploading...
-                            </Typography>
-                        </>
-                    ) : (
-                        <>
-                            <UploadIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
-                            <Typography variant="body2" color="text.secondary">
-                                Click to upload
-                            </Typography>
-                            <Typography variant="caption" color="text.disabled">
-                                Images and PDFs up to 5MB ({attachments.length}/{maxFiles} files)
-                            </Typography>
-                        </>
-                    )}
-                </Box>
+                    <Box sx={{ 
+                        display: 'inline-flex', 
+                        p: 2, 
+                        borderRadius: '50%', 
+                        bgcolor: 'primary.50',
+                        color: 'primary.main',
+                        mb: 2,
+                        transition: '0.3s',
+                        '.MuiSvgIcon-root': { fontSize: 32 }
+                    }}>
+                        <UploadIcon />
+                    </Box>
+                    <Typography variant="h6" color="primary.main" fontWeight={700} sx={{ mb: 0.5 }}>
+                        Select Files to Upload
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        PDF, DOCX, Images (Max 5MB per file)
+                    </Typography>
+                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 1 }}>
+                        <Typography variant="caption" sx={{ px: 1.5, py: 0.5, borderRadius: 10, bgcolor: 'primary.50', color: 'primary.700', fontWeight: 600 }}>
+                            {attachments.length}/{maxFiles} Uploaded
+                        </Typography>
+                    </Box>
+                </AppCard>
             )}
 
-            {/* Uploaded Files List */}
-            {attachments.length > 0 && (
-                <Stack spacing={1}>
-                    {attachments.map((attachment, index) => (
-                        <Box
-                            key={index}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                p: 1.5,
-                                border: '1px solid',
-                                borderColor: 'grey.300',
-                                borderRadius: 1,
-                                bgcolor: 'background.paper',
+            {/* Error Message */}
+            {globalError && (
+                <Alert severity="error" sx={{ borderRadius: 2 }}>{globalError}</Alert>
+            )}
+
+            {/* Upload Queue (Active or Errored) */}
+            {uploadQueue.length > 0 && (
+                <Stack spacing={2}>
+                    {uploadQueue.map((item) => (
+                        <AppCard 
+                            key={item.id} 
+                            hover={false} 
+                            sx={{ 
+                                border: '1px solid', 
+                                borderColor: item.status === 'error' ? 'error.200' : 'primary.100',
+                                background: item.status === 'error' ? 'rgba(211, 47, 47, 0.02)' : 'rgba(25, 118, 210, 0.02)',
+                                p: 0
                             }}
                         >
-                            {getFileIcon(attachment.fileType)}
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                                <Typography variant="body2" noWrap>
-                                    {attachment.fileName}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    {attachment.fileType.toUpperCase()}
-                                </Typography>
+                            <Box sx={{ p: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Box sx={{ 
+                                        p: 1.5, 
+                                        borderRadius: 2, 
+                                        bgcolor: item.status === 'error' ? 'error.50' : 'primary.50',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: item.status === 'error' ? 'error.main' : 'primary.main'
+                                    }}>
+                                        {getFileIcon(getFileType(item.file.name))}
+                                    </Box>
+                                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                            <Typography variant="body2" noWrap fontWeight={600} color="text.primary">
+                                                {item.file.name}
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ fontWeight: 700, color: item.status === 'error' ? 'error.main' : 'text.secondary' }}>
+                                                {Math.round(item.file.size / 1024)} KB
+                                            </Typography>
+                                        </Box>
+                                        
+                                        {item.status === 'uploading' && (
+                                            <Box sx={{ width: '100%' }}>
+                                                <LinearProgress 
+                                                    variant="determinate" 
+                                                    value={item.progress} 
+                                                    sx={{ 
+                                                        borderRadius: 10, 
+                                                        height: 8, 
+                                                        bgcolor: 'primary.50',
+                                                        '& .MuiLinearProgress-bar': { borderRadius: 10 }
+                                                    }} 
+                                                />
+                                                <Typography variant="caption" color="primary.main" sx={{ mt: 0.5, display: 'block', fontWeight: 600 }}>
+                                                    Uploading... {item.progress}%
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        
+                                        {item.status === 'error' && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                                <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                    Error: {item.error}
+                                                </Typography>
+                                            </Box>
+                                        )}
+
+                                        {item.status === 'success' && (
+                                            <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                ✓ Upload Successful
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                    {item.status === 'error' && (
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => setUploadQueue(q => q.filter(x => x.id !== item.id))}
+                                            sx={{ bgcolor: 'error.50', color: 'error.main', '&:hover': { bgcolor: 'error.100' } }}
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    )}
+                                </Box>
                             </Box>
-                            {!disabled && (
-                                <IconButton
-                                    size="small"
-                                    color="error"
-                                    onClick={() => handleRemove(index)}
-                                >
-                                    <DeleteIcon fontSize="small" />
-                                </IconButton>
-                            )}
-                        </Box>
+                        </AppCard>
                     ))}
                 </Stack>
             )}
 
-            {error && (
-                <Alert severity="error" sx={{ py: 0.5 }}>
-                    {error}
-                </Alert>
+            {/* Final Attachments List */}
+            {attachments.length > 0 && (
+                <Box>
+                    <Typography variant="overline" color="text.secondary" fontWeight={800} sx={{ mb: 1.5, display: 'block', letterSpacing: 1 }}>
+                        ATTACHED ASSETS ({attachments.length})
+                    </Typography>
+                    <Stack spacing={1.5}>
+                        {attachments.map((attachment, index) => (
+                            <AppCard
+                                key={index}
+                                hover={true}
+                                sx={{ 
+                                    p: 0,
+                                    border: '1px solid', 
+                                    borderColor: 'divider',
+                                    borderRadius: 2,
+                                    overflow: 'hidden',
+                                    transition: '0.3s',
+                                    '&:hover': {
+                                        borderColor: 'primary.200',
+                                        transform: 'scale(1.01)'
+                                    }
+                                }}
+                            >
+                                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Box sx={{ 
+                                        p: 1.5, 
+                                        borderRadius: 2, 
+                                        bgcolor: 'grey.50',
+                                        color: 'text.secondary'
+                                    }}>
+                                        {getFileIcon(attachment.fileType)}
+                                    </Box>
+                                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                                        <Typography variant="body2" noWrap fontWeight={600} color="text.primary">
+                                            {attachment.fileName}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ px: 1, py: 0.2, borderRadius: 1, bgcolor: 'grey.100', color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem' }}>
+                                            {attachment.fileType.toUpperCase()}
+                                        </Typography>
+                                    </Box>
+                                    {!disabled && (
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleRemove(index)}
+                                            sx={{ 
+                                                color: 'text.disabled',
+                                                '&:hover': { color: 'error.main', bgcolor: 'error.50' }
+                                            }}
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    )}
+                                </Box>
+                            </AppCard>
+                        ))}
+                    </Stack>
+                </Box>
             )}
 
-            {/* Hidden ImageKit Upload Component */}
-            <IKContext
-                publicKey={imagekitConfig.publicKey}
-                urlEndpoint={imagekitConfig.urlEndpoint}
-                authenticator={authenticator}
-            >
-                <IKUpload
-                    ref={uploadRef}
-                    fileName={fileName}
-                    folder={folder}
-                    // @ts-ignore - IKUpload types are incompatible with React event handlers
-                    onError={handleUploadError}
-                    onSuccess={handleUploadSuccess}
-                    onUploadStart={handleUploadStart}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                        // Detect file type from the actual file being uploaded
-                        const file = event.target.files?.[0];
-                        if (file) {
-                            console.log('[FileUpload] Selected file:', file.name);
-                            const detectedType = getFileType(file.name);
-                            console.log('[FileUpload] Detected file type:', detectedType);
-                            fileTypeRef.current = detectedType; // Set ref immediately (synchronous)
-                        }
-                    }}
-                    style={{ display: 'none' }}
-                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                />
-            </IKContext>
+            {/* Hidden Input (No longer using IKUpload component wrapper directly for multiple support) */}
+            <input
+                type="file"
+                multiple
+                ref={uploadRef}
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+            />
         </Box>
     );
 };

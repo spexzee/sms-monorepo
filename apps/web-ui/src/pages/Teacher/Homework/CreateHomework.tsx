@@ -4,11 +4,15 @@ import {
     Typography,
     Alert,
     Grid,
+    IconButton,
 } from '@mui/material';
 import {
     ArrowBack as ArrowBackIcon,
     Add as AddIcon,
+    Delete as DeleteIcon,
 } from '@mui/icons-material';
+import FileUpload from '../../../components/FileUpload/FileUpload';
+import type { AnnouncementAttachment } from '../../../types';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import type { CreateHomeworkPayload } from '../../../types';
@@ -34,6 +38,8 @@ const CreateHomework: React.FC = () => {
         title: '',
         description: '',
         attachmentUrl: '',
+        referenceLinks: [''],
+        attachments: [],
     });
     const [dueDate, setDueDate] = useState<Date | null>(null);
     const [error, setError] = useState('');
@@ -55,6 +61,35 @@ const CreateHomework: React.FC = () => {
         setFormData(prev => ({ ...prev, [field]: event.target.value }));
     };
 
+    const handleAddLink = () => {
+        setFormData(prev => ({
+            ...prev,
+            referenceLinks: [...(prev.referenceLinks || []), '']
+        }));
+    };
+
+    const handleRemoveLink = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            referenceLinks: prev.referenceLinks?.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleLinkChange = (index: number, value: string) => {
+        const newLinks = [...(formData.referenceLinks || [])];
+        newLinks[index] = value;
+        setFormData(prev => ({ ...prev, referenceLinks: newLinks }));
+    };
+
+    const handleFilesChange = (newAttachments: AnnouncementAttachment[]) => {
+        setFormData(prev => ({ ...prev, attachments: newAttachments }));
+    };
+
+    const user = TokenService.getUser();
+    const teacherName = user ? `${user.firstName || ''}_${user.lastName || ''}`.replace(/\s+/g, '_') : 'teacher';
+    const className = selectedClass?.name?.replace(/\s+/g, '_') || 'class';
+    const imageKitFolder = `homework/${teacherName}/${className}`;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -67,6 +102,7 @@ const CreateHomework: React.FC = () => {
         try {
             await createHomework.mutateAsync({
                 ...formData,
+                referenceLinks: formData.referenceLinks?.filter(link => link.trim() !== ''),
                 dueDate: dueDate.toISOString(),
             });
             setSuccess(true);
@@ -178,13 +214,47 @@ const CreateHomework: React.FC = () => {
                         </Grid>
 
                         <Grid size={{ xs: 12 }}>
-                            <AppInput
-                                fullWidth
-                                label="Reference Material Link"
-                                value={formData.attachmentUrl}
-                                onChange={handleChange('attachmentUrl')}
-                                placeholder="https://..."
-                                labelHint="Optional"
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Reference Material Links (Optional)
+                                </Typography>
+                                {(formData.referenceLinks || []).map((link, index) => (
+                                    <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                                        <AppInput
+                                            fullWidth
+                                            placeholder="https://..."
+                                            value={link}
+                                            onChange={(e) => handleLinkChange(index, e.target.value)}
+                                        />
+                                        <IconButton 
+                                            color="error" 
+                                            onClick={() => handleRemoveLink(index)}
+                                            disabled={formData.referenceLinks?.length === 1}
+                                            sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}
+                                        >
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    </Box>
+                                ))}
+                                <AppButton
+                                    startIcon={<AddIcon />}
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={handleAddLink}
+                                >
+                                    Add Another Link
+                                </AppButton>
+                            </Box>
+                        </Grid>
+
+                        <Grid size={{ xs: 12 }}>
+                            <FileUpload
+                                folder={imageKitFolder}
+                                baseFileName={`homework_${formData.title.replace(/\s+/g, '_')}`}
+                                currentAttachments={formData.attachments}
+                                onUploadSuccess={handleFilesChange}
+                                label="Attachment Files (Optional)"
+                                maxFiles={5}
                             />
                         </Grid>
 
