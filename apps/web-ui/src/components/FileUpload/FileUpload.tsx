@@ -1,8 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { IKContext, IKUpload } from 'imagekitio-react';
 import {
     Box,
-    CircularProgress,
     Typography,
     IconButton,
     Alert,
@@ -82,7 +80,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
     baseFileName,
     currentAttachments = [],
     onUploadSuccess,
-    onUploadError,
     label = 'Upload Files',
     required = false,
     disabled = false,
@@ -115,7 +112,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             const response = await axios.post(uploadUrl, formData, {
                 onUploadProgress: (progressEvent) => {
                     const progress = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
-                    setUploadQueue(prev => prev.map(q => 
+                    setUploadQueue(prev => prev.map(q =>
                         q.id === item.id ? { ...q, progress } : q
                     ));
                 }
@@ -128,14 +125,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 uploadedAt: new Date().toISOString(),
             };
 
-            setUploadQueue(prev => prev.map(q => 
+            setUploadQueue(prev => prev.map(q =>
                 q.id === item.id ? { ...q, status: 'success', progress: 100, result } : q
             ));
 
             return result;
         } catch (err: any) {
             const errorMsg = err.response?.data?.message || err.message || 'Upload failed';
-            setUploadQueue(prev => prev.map(q => 
+            setUploadQueue(prev => prev.map(q =>
                 q.id === item.id ? { ...q, status: 'error', error: errorMsg } : q
             ));
             throw new Error(errorMsg);
@@ -168,7 +165,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
         // Start Concurrent Uploads
         const uploadPromises = newItems.map(item => uploadFile(item));
-        
+
         const results = await Promise.allSettled(uploadPromises);
 
         // Update main attachments list with successful ones
@@ -205,12 +202,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
         }
     };
 
-    // Get authenticator function for ImageKit
-    const authenticator = getImageKitAuthenticator(authEndpoint);
-
-    // Generate unique filename
-    const fileName = `${baseFileName}_${Date.now()}`;
-
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Typography variant="body2" color="text.secondary">
@@ -238,10 +229,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     onClick={triggerUpload}
                     hover={false}
                 >
-                    <Box sx={{ 
-                        display: 'inline-flex', 
-                        p: 2, 
-                        borderRadius: '50%', 
+                    <Box sx={{
+                        display: 'inline-flex',
+                        p: 2,
+                        borderRadius: '50%',
                         bgcolor: 'primary.50',
                         color: 'primary.main',
                         mb: 2,
@@ -273,11 +264,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
             {uploadQueue.length > 0 && (
                 <Stack spacing={2}>
                     {uploadQueue.map((item) => (
-                        <AppCard 
-                            key={item.id} 
-                            hover={false} 
-                            sx={{ 
-                                border: '1px solid', 
+                        <AppCard
+                            key={item.id}
+                            hover={false}
+                            sx={{
+                                border: '1px solid',
                                 borderColor: item.status === 'error' ? 'error.200' : 'primary.100',
                                 background: item.status === 'error' ? 'rgba(211, 47, 47, 0.02)' : 'rgba(25, 118, 210, 0.02)',
                                 p: 0
@@ -285,9 +276,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
                         >
                             <Box sx={{ p: 2 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <Box sx={{ 
-                                        p: 1.5, 
-                                        borderRadius: 2, 
+                                    <Box sx={{
+                                        p: 1.5,
+                                        borderRadius: 2,
                                         bgcolor: item.status === 'error' ? 'error.50' : 'primary.50',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -305,25 +296,25 @@ const FileUpload: React.FC<FileUploadProps> = ({
                                                 {Math.round(item.file.size / 1024)} KB
                                             </Typography>
                                         </Box>
-                                        
+
                                         {item.status === 'uploading' && (
                                             <Box sx={{ width: '100%' }}>
-                                                <LinearProgress 
-                                                    variant="determinate" 
-                                                    value={item.progress} 
-                                                    sx={{ 
-                                                        borderRadius: 10, 
-                                                        height: 8, 
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={item.progress}
+                                                    sx={{
+                                                        borderRadius: 10,
+                                                        height: 8,
                                                         bgcolor: 'primary.50',
                                                         '& .MuiLinearProgress-bar': { borderRadius: 10 }
-                                                    }} 
+                                                    }}
                                                 />
                                                 <Typography variant="caption" color="primary.main" sx={{ mt: 0.5, display: 'block', fontWeight: 600 }}>
                                                     Uploading... {item.progress}%
                                                 </Typography>
                                             </Box>
                                         )}
-                                        
+
                                         {item.status === 'error' && (
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                                                 <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -339,8 +330,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
                                         )}
                                     </Box>
                                     {item.status === 'error' && (
-                                        <IconButton 
-                                            size="small" 
+                                        <IconButton
+                                            size="small"
                                             onClick={() => setUploadQueue(q => q.filter(x => x.id !== item.id))}
                                             sx={{ bgcolor: 'error.50', color: 'error.main', '&:hover': { bgcolor: 'error.100' } }}
                                         >
@@ -365,9 +356,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
                             <AppCard
                                 key={index}
                                 hover={true}
-                                sx={{ 
+                                sx={{
                                     p: 0,
-                                    border: '1px solid', 
+                                    border: '1px solid',
                                     borderColor: 'divider',
                                     borderRadius: 2,
                                     overflow: 'hidden',
@@ -379,9 +370,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
                                 }}
                             >
                                 <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <Box sx={{ 
-                                        p: 1.5, 
-                                        borderRadius: 2, 
+                                    <Box sx={{
+                                        p: 1.5,
+                                        borderRadius: 2,
                                         bgcolor: 'grey.50',
                                         color: 'text.secondary'
                                     }}>
@@ -399,7 +390,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                                         <IconButton
                                             size="small"
                                             onClick={() => handleRemove(index)}
-                                            sx={{ 
+                                            sx={{
                                                 color: 'text.disabled',
                                                 '&:hover': { color: 'error.main', bgcolor: 'error.50' }
                                             }}

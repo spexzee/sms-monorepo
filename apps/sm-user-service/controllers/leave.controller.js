@@ -4,6 +4,7 @@ const { getSchoolDbName } = require("../utils/schoolDbHelper");
 const {
     ParentSchema: parentSchema,
     StudentSchema: studentSchema,
+    LeaveRequestSchema: leaveRequestSchema,
 } = require("@sms/shared");
 const { logActivity } = require("@sms/shared/utils");
 
