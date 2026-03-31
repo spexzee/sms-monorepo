@@ -6,7 +6,7 @@ WORKDIR /app
 COPY apps/web-ui/package.json ./
 
 # Install all dependencies (includes TypeScript, Vite, etc.)
-RUN npm ci
+RUN npm install
 
 # Copy web-ui source code
 COPY apps/web-ui/ ./

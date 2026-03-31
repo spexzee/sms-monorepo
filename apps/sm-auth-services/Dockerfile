@@ -12,7 +12,7 @@ COPY apps/sm-auth-services/package.json ./package.json
 RUN node -e "const p=require('./package.json'); delete p.dependencies['@sms/shared']; require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 2));"
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy shared package into node_modules
 RUN mkdir -p node_modules/@sms && cp -r packages/shared node_modules/@sms/shared
