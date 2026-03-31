@@ -662,23 +662,32 @@ const TimetableMaster = () => {
       <Box
         sx={{
           display: "flex",
+          flexDirection: { xs: "column", md: "row" },
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "flex-start", md: "center" },
           mb: 3,
-          flexWrap: "wrap",
           gap: 2,
         }}
       >
         <Typography variant="h5" fontWeight={600}>
           Master Timetable
         </Typography>
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        <Box 
+          sx={{ 
+            display: "flex", 
+            gap: 1.5, 
+            alignItems: "center", 
+            flexWrap: "wrap",
+            width: { xs: "100%", md: "auto" }
+          }}
+        >
           {teachersOnLeave.length > 0 && (
             <Chip
               icon={<WarningIcon />}
               label={`${teachersOnLeave.length} teacher(s) on leave today`}
               color="warning"
               size="small"
+              sx={{ width: { xs: "100%", sm: "auto" } }}
             />
           )}
           {selectedClass && selectedSection && (
@@ -688,7 +697,6 @@ const TimetableMaster = () => {
                 startIcon={<PdfIcon />}
                 onClick={handleExportPdf}
                 size="small"
-                sx={{ mr: 1 }}
               >
                 Export PDF
               </AppButton>
@@ -697,7 +705,6 @@ const TimetableMaster = () => {
                 startIcon={<DownloadIcon />}
                 onClick={handleDownloadExcelTemplate}
                 size="small"
-                sx={{ mr: 1 }}
               >
                 Excel Template
               </AppButton>
@@ -706,7 +713,6 @@ const TimetableMaster = () => {
                 component="label"
                 startIcon={<UploadIcon />}
                 size="small"
-                sx={{ mr: 1 }}
                 loading={bulkCreateEntries.isPending}
               >
                 Upload Excel
@@ -724,7 +730,6 @@ const TimetableMaster = () => {
                   startIcon={<DeleteIcon />}
                   onClick={() => setIsDeleteDialogOpen(true)}
                   size="small"
-                  sx={{ mr: 1 }}
                 >
                   Delete Table
                 </AppButton>
