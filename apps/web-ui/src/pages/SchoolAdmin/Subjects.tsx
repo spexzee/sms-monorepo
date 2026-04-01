@@ -11,6 +11,7 @@ import {
   Paper,
   Grid,
   Switch,
+  Typography,
 } from "@mui/material";
 import { Edit as EditIcon } from "@mui/icons-material";
 import DataTable, { StatusChip } from "../../components/Table/DataTable";
