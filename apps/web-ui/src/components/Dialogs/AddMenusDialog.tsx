@@ -22,19 +22,19 @@ import {
   Box,
   OutlinedInput,
   InputAdornment,
-    Autocomplete,
-    Typography,
-    Divider,
-    Switch,
+  Autocomplete,
+  Typography,
+  Divider,
+  Switch,
 } from "@mui/material";
-import { Close as CloseIcon, Apps as AppsIcon } from "@mui/icons-material";
+import { Close as CloseIcon, Apps as AppsIcon, SelectAll as SelectAllIcon, SyncAlt as SyncAltIcon } from "@mui/icons-material";
 import { useCreateMenu, useGetMenus, useUpdateMenu } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
 import type { CreateMenuPayload, Menu } from "../../types";
 import IconPickerDialog from "./IconPickerDialog";
-import { AppInput } from "../ui/AppInput";
-import { AppSelect } from "../ui/AppSelect";
-import { AppButton } from "../ui/AppButton";
+import { AppInput } from "../shared/AppInput";
+import { AppSelect } from "../shared/AppSelect";
+import { AppButton } from "../shared/AppButton";
 
 interface AddMenusDialogProps {
   open: boolean;
@@ -323,39 +323,106 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
               </Typography>
 
               {/* School Selection (Multi-select) */}
-              <Autocomplete
-                multiple
-                options={schools}
-                getOptionLabel={(school: any) => school.schoolName || ""}
-                value={schools.filter((s: any) =>
-                  Array.isArray(formData.schoolId)
-                    ? formData.schoolId.includes(s.schoolId)
-                    : formData.schoolId === s.schoolId,
-                )}
-                onChange={(_event, newValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    schoolId: newValue.map((s: any) => s.schoolId),
-                  }));
-                  if (errors.schoolId) {
-                    setErrors((prev) => ({ ...prev, schoolId: "" }));
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Assigned Schools</Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {/* Select All / Clear All */}
+                    {schools.length > 0 && (
+                      <AppButton
+                        size="small"
+                        variant="text"
+                        color="primary"
+                        startIcon={<SelectAllIcon sx={{ fontSize: 15 }} />}
+                        onClick={() => {
+                          const allIds = schools.map((s: any) => s.schoolId);
+                          const currentIds: string[] = Array.isArray(formData.schoolId) ? formData.schoolId : [formData.schoolId as string];
+                          const allSelected = allIds.every((id: string) => currentIds.includes(id));
+                          setFormData(prev => ({
+                            ...prev,
+                            schoolId: allSelected ? [] : allIds,
+                          }));
+                          setErrors(prev => ({ ...prev, schoolId: '' }));
+                        }}
+                        sx={{ fontSize: '0.7rem', py: 0, minWidth: 0 }}
+                      >
+                        {(() => {
+                          const allIds = schools.map((s: any) => s.schoolId);
+                          const currentIds: string[] = Array.isArray(formData.schoolId) ? formData.schoolId : [formData.schoolId as string];
+                          return allIds.every((id: string) => currentIds.includes(id)) ? 'Clear All' : 'Select All';
+                        })()}
+                      </AppButton>
+                    )}
+
+                    {/* Sync Missing Schools — only useful when editing an existing menu */}
+                    {menuToEdit && schools.length > 0 && (
+                      <AppButton
+                        size="small"
+                        variant="text"
+                        color="warning"
+                        startIcon={<SyncAltIcon sx={{ fontSize: 15 }} />}
+                        onClick={() => {
+                          // Add schools that are NOT already in the schoolId list
+                          const currentIds: string[] = Array.isArray(formData.schoolId) ? formData.schoolId : [formData.schoolId as string];
+                          const missingSchoolIds = schools
+                            .map((s: any) => s.schoolId)
+                            .filter((id: string) => !currentIds.includes(id));
+                          if (missingSchoolIds.length === 0) return;
+                          setFormData(prev => ({
+                            ...prev,
+                            schoolId: [...currentIds, ...missingSchoolIds],
+                          }));
+                          setErrors(prev => ({ ...prev, schoolId: '' }));
+                        }}
+                        sx={{ fontSize: '0.7rem', py: 0, minWidth: 0 }}
+                        disabled={(() => {
+                          const currentIds: string[] = Array.isArray(formData.schoolId) ? formData.schoolId : [formData.schoolId as string];
+                          return schools.every((s: any) => currentIds.includes(s.schoolId));
+                        })()}
+                      >
+                        Assign Missing ({(() => {
+                          const currentIds: string[] = Array.isArray(formData.schoolId) ? formData.schoolId : [formData.schoolId as string];
+                          return schools.filter((s: any) => !currentIds.includes(s.schoolId)).length;
+                        })()})
+                      </AppButton>
+                    )}
+                  </Box>
+                </Box>
+
+                <Autocomplete
+                  multiple
+                  options={schools}
+                  getOptionLabel={(school: any) => school.schoolName || ""}
+                  value={schools.filter((s: any) =>
+                    Array.isArray(formData.schoolId)
+                      ? formData.schoolId.includes(s.schoolId)
+                      : formData.schoolId === s.schoolId,
+                  )}
+                  onChange={(_event, newValue) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      schoolId: newValue.map((s: any) => s.schoolId),
+                    }));
+                    if (errors.schoolId) {
+                      setErrors((prev) => ({ ...prev, schoolId: "" }));
+                    }
+                  }}
+                  loading={isLoadingSchools}
+                  renderInput={(params) => (
+                    <AppInput
+                      {...params}
+                      label="Assigned Schools"
+                      error={!!errors.schoolId}
+                      helperText={errors.schoolId}
+                      placeholder="Search and select schools"
+                    />
+                  )}
+                  isOptionEqualToValue={(option, value) =>
+                    option.schoolId === value.schoolId
                   }
-                }}
-                loading={isLoadingSchools}
-                renderInput={(params) => (
-                  <AppInput
-                    {...params}
-                    label="Assigned Schools"
-                    error={!!errors.schoolId}
-                    helperText={errors.schoolId}
-                    placeholder="Search and select schools"
-                  />
-                )}
-                isOptionEqualToValue={(option, value) =>
-                  option.schoolId === value.schoolId
-                }
-                fullWidth
-              />
+                  fullWidth
+                />
+              </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <FormControlLabel
@@ -392,7 +459,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
               </Box>
 
               <Divider sx={{ my: 0.5 }} />
-              
+
               <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                 Basic Information
               </Typography>
@@ -444,7 +511,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
               />
 
               <Divider sx={{ my: 0.5 }} />
-              
+
               <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                 Menu Structure
               </Typography>
@@ -626,7 +693,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
               )}
 
               <Divider sx={{ my: 0.5 }} />
-              
+
               <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                 Access Control
               </Typography>

@@ -12,8 +12,8 @@ import {
   Grid,
 } from "@mui/material";
 import { Search as SearchIcon, Close as CloseIcon } from "@mui/icons-material";
-import { AppInput } from "../ui/AppInput";
-import { AppButton } from "../ui/AppButton";
+import { AppInput } from "../shared/AppInput";
+import { AppButton } from "../shared/AppButton";
 
 interface IconPickerDialogProps {
   open: boolean;
@@ -84,11 +84,11 @@ const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { 
-            height: "80vh", 
-            display: "flex", 
-            flexDirection: "column",
-            borderRadius: '16px'
+        sx: {
+          height: "80vh",
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: '16px'
         },
       }}
     >

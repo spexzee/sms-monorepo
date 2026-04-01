@@ -16,9 +16,9 @@ import { useGetSchools } from '../../queries/School';
 import type { CreateSchoolAdminPayload, SchoolAdmin } from '../../types';
 import { ImageUpload } from '../ImageUpload';
 import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
-import { AppInput } from '../ui/AppInput';
-import { AppSelect } from '../ui/AppSelect';
-import { AppButton } from '../ui/AppButton';
+import { AppInput } from '../shared/AppInput';
+import { AppSelect } from '../shared/AppSelect';
+import { AppButton } from '../shared/AppButton';
 
 interface SchoolAdminDialogProps {
   open: boolean;

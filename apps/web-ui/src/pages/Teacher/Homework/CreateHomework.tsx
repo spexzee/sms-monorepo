@@ -16,10 +16,10 @@ import type { AnnouncementAttachment } from '../../../types';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import type { CreateHomeworkPayload } from '../../../types';
-import { AppInput } from '../../../components/ui/AppInput';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
-import { AppButton } from '../../../components/ui/AppButton';
+import { AppInput } from '../../../components/shared/AppInput';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
+import { AppButton } from '../../../components/shared/AppButton';
 import { useNavigate } from 'react-router-dom';
 import TokenService from '../../../queries/token/tokenService';
 import { useGetClasses } from '../../../queries/Class';
@@ -226,8 +226,8 @@ const CreateHomework: React.FC = () => {
                                             value={link}
                                             onChange={(e) => handleLinkChange(index, e.target.value)}
                                         />
-                                        <IconButton 
-                                            color="error" 
+                                        <IconButton
+                                            color="error"
                                             onClick={() => handleRemoveLink(index)}
                                             disabled={formData.referenceLinks?.length === 1}
                                             sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}

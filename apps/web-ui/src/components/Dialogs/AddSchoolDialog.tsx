@@ -15,9 +15,9 @@ import { useCreateSchool, useUpdateSchool } from '../../queries/School';
 import type { CreateSchoolPayload, School } from '../../types';
 import { ImageUpload } from '../ImageUpload';
 import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
-import { AppInput } from '../ui/AppInput';
-import { AppSelect } from '../ui/AppSelect';
-import { AppButton } from '../ui/AppButton';
+import { AppInput } from '../shared/AppInput';
+import { AppSelect } from '../shared/AppSelect';
+import { AppButton } from '../shared/AppButton';
 
 interface SchoolDialogProps {
   open: boolean;
@@ -43,8 +43,8 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
     schoolContact: "",
     schoolWebsite: "",
     attendanceSettings: {
-            mode: 'simple',
-            workingHours: { start: '08:00', end: '16:00' },
+      mode: 'simple',
+      workingHours: { start: '08:00', end: '16:00' },
       lateThresholdMinutes: 15,
       halfDayThresholdMinutes: 240,
       periodsPerDay: 8,
@@ -60,16 +60,16 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
   useEffect(() => {
     if (editData) {
       setFormData({
-                schoolName: editData.schoolName || '',
-                dbName: editData.schoolDbName || '',
-                schoolLogo: editData.schoolLogo || '',
-                schoolAddress: editData.schoolAddress || '',
-                schoolEmail: editData.schoolEmail || '',
-                schoolContact: editData.schoolContact || '',
-                schoolWebsite: editData.schoolWebsite || '',
+        schoolName: editData.schoolName || '',
+        dbName: editData.schoolDbName || '',
+        schoolLogo: editData.schoolLogo || '',
+        schoolAddress: editData.schoolAddress || '',
+        schoolEmail: editData.schoolEmail || '',
+        schoolContact: editData.schoolContact || '',
+        schoolWebsite: editData.schoolWebsite || '',
         attendanceSettings: editData.attendanceSettings || {
-                    mode: 'simple',
-                    workingHours: { start: '08:00', end: '16:00' },
+          mode: 'simple',
+          workingHours: { start: '08:00', end: '16:00' },
           lateThresholdMinutes: 15,
           halfDayThresholdMinutes: 240,
           periodsPerDay: 8,
@@ -77,16 +77,16 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
       });
     } else {
       setFormData({
-                schoolName: '',
-                dbName: '',
-                schoolLogo: '',
-                schoolAddress: '',
-                schoolEmail: '',
-                schoolContact: '',
-                schoolWebsite: '',
+        schoolName: '',
+        dbName: '',
+        schoolLogo: '',
+        schoolAddress: '',
+        schoolEmail: '',
+        schoolContact: '',
+        schoolWebsite: '',
         attendanceSettings: {
-                    mode: 'simple',
-                    workingHours: { start: '08:00', end: '16:00' },
+          mode: 'simple',
+          workingHours: { start: '08:00', end: '16:00' },
           lateThresholdMinutes: 15,
           halfDayThresholdMinutes: 240,
           periodsPerDay: 8,
@@ -99,7 +99,7 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-            setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -107,12 +107,12 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.schoolName.trim()) {
-            newErrors.schoolName = 'School name is required';
+      newErrors.schoolName = 'School name is required';
     }
     if (!isEditMode && !formData.dbName.trim()) {
-            newErrors.dbName = 'Database name is required';
+      newErrors.dbName = 'Database name is required';
     } else if (!isEditMode && !/^[a-z0-9-]+$/.test(formData.dbName)) {
-            newErrors.dbName = 'Only lowercase letters, numbers, and hyphens allowed';
+      newErrors.dbName = 'Only lowercase letters, numbers, and hyphens allowed';
     }
     if (
       formData.schoolEmail &&
@@ -157,16 +157,16 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
 
   const handleClose = () => {
     setFormData({
-            schoolName: '',
-            dbName: '',
-            schoolLogo: '',
-            schoolAddress: '',
-            schoolEmail: '',
-            schoolContact: '',
-            schoolWebsite: '',
+      schoolName: '',
+      dbName: '',
+      schoolLogo: '',
+      schoolAddress: '',
+      schoolEmail: '',
+      schoolContact: '',
+      schoolWebsite: '',
       attendanceSettings: {
-                mode: 'simple',
-                workingHours: { start: '08:00', end: '16:00' },
+        mode: 'simple',
+        workingHours: { start: '08:00', end: '16:00' },
         lateThresholdMinutes: 15,
         halfDayThresholdMinutes: 240,
         periodsPerDay: 8,
@@ -187,7 +187,7 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-            <DialogTitle
+      <DialogTitle
         sx={{
           display: "flex",
           justifyContent: "space-between",
@@ -236,7 +236,7 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
             />
 
             <Divider sx={{ my: 1 }} />
-            
+
             <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
               Visual Branding
             </Typography>
@@ -298,7 +298,7 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
             />
 
             <Divider sx={{ my: 1 }} />
-            
+
             <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
               Attendance Settings
             </Typography>
@@ -326,13 +326,13 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
                 label="Periods Per Day"
                 value={formData.attendanceSettings?.periodsPerDay || 8}
                 onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    attendanceSettings: {
-                      ...prev.attendanceSettings,
-                      mode: prev.attendanceSettings?.mode || 'simple',
-                      periodsPerDay: parseInt(e.target.value) || 8,
-                    },
-                  }))
+                  ...prev,
+                  attendanceSettings: {
+                    ...prev.attendanceSettings,
+                    mode: prev.attendanceSettings?.mode || 'simple',
+                    periodsPerDay: parseInt(e.target.value) || 8,
+                  },
+                }))
                 }
                 slotProps={{ htmlInput: { min: 1, max: 12 } }}
               />
@@ -345,18 +345,18 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
                   label="Working Hours Start"
                   value={formData.attendanceSettings?.workingHours?.start || '08:00'}
                   onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      attendanceSettings: {
-                        ...prev.attendanceSettings,
-                        mode: prev.attendanceSettings?.mode || 'simple',
-                        workingHours: {
-                          start: e.target.value,
-                          end:
-                            prev.attendanceSettings?.workingHours?.end ||
-                            "16:00",
-                        },
+                    ...prev,
+                    attendanceSettings: {
+                      ...prev.attendanceSettings,
+                      mode: prev.attendanceSettings?.mode || 'simple',
+                      workingHours: {
+                        start: e.target.value,
+                        end:
+                          prev.attendanceSettings?.workingHours?.end ||
+                          "16:00",
                       },
-                    }))
+                    },
+                  }))
                   }
                 />
                 <AppInput

@@ -29,9 +29,9 @@ import { useGetStudents } from '../../../queries/Student';
 import { useGetPeriodClassAttendance, useMarkPeriodAttendance } from '../../../queries/Attendance';
 import type { Student, Class, Subject } from '../../../types';
 import TokenService from '../../../queries/token/tokenService';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppButton } from '../../../components/ui/AppButton';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppButton } from '../../../components/shared/AppButton';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
 import { format } from 'date-fns';
 
 type PeriodStatus = "present" | "absent" | "late";

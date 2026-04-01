@@ -32,10 +32,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CancelIcon from '@mui/icons-material/Cancel';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
-import { AppInput } from '../../../components/ui/AppInput';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppButton } from '../../../components/ui/AppButton';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { AppInput } from '../../../components/shared/AppInput';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppButton } from '../../../components/shared/AppButton';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
 import { format } from 'date-fns';
 import { useAuth } from '../../../context/AuthContext';
 import {

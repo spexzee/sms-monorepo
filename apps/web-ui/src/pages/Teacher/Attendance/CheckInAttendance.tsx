@@ -25,9 +25,9 @@ import { useGetStudents } from '../../../queries/Student';
 import { useGetDailyCheckins, useCheckIn, useCheckOut } from '../../../queries/Attendance';
 import type { Student, Class, AttendanceCheckin } from '../../../types';
 import TokenService from '../../../queries/token/tokenService';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppButton } from '../../../components/ui/AppButton';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppButton } from '../../../components/shared/AppButton';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
 import { format } from 'date-fns';
 
 const CheckInAttendance = () => {
@@ -116,38 +116,38 @@ const CheckInAttendance = () => {
             {/* Filters */}
             <Paper sx={{ p: 2, mb: 3 }}>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-                    <AppDatePicker
-                        label="Check-In Date"
-                        value={selectedDate ? new Date(selectedDate) : null}
-                        onChange={(date) => setSelectedDate(date ? format(date, 'yyyy-MM-dd') : '')}
-                    />
-                    <AppSelect
-                        label="Class"
-                        value={selectedClass}
-                        options={[
-                            { value: '', label: 'All Classes' },
-                            ...classes.map((c: Class) => ({ value: c.classId, label: c.name }))
-                        ]}
-                        onChange={(e) => {
-                            setSelectedClass(e.target.value as string);
-                            setSelectedSection('');
-                        }}
-                        sx={{ minWidth: 200 }}
-                    />
-                    {sections.length > 0 && (
-                        <AppSelect
-                            label="Section"
-                            value={selectedSection}
-                            options={[
-                                { value: '', label: 'All' },
-                                ...sections.map(s => ({ value: s.sectionId, label: s.name }))
-                            ]}
-                            onChange={(e) => setSelectedSection(e.target.value as string)}
-                            sx={{ minWidth: 150 }}
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                        <AppDatePicker
+                            label="Check-In Date"
+                            value={selectedDate ? new Date(selectedDate) : null}
+                            onChange={(date) => setSelectedDate(date ? format(date, 'yyyy-MM-dd') : '')}
                         />
-                    )}
-                </Box>
+                        <AppSelect
+                            label="Class"
+                            value={selectedClass}
+                            options={[
+                                { value: '', label: 'All Classes' },
+                                ...classes.map((c: Class) => ({ value: c.classId, label: c.name }))
+                            ]}
+                            onChange={(e) => {
+                                setSelectedClass(e.target.value as string);
+                                setSelectedSection('');
+                            }}
+                            sx={{ minWidth: 200 }}
+                        />
+                        {sections.length > 0 && (
+                            <AppSelect
+                                label="Section"
+                                value={selectedSection}
+                                options={[
+                                    { value: '', label: 'All' },
+                                    ...sections.map(s => ({ value: s.sectionId, label: s.name }))
+                                ]}
+                                onChange={(e) => setSelectedSection(e.target.value as string)}
+                                sx={{ minWidth: 150 }}
+                            />
+                        )}
+                    </Box>
                 </Box>
             </Paper>
 

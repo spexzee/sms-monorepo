@@ -114,7 +114,12 @@ export const useUserStore = create<UserStore>()(
                         throw new Error('Failed to fetch profile data');
                     }
                 } catch (error: any) {
-                    console.error('Error fetching profile:', error);
+                    console.error('Error fetching profile detail:', {
+                        message: error.message,
+                        response: error.response?.data,
+                        status: error.response?.status,
+                        error // Log full error object for debugging
+                    });
                     set({
                         error: error.message || 'Failed to fetch profile',
                         isLoading: false,

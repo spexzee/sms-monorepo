@@ -16,9 +16,9 @@ import { useGetAnnouncements } from '../../queries/Announcement';
 import { useGetUpcomingHomework } from '../../queries/Homework';
 import { useChildSelector } from '../../context/ChildSelectorContext';
 import type { ChildStats, Announcement, Homework } from '../../types';
-import { AppCard } from '../../components/ui/AppCard';
-import { AppButton } from '../../components/ui/AppButton';
-import { AppSection } from '../../components/ui/AppSection';
+import { AppCard } from '../../components/shared/AppCard';
+import { AppButton } from '../../components/shared/AppButton';
+import { AppSection } from '../../components/shared/AppSection';
 
 const ParentDashboard = () => {
     const navigate = useNavigate();

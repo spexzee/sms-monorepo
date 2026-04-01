@@ -29,10 +29,10 @@ import {
     InputAdornment,
     TextField,
 } from '@mui/material';
-import { AppInput } from '../../../components/ui/AppInput';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppButton } from '../../../components/ui/AppButton';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { AppInput } from '../../../components/shared/AppInput';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppButton } from '../../../components/shared/AppButton';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
 import { format } from 'date-fns';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import EditIcon from '@mui/icons-material/Edit';
@@ -373,7 +373,7 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             placeholder="e.g. Mid-Term Assessment 2025"
                         />
-                        
+
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <AppSelect
@@ -461,9 +461,9 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <AppButton onClick={handleClose} variant="text" color="inherit">Cancel</AppButton>
-                    <AppButton 
-                        variant="contained" 
-                        onClick={handleSubmit} 
+                    <AppButton
+                        variant="contained"
+                        onClick={handleSubmit}
                         loading={createExam.isPending || updateExam.isPending}
                     >
                         {editingExam ? 'Update Exam Profile' : 'Register Exam Event'}
@@ -491,10 +491,10 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <AppButton onClick={() => setDeleteDialogOpen(false)} variant="text" color="inherit">Cancel</AppButton>
-                    <AppButton 
-                        variant="contained" 
-                        color="error" 
-                        onClick={confirmDelete} 
+                    <AppButton
+                        variant="contained"
+                        color="error"
+                        onClick={confirmDelete}
                         loading={deleteExam.isPending}
                     >
                         Delete Permanently
@@ -978,12 +978,12 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 4 }}>
                                 <AppDatePicker
-                                label="Exam Date"
-                                value={formData.date ? new Date(formData.date) : null}
-                                onChange={(date) => setFormData({ ...formData, date: date ? format(date, 'yyyy-MM-dd') : '' })}
-                                error={!!errors.date}
-                                helperText={errors.date}
-                            />
+                                    label="Exam Date"
+                                    value={formData.date ? new Date(formData.date) : null}
+                                    onChange={(date) => setFormData({ ...formData, date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                    error={!!errors.date}
+                                    helperText={errors.date}
+                                />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
                                 <AppInput
@@ -1020,9 +1020,9 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                                     value={formData.roomId}
                                     options={[
                                         { value: "", label: "Unassigned / None" },
-                                        ...(rooms?.data?.map((r: any) => ({ 
-                                            value: r._id, 
-                                            label: `${r.name} (${r.code}) — Cap: ${r.capacity}` 
+                                        ...(rooms?.data?.map((r: any) => ({
+                                            value: r._id,
+                                            label: `${r.name} (${r.code}) — Cap: ${r.capacity}`
                                         })) || [])
                                     ]}
                                     onChange={(e) => setFormData({ ...formData, roomId: e.target.value as string })}
@@ -1033,9 +1033,9 @@ const ExamDetailView = ({ schoolId, exam, onBack }: { schoolId: string, exam: Ex
                                     multiple
                                     label="Assigned Invigilators"
                                     value={formData.invigilators}
-                                    options={teachers?.data?.map((t: any) => ({ 
-                                        value: t.teacherId, 
-                                        label: `${t.firstName} ${t.lastName}` 
+                                    options={teachers?.data?.map((t: any) => ({
+                                        value: t.teacherId,
+                                        label: `${t.firstName} ${t.lastName}`
                                     })) || []}
                                     onChange={(e) => {
                                         const val = typeof e.target.value === 'string' ? e.target.value.split(',') : (e.target.value as string[]);

@@ -8,7 +8,7 @@ import {
     LinearProgress,
 } from '@mui/material';
 import axios from 'axios';
-import { AppCard } from '../ui/AppCard';
+import { AppCard } from '../shared/AppCard';
 import {
     CloudUpload as UploadIcon,
     Delete as DeleteIcon,

@@ -37,10 +37,10 @@ import {
 import { useGetTeachers } from '../../../queries/Teacher';
 import { useGetClasses } from '../../../queries/Class';
 import TokenService from '../../../queries/token/tokenService';
-import { AppInput } from '../../../components/ui/AppInput';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppButton } from '../../../components/ui/AppButton';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
+import { AppInput } from '../../../components/shared/AppInput';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppButton } from '../../../components/shared/AppButton';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
 import { format } from 'date-fns';
 
 interface TabPanelProps {
@@ -348,9 +348,9 @@ const SubstituteManagement = () => {
                         <AppSelect
                             label="Day"
                             value={formData.dayOfWeek}
-                            options={config?.workingDays?.map((day: string) => ({ 
-                                value: day, 
-                                label: day.charAt(0).toUpperCase() + day.slice(1) 
+                            options={config?.workingDays?.map((day: string) => ({
+                                value: day,
+                                label: day.charAt(0).toUpperCase() + day.slice(1)
                             })) || []}
                             onChange={(e) => setFormData({ ...formData, dayOfWeek: e.target.value as string })}
                         />
@@ -358,9 +358,9 @@ const SubstituteManagement = () => {
                         <AppSelect
                             label="Period"
                             value={formData.periodNumber}
-                            options={regularPeriods.map((p: any) => ({ 
-                                value: p.periodNumber, 
-                                label: `${p.name} (${p.startTime} - ${p.endTime})` 
+                            options={regularPeriods.map((p: any) => ({
+                                value: p.periodNumber,
+                                label: `${p.name} (${p.startTime} - ${p.endTime})`
                             }))}
                             onChange={(e) => setFormData({ ...formData, periodNumber: Number(e.target.value) })}
                         />

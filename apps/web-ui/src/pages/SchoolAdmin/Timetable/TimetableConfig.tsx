@@ -26,11 +26,11 @@ import {
     Divider,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
-import { AppInput } from '../../../components/ui/AppInput';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppButton } from '../../../components/ui/AppButton';
-import { AppTimePicker } from '../../../components/ui/AppTimePicker';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
+import { AppInput } from '../../../components/shared/AppInput';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppButton } from '../../../components/shared/AppButton';
+import { AppTimePicker } from '../../../components/shared/AppTimePicker';
 import {
     Add as AddIcon,
     Delete as DeleteIcon,

@@ -14,9 +14,9 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateSubject, useUpdateSubject } from '../../queries/Subject';
 import { useGetClasses } from '../../queries/Class';
 import type { Subject, CreateSubjectPayload } from '../../types';
-import { AppInput } from '../ui/AppInput';
-import { AppSelect } from '../ui/AppSelect';
-import { AppButton } from '../ui/AppButton';
+import { AppInput } from '../shared/AppInput';
+import { AppSelect } from '../shared/AppSelect';
+import { AppButton } from '../shared/AppButton';
 
 interface SubjectDialogProps {
     open: boolean;
