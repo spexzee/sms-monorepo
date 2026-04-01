@@ -39,6 +39,7 @@ interface DataTableProps<T> {
   paginationTotalRows?: number;
   onChangePage?: (page: number) => void;
   onChangeRowsPerPage?: (limit: number, page: number) => void;
+  renderHeaderActions?: () => React.ReactNode;
 }
 
 // Transform our Column type to react-data-table-component's TableColumn
@@ -81,6 +82,7 @@ function DataTable<T>({
   paginationTotalRows,
   onChangePage,
   onChangeRowsPerPage,
+  renderHeaderActions,
 }: DataTableProps<T>) {
   const transformedColumns = transformColumns(columns);
 
@@ -120,20 +122,23 @@ function DataTable<T>({
               {title}
             </Typography>
           )}
-          {onAddClick && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={onAddClick}
-              sx={{
-                                textTransform: 'none',
-                borderRadius: 1,
-                px: 3,
-              }}
-            >
-              {addButtonLabel}
-            </Button>
-          )}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            {renderHeaderActions && renderHeaderActions()}
+            {onAddClick && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={onAddClick}
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: 1,
+                  px: 3,
+                }}
+              >
+                {addButtonLabel}
+              </Button>
+            )}
+          </Box>
         </Box>
       )}
 

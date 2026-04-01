@@ -1,0 +1,395 @@
+// apps/web-ui/src/pages/Parent/Transport/ParentTransport.tsx
+
+import { useMemo } from 'react';
+import {
+    Box, Typography, Card, CardContent, Avatar, Divider, Chip,
+    Alert, Skeleton, Grid, Button,
+} from '@mui/material';
+import {
+    DirectionsBus as BusIcon,
+    LocationOn as StopIcon,
+    Person as DriverIcon,
+    Phone as PhoneIcon,
+    Badge as LicenseIcon,
+    School as SchoolIcon,
+    AccessTime as TimeIcon,
+    ChildCare as ChildIcon,
+    NotificationsActive as NotifIcon,
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import TokenService from '../../../queries/token/tokenService';
+import { useChildSelector } from '../../../context/ChildSelectorContext';
+import { useGetStudentRoute } from '../../../queries/transport';
+import { useGetSchoolById } from '../../../queries/School';
+import { getSchoolOrigin } from '../../../config/transportConfig';
+import { Map, MapRoute, MapMarker, MapControls, MarkerContent } from '@/components/ui/map';
+import { fetchRoadRoute } from '../../../utils/transport_routing';
+import { useEffect, useState, useRef } from 'react';
+import type { TransportStop } from '../../../types/transport';
+
+const ParentTransport = () => {
+    const navigate = useNavigate();
+    const schoolId = TokenService.getSchoolId() || '';
+    const { selectedChild } = useChildSelector();
+
+    const studentId = selectedChild?.studentId || '';
+
+    const { data, isLoading, error } = useGetStudentRoute(schoolId, studentId);
+    const { data: schoolData } = useGetSchoolById(schoolId);
+    const schoolOrigin = useMemo(() => getSchoolOrigin(schoolData?.data), [schoolData?.data]);
+
+    const route = data?.data?.route;
+    const assignedStop = data?.data?.stop;
+
+    const [roadRoute, setRoadRoute] = useState<[number, number][]>([]);
+    const [isRouting, setIsRouting] = useState(false);
+    const mapRef = useRef<any>(null);
+
+    const getStopCoords = (stop: TransportStop): [number, number] => {
+        if (stop.longitude !== undefined && stop.latitude !== undefined) {
+            return [stop.longitude, stop.latitude];
+        }
+        return schoolOrigin ? [schoolOrigin.longitude, schoolOrigin.latitude] : [77.5946, 12.9716];
+    };
+
+    const initialCenter = useMemo<[number, number]>(
+        () => schoolOrigin ? [schoolOrigin.longitude, schoolOrigin.latitude] : [77.5946, 12.9716],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        []
+    );
+
+    useEffect(() => {
+        if (!route?.stops?.length) { setRoadRoute([]); return; }
+        const stops = route.stops.map(s => {
+            const [lng, lat] = getStopCoords(s);
+            return { longitude: lng, latitude: lat };
+        });
+        setIsRouting(true);
+        const origin = schoolOrigin ? { longitude: schoolOrigin.longitude, latitude: schoolOrigin.latitude } : undefined;
+        fetchRoadRoute(stops, origin).then(r => { 
+            setRoadRoute(r); 
+            setIsRouting(false); 
+            
+            if (assignedStop && mapRef.current) {
+                const [lng, lat] = getStopCoords(assignedStop);
+                setTimeout(() => {
+                    mapRef.current?.flyTo({ center: [lng, lat], zoom: 15, speed: 1.2 });
+                }, 500); // Slight delay for smoother UX after route loads
+            }
+        });
+    }, [route, schoolOrigin, assignedStop]);
+
+    if (!studentId) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    Please select a child from the top bar to view their transport details.
+                </Alert>
+            </Box>
+        );
+    }
+
+    if (isLoading) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2, mb: 2 }} />
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}><Skeleton variant="rectangular" height={150} sx={{ borderRadius: 2 }} /></Grid>
+                    <Grid size={{ xs: 12, md: 6 }}><Skeleton variant="rectangular" height={150} sx={{ borderRadius: 2 }} /></Grid>
+                </Grid>
+            </Box>
+        );
+    }
+
+    if (error || !route) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="info" sx={{ borderRadius: 2, mb: 2 }}>
+                    <Typography fontWeight={600}>No transport route assigned</Typography>
+                    <Typography variant="body2" sx={{ mt: 0.5 }}>
+                        {selectedChild
+                            ? `${selectedChild.firstName} ${selectedChild.lastName} has not been assigned to any bus route yet.`
+                            : 'Your child has not been assigned to any bus route yet.'}
+                    </Typography>
+                </Alert>
+                <Button variant="outlined" size="small" onClick={() => navigate('/parent/notifications')}>
+                    View Notifications
+                </Button>
+            </Box>
+        );
+    }
+
+    const assignedStopIdx = route.stops.findIndex(s => s.stopId === assignedStop?.stopId);
+
+    return (
+        <Box sx={{
+            p: { xs: 1.5, sm: 2 },
+            minHeight: '100vh',
+            bgcolor: 'background.default',
+            backgroundImage: 'radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%)',
+        }}>
+            {/* Page Header */}
+            <Box sx={{ mb: 2 }}>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'primary.main', color: 'white', display: 'flex' }}>
+                        <BusIcon fontSize="small" />
+                    </Box>
+                    My Child's Transport
+                </Typography>
+                {selectedChild && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, ml: 0.5 }}>
+                        Showing transport details for <strong>{selectedChild.firstName} {selectedChild.lastName}</strong>
+                    </Typography>
+                )}
+            </Box>
+
+            {/* Route summary strip */}
+            <Box sx={{
+                display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2,
+                p: 1.5, bgcolor: 'primary.main', borderRadius: 2, color: 'white',
+            }}>
+                <Chip icon={<BusIcon />} label={route.routeName} sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 700 }} />
+                {route.busNumber && <Chip icon={<BusIcon />} label={`Bus: ${route.busNumber}`} sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white' }} />}
+                <Chip
+                    label={route.status === 'active' ? 'Active' : 'Inactive'}
+                    color={route.status === 'active' ? 'success' : 'warning'}
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                />
+                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <NotifIcon fontSize="small" sx={{ opacity: 0.8 }} />
+                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                        {route.stops.length} stops
+                    </Typography>
+                </Box>
+            </Box>
+
+            <Grid container spacing={2}>
+                {/* Map */}
+                <Grid size={{ xs: 12, lg: 8 }}>
+                    <Card sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+                        <CardContent sx={{ p: 0, height: '380px', position: 'relative' }}>
+                            <Map ref={mapRef} center={initialCenter} zoom={13} className="h-full w-full">
+                                <MapControls showZoom showLocate />
+
+                                {/* School marker */}
+                                {schoolOrigin && (
+                                    <MapMarker longitude={schoolOrigin.longitude} latitude={schoolOrigin.latitude}>
+                                        <MarkerContent>
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-indigo-900 text-white shadow-xl">
+                                                <SchoolIcon sx={{ fontSize: 16 }} />
+                                            </div>
+                                        </MarkerContent>
+                                    </MapMarker>
+                                )}
+
+                                {/* All stop markers */}
+                                {route.stops.map((stop, i) => {
+                                    const [lng, lat] = getStopCoords(stop);
+                                    const isAssigned = stop.stopId === assignedStop?.stopId;
+                                    return (
+                                        <MapMarker key={i} longitude={lng} latitude={lat}>
+                                            <MarkerContent>
+                                                <Box sx={{
+                                                    width: isAssigned ? 34 : 26,
+                                                    height: isAssigned ? 34 : 26,
+                                                    borderRadius: '50%',
+                                                    bgcolor: isAssigned ? '#059669' : 'primary.main',
+                                                    border: isAssigned ? '3px solid white' : '2px solid white',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontSize: isAssigned ? '13px' : '11px',
+                                                    fontWeight: 700, color: 'white',
+                                                    boxShadow: isAssigned ? '0 0 0 3px rgba(5,150,105,0.4)' : '0 2px 8px rgba(0,0,0,0.4)',
+                                                    animation: isAssigned ? 'pulse 2s infinite' : 'none',
+                                                }}>
+                                                    {i + 1}
+                                                </Box>
+                                            </MarkerContent>
+                                        </MapMarker>
+                                    );
+                                })}
+
+                                {/* Road route polyline */}
+                                {roadRoute.length > 0 && (
+                                    <MapRoute coordinates={roadRoute} color="#4F46E5" width={4} opacity={0.8} />
+                                )}
+                            </Map>
+
+                            {isRouting && (
+                                <Box sx={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', bgcolor: 'background.paper', px: 2, py: 0.5, borderRadius: 20, boxShadow: 2, zIndex: 10 }}>
+                                    <Typography variant="caption">Updating route...</Typography>
+                                </Box>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Stop timeline */}
+                    <Card sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                        <CardContent sx={{ p: 2 }}>
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
+                                🗺️ Route Stop Schedule
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                                {route.stops.map((stop, i) => {
+                                    const isHighlighted = stop.stopId === assignedStop?.stopId;
+                                    const isLast = i === route.stops.length - 1;
+                                    return (
+                                        <Box key={i} sx={{ display: 'flex', gap: 1.5 }}>
+                                            {/* Timeline connector */}
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 24 }}>
+                                                <Box sx={{
+                                                    width: 22, height: 22, borderRadius: '50%',
+                                                    bgcolor: isHighlighted ? 'success.main' : 'primary.main',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontSize: 10, fontWeight: 700, color: 'white', flexShrink: 0,
+                                                    boxShadow: isHighlighted ? '0 0 0 3px rgba(5,150,105,0.3)' : 'none',
+                                                }}>
+                                                    {i + 1}
+                                                </Box>
+                                                {!isLast && <Box sx={{ width: 2, flex: 1, bgcolor: 'divider', my: 0.25 }} />}
+                                            </Box>
+
+                                            {/* Stop info */}
+                                            <Box sx={{
+                                                flex: 1, pb: 1.5,
+                                                ...(isHighlighted && {
+                                                    bgcolor: 'success.light',
+                                                    p: 1, borderRadius: 1.5, mb: 0.5,
+                                                }),
+                                            }}>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <Typography variant="body2" fontWeight={isHighlighted ? 700 : 500}>
+                                                        {stop.name}
+                                                        {isHighlighted && (
+                                                            <Chip size="small" label="Your Stop" color="success" sx={{ ml: 1, height: 18, fontSize: 10 }} />
+                                                        )}
+                                                    </Typography>
+                                                </Box>
+                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', gap: 1.5, mt: 0.25 }}>
+                                                    <span>📥 {stop.pickupTime || '—'}</span>
+                                                    <span>📤 {stop.dropTime || '—'}</span>
+                                                    <span>👨‍👩‍👧 {stop.students?.length || 0} students</span>
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    );
+                                })}
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* Right column: Your Stop + Driver */}
+                <Grid size={{ xs: 12, lg: 4 }}>
+                    {/* Your Stop Card */}
+                    {assignedStop && (
+                        <Card sx={{ mb: 2, borderRadius: 2, border: '2px solid', borderColor: 'success.main', boxShadow: '0 4px 20px rgba(5,150,105,0.15)' }}>
+                            <Box sx={{ bgcolor: 'success.main', px: 2, py: 1.5 }}>
+                                <Typography variant="subtitle1" fontWeight={700} color="white" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <ChildIcon fontSize="small" /> Your Child's Stop
+                                </Typography>
+                            </Box>
+                            <CardContent sx={{ p: 2 }}>
+                                <Typography variant="h6" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <StopIcon color="success" fontSize="small" />
+                                    Stop {assignedStopIdx + 1}: {assignedStop.name}
+                                </Typography>
+                                <Divider sx={{ my: 1.5 }} />
+                                <Box sx={{ display: 'flex', gap: 3 }}>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary" fontWeight={600}>PICKUP TIME</Typography>
+                                        <Typography variant="body1" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                            <TimeIcon fontSize="small" color="primary" />
+                                            {assignedStop.pickupTime || '—'}
+                                        </Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary" fontWeight={600}>DROP TIME</Typography>
+                                        <Typography variant="body1" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                            <TimeIcon fontSize="small" color="secondary" />
+                                            {assignedStop.dropTime || '—'}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Driver Card */}
+                    <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+                        <Box sx={{ bgcolor: 'primary.main', px: 2, py: 1.5 }}>
+                            <Typography variant="subtitle1" fontWeight={700} color="white" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <DriverIcon fontSize="small" /> Driver Information
+                            </Typography>
+                        </Box>
+                        <CardContent sx={{ p: 2 }}>
+                            {route.driver ? (
+                                <Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                        <Avatar sx={{ width: 52, height: 52, bgcolor: 'primary.light', fontSize: 22 }}>
+                                            {route.driver.name?.[0] || 'D'}
+                                        </Avatar>
+                                        <Box>
+                                            <Typography variant="body1" fontWeight={700}>{route.driver.name}</Typography>
+                                            <Chip size="small" label="Verified Driver" color="success" sx={{ mt: 0.25, height: 18, fontSize: 10 }} />
+                                        </Box>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <PhoneIcon fontSize="small" color="primary" />
+                                            <Typography variant="body2">{route.driver.phone}</Typography>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                href={`tel:${route.driver.phone}`}
+                                                sx={{ ml: 'auto', borderRadius: 2, height: 26, fontSize: 11, textTransform: 'none' }}
+                                            >
+                                                Call
+                                            </Button>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <LicenseIcon fontSize="small" color="action" />
+                                            <Typography variant="body2" color="text.secondary">
+                                                License: {route.driver.licenseNumber}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Box>
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">No driver assigned yet</Typography>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Live tracking placeholder */}
+                    <Card sx={{
+                        borderRadius: 2,
+                        border: '1px dashed',
+                        borderColor: 'primary.light',
+                        bgcolor: 'rgba(79,70,229,0.04)',
+                    }}>
+                        <CardContent sx={{ p: 2 }}>
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+                                📡 Live Bus Tracking
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                                Real-time GPS tracking is coming soon. You'll be able to see your child's bus location live on the map.
+                            </Typography>
+                            <Chip size="small" label="Coming Soon" variant="outlined" color="primary" sx={{ fontSize: 11 }} />
+                        </CardContent>
+                    </Card>
+
+                    {/* Notification tip */}
+                    <Alert severity="info" sx={{ mt: 2, borderRadius: 2 }} icon={<NotifIcon />}>
+                        <Typography variant="caption" fontWeight={600}>Stay updated!</Typography>
+                        <Typography variant="caption" display="block">
+                            You'll receive in-app notifications when the bus departs, is delayed, or your child is picked up.
+                        </Typography>
+                    </Alert>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+};
+
+export default ParentTransport;

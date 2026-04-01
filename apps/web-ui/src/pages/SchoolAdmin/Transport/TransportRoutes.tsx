@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Box, IconButton, Tooltip, Switch, Typography, Card, CardContent, Divider, Alert, Button, Avatar, Chip } from '@mui/material';
-import { Edit as EditIcon, DirectionsBus as BusIcon, Route as RouteIcon, School as SchoolIcon, Close as CloseIcon, Person as PersonIcon } from '@mui/icons-material';
+import { Box, IconButton, Tooltip, Switch, Typography, Card, CardContent, Divider, Alert, Button, Avatar, Chip, Dialog } from '@mui/material';
+import { Edit as EditIcon, DirectionsBus as BusIcon, Route as RouteIcon, School as SchoolIcon, Close as CloseIcon, Person as PersonIcon, Notifications as NotificationsIcon } from '@mui/icons-material';
 import DataTable, { StatusChip } from '../../../components/Table/DataTable';
 import type { Column } from '../../../components/Table/DataTable';
 import TransportRouteDialog from '../../../components/Dialogs/TransportRouteDialog';
@@ -14,6 +14,7 @@ import { fetchRoadRoute } from '../../../utils/transport_routing';
 import { AppButton } from '../../../components/shared/AppButton';
 import { getSchoolOrigin } from '../../../config/transportConfig';
 import { useNavigate } from 'react-router-dom';
+import NotificationsPanel from '../../../components/Transport/NotificationsPanel';
 
 // ---------------------------------------------------------------------------
 // MapFlyTo — must live inside <Map> to use useMap().
@@ -32,22 +33,22 @@ function MapFlyTo({ schoolOrigin, selectedRoute, getStopCoords }: MapFlyToProps)
   useEffect(() => {
     if (!map || !isLoaded) return;
 
-    if (selectedRoute?.stops?.[0]) {
+    if (schoolOrigin) {
+      // No route selected — always show school location
+      map.flyTo({ center: [schoolOrigin.longitude, schoolOrigin.latitude], zoom: 14, duration: 800 });
+    } else if (selectedRoute?.stops?.[0]) {
       // Route selected — fly to its first stop
       const [lng, lat] = getStopCoords(selectedRoute.stops[0]);
       map.flyTo({ center: [lng, lat], zoom: 14, duration: 800 });
-    } else if (schoolOrigin) {
-      // No route selected — always show school location
-      map.flyTo({ center: [schoolOrigin.longitude, schoolOrigin.latitude], zoom: 14, duration: 800 });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoute, schoolOrigin, isLoaded]);
 
   // Also fly to school location when map first becomes ready (schoolOrigin may load after map)
   useEffect(() => {
     if (!map || !isLoaded || !schoolOrigin || selectedRoute) return;
     map.flyTo({ center: [schoolOrigin.longitude, schoolOrigin.latitude], zoom: 14, duration: 600 });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]);
 
   return null;
@@ -57,6 +58,7 @@ const TransportRoutesPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editData, setEditData] = useState<TransportRoute | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<TransportRoute | null>(null);
+  const [notifDialogOpen, setNotifDialogOpen] = useState(false);
   const [roadRoute, setRoadRoute] = useState<[number, number][]>([]);
   const [isRouting, setIsRouting] = useState(false);
 
@@ -242,10 +244,20 @@ const TransportRoutesPage = () => {
         onAddClick={handleAdd}
         addButtonLabel="Create Route"
         emptyMessage="No routes found. Click 'Create Route' to start."
+        renderHeaderActions={() => (
+          <Button
+            variant="outlined"
+            startIcon={<NotificationsIcon />}
+            onClick={() => setNotifDialogOpen(true)}
+            sx={{ textTransform: 'none', borderRadius: 1 }}
+          >
+            Send Notification
+          </Button>
+        )}
         getRowKey={(row) => row._id || row.routeId}
       />
 
-      {/* ── Row 2: Map + Route Info (below table) ── */}
+      {/* ── Row 2: Map + Route Info + Notifications (below table) ── */}
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, mt: 2 }}>
 
         {/* Map */}
@@ -256,7 +268,7 @@ const TransportRoutesPage = () => {
           boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
           bgcolor: 'background.paper',
         }}>
-          <CardContent sx={{ p: 0, height: '420px', position: 'relative' }}>
+          <CardContent sx={{ p: 0, height: '450px', position: 'relative' }}>
             <Map center={initialCenter} zoom={14} className="h-full w-full">
               <MapFlyTo schoolOrigin={schoolOrigin} selectedRoute={selectedRoute} getStopCoords={getStopCoordinates} />
               <MapControls showZoom showLocate />
@@ -493,6 +505,21 @@ const TransportRoutesPage = () => {
         schoolId={schoolId}
         editData={editData}
       />
+
+      {/* Notifications Dialog */}
+      <Dialog
+        open={notifDialogOpen}
+        onClose={() => setNotifDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <NotificationsPanel
+          routes={routes}
+          schoolId={schoolId}
+          onClose={() => setNotifDialogOpen(false)}
+        />
+      </Dialog>
     </Box>
   );
 };
