@@ -9,16 +9,13 @@ import {
     Box,
     Typography,
     Divider,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateSubject, useUpdateSubject } from '../../queries/Subject';
 import { useGetClasses } from '../../queries/Class';
 import type { Subject, CreateSubjectPayload } from '../../types';
 import { AppInput } from '../ui/AppInput';
+import { AppSelect } from '../ui/AppSelect';
 import { AppButton } from '../ui/AppButton';
 
 interface SubjectDialogProps {
@@ -179,23 +176,19 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({
                             placeholder="MATH01"
                         />
 
-                        <FormControl fullWidth>
-                            <InputLabel id="class-select-label">Assign to Class</InputLabel>
-                            <Select
-                                labelId="class-select-label"
-                                name="classId"
-                                value={formData.classId}
-                                label="Assign to Class"
-                                onChange={handleChange}
-                            >
-                                <MenuItem value="">None (Generic Subject)</MenuItem>
-                                {classes.map((c: any) => (
-                                    <MenuItem key={c.classId} value={c.classId}>
-                                        {c.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <AppSelect
+                            label="Assign to Class"
+                            name="classId"
+                            value={formData.classId}
+                            onChange={handleChange}
+                            options={[
+                                { value: "", label: "Select Class" },
+                                ...classes.map((c: any) => ({
+                                    value: c.classId,
+                                    label: c.name
+                                }))
+                            ]}
+                        />
 
                         <Divider sx={{ my: 0.5 }} />
 
