@@ -427,6 +427,7 @@ export interface Subject {
   status: "active" | "inactive";
   assignedTeacherName?: string;
   assignedTeacherId?: string;
+  classId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -435,6 +436,7 @@ export interface CreateSubjectPayload {
   name: string;
   code: string;
   description?: string;
+  classId?: string;
 }
 
 export interface UpdateSubjectPayload {
@@ -442,6 +444,7 @@ export interface UpdateSubjectPayload {
   code?: string;
   description?: string;
   status?: "active" | "inactive";
+  classId?: string;
 }
 
 export interface SubjectFilters {

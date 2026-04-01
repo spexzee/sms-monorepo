@@ -9,9 +9,14 @@ import {
     Box,
     Typography,
     Divider,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateSubject, useUpdateSubject } from '../../queries/Subject';
+import { useGetClasses } from '../../queries/Class';
 import type { Subject, CreateSubjectPayload } from '../../types';
 import { AppInput } from '../ui/AppInput';
 import { AppButton } from '../ui/AppButton';
@@ -22,7 +27,6 @@ interface SubjectDialogProps {
     schoolId: string;
     editData?: Subject | null;
     initialClassId?: string;
-    initialSectionId?: string;
 }
 
 const SubjectDialog: React.FC<SubjectDialogProps> = ({
@@ -30,6 +34,7 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({
     onClose,
     schoolId,
     editData,
+    initialClassId,
 }) => {
     const isEditMode = !!editData;
 
@@ -37,12 +42,15 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({
         name: "",
         code: "",
         description: "",
+        classId: "",
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const createMutation = useCreateSubject(schoolId);
     const updateMutation = useUpdateSubject(schoolId);
+    const { data: classesData } = useGetClasses(schoolId);
+    const classes = classesData?.data || [];
 
     useEffect(() => {
         if (editData) {
@@ -50,17 +58,19 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({
                 name: editData.name || "",
                 code: editData.code || "",
                 description: editData.description || "",
+                classId: editData.classId || "",
             });
         } else {
             setFormData({
                 name: "",
                 code: "",
                 description: "",
+                classId: initialClassId || "",
             });
         }
-    }, [editData, open]);
+    }, [editData, open, initialClassId]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: any) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
         if (errors[name]) {
@@ -106,6 +116,7 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({
             name: "",
             code: "",
             description: "",
+            classId: "",
         });
         setErrors({});
         createMutation.reset();
@@ -167,6 +178,24 @@ const SubjectDialog: React.FC<SubjectDialogProps> = ({
                             inputProps={{ style: { textTransform: 'uppercase' } }}
                             placeholder="MATH01"
                         />
+
+                        <FormControl fullWidth>
+                            <InputLabel id="class-select-label">Assign to Class</InputLabel>
+                            <Select
+                                labelId="class-select-label"
+                                name="classId"
+                                value={formData.classId}
+                                label="Assign to Class"
+                                onChange={handleChange}
+                            >
+                                <MenuItem value="">None (Generic Subject)</MenuItem>
+                                {classes.map((c: any) => (
+                                    <MenuItem key={c.classId} value={c.classId}>
+                                        {c.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
                         <Divider sx={{ my: 0.5 }} />
 

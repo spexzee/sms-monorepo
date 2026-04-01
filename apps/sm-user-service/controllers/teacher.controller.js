@@ -314,48 +314,54 @@ const getAllTeachers = async (req, res) => {
       Teacher.countDocuments(query),
     ]);
 
-    // Populate class teacher labels
+    // Populate class teacher labels and subject names
     const classSectionPairs = teachers
       .filter(
         (t) => t.classTeacherSectionId && t.classTeacherSectionId.includes("#"),
       )
       .map((t) => t.classTeacherSectionId);
 
+    const allSubjectIds = [...new Set(teachers.flatMap(t => t.subjects || []))];
+
     const sectionMap = {};
-    if (classSectionPairs.length > 0) {
-      const schoolDb = getSchoolDbConnection(schoolDbName);
-      const { ClassSchema: classSchema } = require("@sms/shared");
+    const subjectMap = {};
+    const schoolDb = getSchoolDbConnection(schoolDbName);
+
+    if (classSectionPairs.length > 0 || allSubjectIds.length > 0) {
+      const { ClassSchema: classSchema, SubjectSchema: subjectSchema } = require("@sms/shared");
       const Class = schoolDb.model("Class", classSchema);
+      const Subject = schoolDb.model("Subject", subjectSchema);
 
-      // Get unique classIds to optimize query
-      const uniqueClassIds = [
-        ...new Set(classSectionPairs.map((p) => p.split("#")[0])),
-      ];
-
-      const classesDocs = await Class.find({
-        classId: { $in: uniqueClassIds },
-      }).select("classId name sections");
+      const [classesDocs, subjectsDocs] = await Promise.all([
+        classSectionPairs.length > 0 
+          ? Class.find({ classId: { $in: [...new Set(classSectionPairs.map(p => p.split("#")[0]))] } }).select("classId name sections")
+          : Promise.resolve([]),
+        allSubjectIds.length > 0
+          ? Subject.find({ subjectId: { $in: allSubjectIds } }).select("subjectId name")
+          : Promise.resolve([])
+      ]);
 
       classSectionPairs.forEach((pair) => {
         const [cId, sId] = pair.split("#");
         const classDoc = classesDocs.find((c) => c.classId === cId);
         if (classDoc) {
           const section = classDoc.sections.find((s) => s.sectionId === sId);
-          if (section) {
-            sectionMap[pair] = `${classDoc.name} - ${section.name}`;
-          }
+          if (section) sectionMap[pair] = `${classDoc.name} - ${section.name}`;
         }
       });
+
+      subjectsDocs.forEach(s => subjectMap[s.subjectId] = s.name);
     }
 
-    const teachersWithLabels = teachers.map((t) => {
+    const teachersWithPopulatedData = teachers.map((t) => {
       const obj = t.toObject();
       obj.classTeacherLabel = sectionMap[t.classTeacherSectionId] || null;
+      obj.subjectNames = (t.subjects || []).map(id => subjectMap[id]).filter(Boolean);
       return obj;
     });
 
     const response = formatPaginationResponse(
-      teachersWithLabels,
+      teachersWithPopulatedData,
       total,
       page,
       limit,
