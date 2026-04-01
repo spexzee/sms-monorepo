@@ -1,12 +1,12 @@
 // apps/sm-transport-service/controllers/transport.controller.js
 
 const { getSchoolDbConnection } = require('../configs/db');
-const TransportRoute = require('@sms/shared/models').TransportRouteSchema;
+const TransportRouteSchema = require('@sms/shared/models').TransportRouteSchema;
 
 // Helper to get model bound to school DB
 const getModel = (schoolId) => {
     const db = getSchoolDbConnection(`school-db-${schoolId}`);
-    return db.model('TransportRoute', TransportRoute);
+    return db.model('TransportRoute', TransportRouteSchema);
 };
 
 // Get all routes for a school
