@@ -15,6 +15,7 @@ const TransportStopStudentSchema = new Schema({
     parentId: { type: String },
     parentName: { type: String },
     parentPhone: { type: String },
+    parentEmail: { type: String },
     profileImage: { type: String },
 }, { _id: false });
 

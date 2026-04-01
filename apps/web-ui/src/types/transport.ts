@@ -23,34 +23,34 @@ export interface TransportStop {
   pickupTime?: string;
   dropTime?: string;
   students?: TransportStopStudent[];
-  coordinates?: [number, number]; // Temporary for UI compatibility [lng, lat]
+  coordinates?: [number, number]; // [lng, lat] — UI compat
 }
 
 export interface TransportDriver {
   name: string;
   phone: string;
-  licenseNumber: string; // Required by backend
+  licenseNumber: string;
   profileImage?: string;
 }
 
 export interface TransportRoute {
-  _id: string; // Internal MongoDB ID
+  _id: string;
   schoolId: string;
   routeId: string;
   routeName: string;
   routeNumber?: string;
   color?: string;
   busNumber?: string;
-  vehicleNumber?: string; // Add for UI compatibility if needed, though schema uses busNumber
+  vehicleNumber?: string;
   driver?: TransportDriver;
-  driverName?: string; // Add for UI compatibility
-  driverPhone?: string; // Add for UI compatibility
+  driverName?: string;
+  driverPhone?: string;
   stops: TransportStop[];
-  routeCoordinates?: number[][]; // array of [lat, lng]
+  routeCoordinates?: number[][];
   currentLocation?: {
     latitude?: number;
     longitude?: number;
-    lastUpdated?: string; // ISO date string
+    lastUpdated?: string;
     speed?: number;
     heading?: number;
   };
@@ -60,16 +60,76 @@ export interface TransportRoute {
   updatedAt?: string;
 }
 
+export interface TransportSummary {
+  totalRoutes: number;
+  activeRoutes: number;
+  inactiveRoutes: number;
+  totalStops: number;
+  totalStudents: number;
+  totalDrivers: number;
+}
+
+export type TransportNotificationType =
+  | 'bus_departed'
+  | 'child_picked'
+  | 'child_dropped'
+  | 'bus_reached_school'
+  | 'bus_delayed'
+  | 'transport_update';
+
+export interface TransportNotification {
+  _id: string;
+  notificationId: string;
+  schoolId: string;
+  userId: string;
+  userRole: string;
+  type: TransportNotificationType;
+  title: string;
+  message: string;
+  referenceId?: string;
+  referenceType: 'transport';
+  isRead: boolean;
+  readAt?: string;
+  metadata?: {
+    routeId?: string;
+    routeName?: string;
+    busNumber?: string;
+    stopName?: string;
+    studentId?: string;
+    studentName?: string;
+  };
+  createdAt: string;
+}
+
+export interface SendNotificationPayload {
+  routeId: string;
+  type: TransportNotificationType;
+  stopId?: string;
+  customMessage?: string;
+  sendEmail?: boolean;
+}
+
+export interface BusStatusPayload {
+  routeId: string;
+  status: 'departed' | 'arrived' | 'delayed';
+  customMessage?: string;
+}
+
 export interface CreateTransportRoutePayload {
-  routeId: string; // Required by backend
+  routeId: string;
   routeName: string;
   routeNumber?: string;
   busNumber?: string;
-  vehicleNumber?: string; // UI sends this
-  driverName?: string; // UI sends this
-  driverPhone?: string; // UI sends this
-  licenseNumber?: string; // UI sends this (temporary flat property)
+  vehicleNumber?: string;
+  driverName?: string;
+  driverPhone?: string;
+  licenseNumber?: string;
   driver?: Partial<TransportDriver>;
   stops: Partial<TransportStop>[];
   status?: 'active' | 'inactive';
+}
+
+export interface StudentRouteResult {
+  route: TransportRoute;
+  stop: TransportStop;
 }

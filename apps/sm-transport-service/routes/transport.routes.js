@@ -4,21 +4,40 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });
 
 const transportController = require('../controllers/transport.controller');
+const notificationController = require('../controllers/transport-notification.controller');
 
+// ─────────────────────────────────────────────────────────────────────────────
 // Base path: /api/transport/school/:schoolId
-// List all routes for a school
-router.get('/', transportController.getAllRoutes);
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Get a specific route
-router.get('/:routeId', transportController.getRoute);
+// ── Collection Endpoints (Literal Matches) ────────────────────────────────────
+router.get('/summary', transportController.getSummary);
+router.get('/routes', transportController.getAllRoutes);
+router.get('/notifications', notificationController.getNotificationHistory);
 
-// Create a new route
-router.post('/', transportController.createRoute);
+// ── Specific Route Operations (Parameterized) ─────────────────────────────────
+router.post('/routes', transportController.createRoute);
+router.get('/routes/:routeId', transportController.getRoute);
+router.put('/routes/:routeId', transportController.updateRoute);
+router.delete('/routes/:routeId', transportController.deleteRoute);
 
-// Update a route
-router.put('/:routeId', transportController.updateRoute);
+// ── Stops ─────────────────────────────────────────────────────────────────────
+router.post('/routes/:routeId/stops', transportController.addStop);
+router.put('/routes/:routeId/stops/:stopId', transportController.updateStop);
+router.delete('/routes/:routeId/stops/:stopId', transportController.removeStop);
 
-// Delete a route
-router.delete('/:routeId', transportController.deleteRoute);
+// ── Driver ────────────────────────────────────────────────────────────────────
+router.put('/routes/:routeId/driver', transportController.updateDriver);
+
+// ── Student assignment ────────────────────────────────────────────────────────
+router.post('/routes/:routeId/stops/:stopId/students', transportController.assignStudents);
+router.delete('/routes/:routeId/stops/:stopId/students/:studentId', transportController.removeStudent);
+
+// ── Student route lookup ──────────────────────────────────────────────────────
+router.get('/student/:studentId/route', transportController.getStudentRoute);
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+router.post('/notifications/send', notificationController.sendNotification);
+router.post('/notifications/bus-status', notificationController.updateBusStatus);
 
 module.exports = router;

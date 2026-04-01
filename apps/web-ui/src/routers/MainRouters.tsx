@@ -87,6 +87,7 @@ const ParentApplyLeave = lazy(() => import("../pages/Parent/Leave/ApplyLeave"));
 const ParentLeaveHistory = lazy(() => import("../pages/Parent/Leave/History"));
 const ParentExamSchedule = lazy(() => import("../pages/Parent/Exam/Schedule"));
 const ParentExamResults = lazy(() => import("../pages/Parent/Exam/Results"));
+const ParentTransport = lazy(() => import("../pages/Parent/Transport/ParentTransport"));
 
 // Shared Pages
 const NotificationsPage = lazy(() => import("../pages/Shared/Notifications"));
@@ -238,6 +239,7 @@ const MainRouters = () => {
           <Route path="/parent/exam/scheduler" element={<ParentExamSchedule />} />
           <Route path="/parent/exam/results" element={<ParentExamResults />} />
           <Route path="/parent/notifications" element={<NotificationsPage />} />
+          <Route path="/parent/transport" element={<ParentTransport />} />
         </Route>
 
         {/* 404 Not Found - Catch All */}
