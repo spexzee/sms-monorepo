@@ -57,10 +57,10 @@ function transformColumns<T>(columns: Column<T>[]): TableColumn<T>[] {
       : undefined,
     sortable: col.sortable ?? true,
     minWidth: col.minWidth ? `${col.minWidth}px` : undefined,
-        right: col.align === 'right',
-        center: col.align === 'center',
+    right: col.align === 'right' ? true : undefined,
+    center: col.align === 'center' ? true : undefined,
     omit: false,
-        hide: col.hide === 'sm' ? 600 : col.hide === 'md' ? 900 : undefined,
+    hide: col.hide === 'sm' ? 600 : col.hide === 'md' ? 900 : undefined,
   }));
 }
 

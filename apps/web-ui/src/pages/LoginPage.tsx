@@ -24,8 +24,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import TokenService from '../queries/token/tokenService';
 import { useUserStore } from '../stores/userStore';
-import { AppInput } from '../components/ui/AppInput';
-import { AppButton } from '../components/ui/AppButton';
+import { AppInput } from '../components/shared/AppInput';
+import { AppButton } from '../components/shared/AppButton';
 
 interface LoginForm {
   email: string;

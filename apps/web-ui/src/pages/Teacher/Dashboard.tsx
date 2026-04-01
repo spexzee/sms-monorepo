@@ -11,9 +11,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import TokenService from '../../queries/token/tokenService';
 import { useGetTeacherDashboardStats } from '../../queries/TeacherDashboard';
-import { AppCard } from '../../components/ui/AppCard';
-import { AppButton } from '../../components/ui/AppButton';
-import { AppSection } from '../../components/ui/AppSection';
+import { AppCard } from '../../components/shared/AppCard';
+import { AppButton } from '../../components/shared/AppButton';
+import { AppSection } from '../../components/shared/AppSection';
 
 const TeacherDashboard: React.FC = () => {
     const navigate = useNavigate();

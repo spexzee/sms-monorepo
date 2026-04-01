@@ -27,11 +27,11 @@ import {
     Delete as DeleteIcon,
 } from '@mui/icons-material';
 import type { Announcement, AnnouncementCategory, AnnouncementAttachment, AnnouncementPriority, AnnouncementTargetAudience, Class } from '../../types';
-import { AppInput } from '../../components/ui/AppInput';
-import { AppSelect } from '../../components/ui/AppSelect';
-import { AppDatePicker } from '../../components/ui/AppDatePicker';
-import { AppButton } from '../../components/ui/AppButton';
-import { AppExpandableTable } from '../../components/ui/AppExpandableTable';
+import { AppInput } from '../../components/shared/AppInput';
+import { AppSelect } from '../../components/shared/AppSelect';
+import { AppDatePicker } from '../../components/shared/AppDatePicker';
+import { AppButton } from '../../components/shared/AppButton';
+import { AppExpandableTable } from '../../components/shared/AppExpandableTable';
 import TokenService from '../../queries/token/tokenService';
 import {
     useGetAnnouncements,

@@ -18,10 +18,10 @@ import {
 } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { AppInput } from '../ui/AppInput';
-import { AppSelect } from '../ui/AppSelect';
-import { AppDatePicker } from '../ui/AppDatePicker';
-import { AppButton } from '../ui/AppButton';
+import { AppInput } from '../shared/AppInput';
+import { AppSelect } from '../shared/AppSelect';
+import { AppDatePicker } from '../shared/AppDatePicker';
+import { AppButton } from '../shared/AppButton';
 import FileUpload from '../FileUpload/FileUpload';
 import { useCreateHomework, useUpdateHomework } from '../../queries/Homework';
 import { useGetClasses } from '../../queries/Class';
@@ -54,7 +54,7 @@ const HomeworkDialog: React.FC<HomeworkDialogProps> = ({ open, onClose, schoolId
 
     const { data: classesData } = useGetClasses(schoolId);
     const { data: subjectsData } = useGetSubjects(schoolId);
-    
+
     const createMutation = useCreateHomework(schoolId);
     const updateMutation = useUpdateHomework(schoolId);
 
@@ -288,8 +288,8 @@ const HomeworkDialog: React.FC<HomeworkDialogProps> = ({ open, onClose, schoolId
                                                 value={link}
                                                 onChange={(e) => handleLinkChange(index, e.target.value)}
                                             />
-                                            <IconButton 
-                                                color="error" 
+                                            <IconButton
+                                                color="error"
                                                 onClick={() => handleRemoveLink(index)}
                                                 disabled={formData.referenceLinks?.length === 1}
                                                 sx={{ bgcolor: 'error.50', borderRadius: 1.5, '&:hover': { bgcolor: 'error.100' } }}

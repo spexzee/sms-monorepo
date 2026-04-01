@@ -32,7 +32,12 @@ const NotificationSchema = new Schema({
             'homework_due',        // Homework due reminder
             'exam_scheduled',      // New exam scheduled
             'result_published',    // Results published
-            'general'
+            'bus_departed',       // Bus left school
+            'child_picked',       // Child boarded bus
+            'child_dropped',      // Child alighted at stop
+            'bus_reached_school', // Bus arrived at school
+            'bus_delayed',        // Bus delay alert
+            'transport_update',   // General transport update
         ],
         required: true
     },
@@ -49,7 +54,7 @@ const NotificationSchema = new Schema({
     },
     referenceType: {
         type: String,
-        enum: ['announcement', 'homework', 'leave', 'attendance', 'exam', 'result', null]
+        enum: ['announcement', 'homework', 'leave', 'attendance', 'exam', 'result', 'transport', null]
     },
     isRead: {
         type: Boolean,

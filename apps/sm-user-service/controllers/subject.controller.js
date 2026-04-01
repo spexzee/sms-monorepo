@@ -45,7 +45,7 @@ const getSchoolDbName = async (schoolId) => {
 const createSubject = async (req, res) => {
   try {
     const { schoolId } = req.params;
-    const { name, code, description } = req.body;
+    const { name, code, description, classId } = req.body;
 
     // Validate required fields
     if (!name || !code) {
@@ -86,6 +86,7 @@ const createSubject = async (req, res) => {
       name,
       code: code.toUpperCase(),
       description,
+      classId,
     });
 
     const savedSubject = await newSubject.save();
@@ -138,6 +139,8 @@ const getAllSubjects = async (req, res) => {
     // Build query filters
     const query = {};
     if (status) query.status = status;
+    const { classId } = req.query;
+    if (classId) query.classId = classId;
 
     const subjects = await SubjectModel.find(query).sort({ name: 1 });
 
@@ -148,34 +151,43 @@ const getAllSubjects = async (req, res) => {
       count: subjects.length,
     };
 
-    // If class and section are provided, we can attach the assigned teacher name for that class
-    const { classId, sectionId } = req.query;
-    if (classId && sectionId) {
-      const classSectionKey = `${classId}#${sectionId}`;
-      const schoolDb = getSchoolDbConnection(schoolDbName);
-      const { TeacherSchema: teacherSchema } = require("@sms/shared");
-      const TeacherModel = schoolDb.model("Teacher", teacherSchema);
+    // Optionally attach assigned teacher names
+    const { classId: filterClassId } = req.query;
+    
+    // We fetch teachers to populate assigned names. 
+    // If filterClassId is provided, we only show teachers assigned to that class's sections.
+    // Otherwise, we show all teachers assigned to the subject across the school.
+    const schoolDb = getSchoolDbConnection(schoolDbName);
+    const { TeacherSchema: teacherSchema } = require("@sms/shared");
+    const TeacherModel = schoolDb.model("Teacher", teacherSchema);
 
-      // Fetch all active teachers who are assigned to this class/section
-      const eligibleTeachers = await TeacherModel.find({
-        status: "active",
-        classes: classSectionKey,
-      }).select("teacherId firstName lastName subjects");
-
-      response.data = subjects.map((s) => {
-        const subjectObj = s.toObject();
-        // Find teacher who has this subjectId in their subjects array
-        const assignedTeacher = eligibleTeachers.find((t) =>
-          t.subjects.includes(subjectObj.subjectId),
-        );
-
-        if (assignedTeacher) {
-          subjectObj.assignedTeacherName = `${assignedTeacher.firstName} ${assignedTeacher.lastName}`;
-          subjectObj.assignedTeacherId = assignedTeacher.teacherId;
-        }
-        return subjectObj;
-      });
+    const teacherQuery = { status: "active" };
+    if (filterClassId) {
+      // Regex to match "classId#sectionId" for the filtered class
+      teacherQuery.classes = { $regex: new RegExp(`^${filterClassId}#`) };
     }
+
+    const allTeachers = await TeacherModel.find(teacherQuery)
+      .select("teacherId firstName lastName subjects");
+
+    response.data = subjects.map((s) => {
+      const subjectObj = s.toObject();
+      
+      // Find all teachers who have this subjectId in their subjects array
+      const assignedTeachers = allTeachers.filter((t) =>
+        t.subjects.includes(subjectObj.subjectId),
+      );
+
+      if (assignedTeachers.length > 0) {
+        subjectObj.assignedTeacherName = assignedTeachers
+          .map(t => `${t.firstName} ${t.lastName}`)
+          .join(", ");
+        subjectObj.assignedTeacherId = assignedTeachers[0].teacherId; // Keep primary ID for compatibility
+      } else {
+        subjectObj.assignedTeacherName = "";
+      }
+      return subjectObj;
+    });
 
     return res.status(200).json(response);
   } catch (error) {

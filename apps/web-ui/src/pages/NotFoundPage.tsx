@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Container } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { AppButton } from '../components/ui/AppButton';
+import { AppButton } from '../components/shared/AppButton';
 
 const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();

@@ -16,12 +16,12 @@ import {
     CheckBox as CheckBoxIcon,
 } from '@mui/icons-material';
 import type { LeaveType, Student } from '../../../types';
-import { AppInput } from '../../../components/ui/AppInput';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
-import { AppButton } from '../../../components/ui/AppButton';
-import { AppCard } from '../../../components/ui/AppCard';
-import { AppSection } from '../../../components/ui/AppSection';
+import { AppInput } from '../../../components/shared/AppInput';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
+import { AppButton } from '../../../components/shared/AppButton';
+import { AppCard } from '../../../components/shared/AppCard';
+import { AppSection } from '../../../components/shared/AppSection';
 import { useNavigate } from 'react-router-dom';
 import TokenService from '../../../queries/token/tokenService';
 import { useChildSelector } from '../../../context/ChildSelectorContext';

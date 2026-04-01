@@ -1,5 +1,10 @@
 // Central export for all shared models
 module.exports = {
+    // Existing exports ...
+    // Add TransportRouteSchema export
+    TransportRouteSchema: require('./transport-route.model'),
+    // Keep other exports unchanged
+
     SchoolModel: require('./schools.model'),
     TeacherSchema: require('./teacher.model'),
     StudentSchema: require('./student.model'),

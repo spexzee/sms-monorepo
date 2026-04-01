@@ -24,7 +24,7 @@ import {
 } from "@mui/icons-material";
 import { useUpdateMenu } from "../../queries/Menus";
 import type { Menu } from "../../types";
-import { AppButton } from "../ui/AppButton";
+import { AppButton } from "../shared/AppButton";
 
 interface ManageMenuAccessDialogProps {
   open: boolean;

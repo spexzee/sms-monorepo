@@ -9,7 +9,7 @@ import {
     Help as RequestIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { AppCard } from '../../components/ui/AppCard';
+import { AppCard } from '../../components/shared/AppCard';
 import TokenService from '../../queries/token/tokenService';
 import { useGetSimpleStudentAttendance } from '../../queries/Attendance';
 
@@ -93,30 +93,30 @@ const StudentDashboard: React.FC = () => {
                         { title: 'My Profile', value: presentDays, subtitle: 'Days present this month', icon: <ClassIcon />, color: '#06b6d4', to: '/student/profile' },
                     ].map((item) => (
                         <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.title}>
-                        <AppCard 
-                            onClick={() => navigate(item.to)}
-                            sx={{ 
-                                p: 3, 
-                                height: '100%',
-                                borderRadius: 4,
-                                backdropFilter: 'blur(10px)',
-                                bgcolor: 'rgba(255, 255, 255, 0.7)',
-                                border: '1px solid rgba(255, 255, 255, 0.3)',
-                                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
-                            }}
-                        >
-                            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
-                                <Avatar sx={{ bgcolor: `${item.color}15`, color: item.color, width: 48, height: 48, borderRadius: 2 }}>
-                                    {React.cloneElement(item.icon as any, { sx: { fontSize: 24 } })}
-                                </Avatar>
-                            </Box>
-                            <Typography variant="h4" fontWeight={800} sx={{ mb: 0.5 }}>{item.value}</Typography>
-                            <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 0.5 }}>{item.title}</Typography>
-                            <Typography variant="caption" color="text.secondary" fontWeight={500}>{item.subtitle}</Typography>
-                        </AppCard>
-                    </Grid>
-                ))
-            )}
+                            <AppCard
+                                onClick={() => navigate(item.to)}
+                                sx={{
+                                    p: 3,
+                                    height: '100%',
+                                    borderRadius: 4,
+                                    backdropFilter: 'blur(10px)',
+                                    bgcolor: 'rgba(255, 255, 255, 0.7)',
+                                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                                    <Avatar sx={{ bgcolor: `${item.color}15`, color: item.color, width: 48, height: 48, borderRadius: 2 }}>
+                                        {React.cloneElement(item.icon as any, { sx: { fontSize: 24 } })}
+                                    </Avatar>
+                                </Box>
+                                <Typography variant="h4" fontWeight={800} sx={{ mb: 0.5 }}>{item.value}</Typography>
+                                <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 0.5 }}>{item.title}</Typography>
+                                <Typography variant="caption" color="text.secondary" fontWeight={500}>{item.subtitle}</Typography>
+                            </AppCard>
+                        </Grid>
+                    ))
+                )}
             </Grid>
         </Box>
     );

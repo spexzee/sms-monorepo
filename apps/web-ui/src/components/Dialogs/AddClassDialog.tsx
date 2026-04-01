@@ -14,8 +14,8 @@ import {
 import { Close as CloseIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useCreateClass, useUpdateClass, useAddSection } from '../../queries/Class';
 import type { Class, CreateClassPayload } from '../../types';
-import { AppInput } from '../ui/AppInput';
-import { AppButton } from '../ui/AppButton';
+import { AppInput } from '../shared/AppInput';
+import { AppButton } from '../shared/AppButton';
 
 interface ClassDialogProps {
     open: boolean;
@@ -208,7 +208,7 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
                         />
 
                         <Divider sx={{ my: 0.5 }} />
-                        
+
                         <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                             Section Management
                         </Typography>

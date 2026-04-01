@@ -15,12 +15,12 @@ import { useNavigate } from 'react-router-dom';
 import { useApplyLeave } from '../../../queries/Leave';
 import TokenService from '../../../queries/token/tokenService';
 import type { LeaveType } from '../../../types';
-import { AppInput } from '../../../components/ui/AppInput';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppButton } from '../../../components/ui/AppButton';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
-import { AppCard } from '../../../components/ui/AppCard';
-import { AppSection } from '../../../components/ui/AppSection';
+import { AppInput } from '../../../components/shared/AppInput';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppButton } from '../../../components/shared/AppButton';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
+import { AppCard } from '../../../components/shared/AppCard';
+import { AppSection } from '../../../components/shared/AppSection';
 import { format, isValid } from 'date-fns';
 
 const leaveTypes: { value: LeaveType; label: string; description: string }[] = [
@@ -189,7 +189,7 @@ const ApplyLeave: React.FC = () => {
                                     size="large"
                                     loading={applyMutation.isPending}
                                     startIcon={!applyMutation.isPending && <SendIcon />}
-                                    sx={{ 
+                                    sx={{
                                         py: 1.5,
                                         borderRadius: 3,
                                         textTransform: 'none',

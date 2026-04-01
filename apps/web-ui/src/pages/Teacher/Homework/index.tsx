@@ -25,8 +25,8 @@ import {
 import { useGetTeacherHomework, useDeleteHomework } from '../../../queries/Homework';
 import TokenService from '../../../queries/token/tokenService';
 import type { Homework } from '../../../types';
-import { AppCard } from '../../../components/ui/AppCard';
-import { AppButton } from '../../../components/ui/AppButton';
+import { AppCard } from '../../../components/shared/AppCard';
+import { AppButton } from '../../../components/shared/AppButton';
 import HomeworkDialog from '../../../components/Dialogs/HomeworkDialog';
 
 const TeacherHomework: React.FC = () => {
@@ -76,17 +76,17 @@ const TeacherHomework: React.FC = () => {
     return (
         <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, mx: 'auto' }}>
             {/* Header Section */}
-            <Box sx={{ 
-                display: 'flex', 
+            <Box sx={{
+                display: 'flex',
                 flexDirection: { xs: 'column', sm: 'row' },
-                justifyContent: 'space-between', 
-                alignItems: { xs: 'flex-start', sm: 'center' }, 
+                justifyContent: 'space-between',
+                alignItems: { xs: 'flex-start', sm: 'center' },
                 gap: 2,
-                mb: 4 
+                mb: 4
             }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={800} sx={{ 
-                        color: 'text.primary', 
+                    <Typography variant="h4" fontWeight={800} sx={{
+                        color: 'text.primary',
                         letterSpacing: '-0.02em',
                         mb: 0.5,
                         display: 'flex',
@@ -114,9 +114,9 @@ const TeacherHomework: React.FC = () => {
             </Box>
 
             {/* Tabs Bar */}
-            <Box sx={{ 
-                mb: 4, 
-                bgcolor: 'rgba(255, 255, 255, 0.6)', 
+            <Box sx={{
+                mb: 4,
+                bgcolor: 'rgba(255, 255, 255, 0.6)',
                 backdropFilter: 'blur(10px)',
                 borderRadius: 3,
                 p: 0.5,
@@ -125,21 +125,21 @@ const TeacherHomework: React.FC = () => {
                 borderColor: 'divider',
                 boxShadow: '0 4px 12px -2px rgba(0,0,0,0.05)'
             }}>
-                <Tabs 
-                    value={tabValue} 
+                <Tabs
+                    value={tabValue}
                     onChange={(_, v) => setTabValue(v)}
-                    sx={{ 
+                    sx={{
                         minHeight: 44,
-                        '& .MuiTabs-indicator': { 
-                            height: '100%', 
+                        '& .MuiTabs-indicator': {
+                            height: '100%',
                             borderRadius: 2.5,
                             bgcolor: 'primary.main',
                             zIndex: 0,
                             opacity: 0.08
                         },
-                        '& .MuiTab-root': { 
+                        '& .MuiTab-root': {
                             minHeight: 44,
-                            px: 3, 
+                            px: 3,
                             borderRadius: 2.5,
                             fontWeight: 700,
                             fontSize: '0.875rem',
@@ -179,13 +179,13 @@ const TeacherHomework: React.FC = () => {
                     <Grid size={{ xs: 12 }}>
                         <AppCard sx={{ p: 6, textAlign: 'center', border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }} hover={false}>
                             <Box sx={{ maxWidth: 400, mx: 'auto' }}>
-                                <Box sx={{ 
-                                    width: 80, 
-                                    height: 80, 
-                                    borderRadius: '50%', 
-                                    bgcolor: 'primary.50', 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
+                                <Box sx={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: '50%',
+                                    bgcolor: 'primary.50',
+                                    display: 'flex',
+                                    alignItems: 'center',
                                     justifyContent: 'center',
                                     mx: 'auto',
                                     mb: 3
@@ -216,7 +216,7 @@ const TeacherHomework: React.FC = () => {
                     homework.map((hw: Homework) => {
                         const statusColor = hw.status === 'active' ? 'success' : hw.status === 'completed' ? 'primary' : 'error';
                         const accentColor = hw.status === 'active' ? '#2e7d32' : hw.status === 'completed' ? '#1976d2' : '#d32f2f';
-                        
+
                         return (
                             <Grid size={{ xs: 12, md: 6, lg: 4 }} key={hw.homeworkId}>
                                 <AppCard
@@ -235,12 +235,12 @@ const TeacherHomework: React.FC = () => {
                                     }}
                                 >
                                     {/* Status Accent Bar */}
-                                    <Box sx={{ 
-                                        position: 'absolute', 
-                                        left: 0, 
-                                        top: 0, 
-                                        bottom: 0, 
-                                        width: 6, 
+                                    <Box sx={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: 0,
+                                        bottom: 0,
+                                        width: 6,
                                         bgcolor: accentColor,
                                         opacity: 0.8
                                     }} />
@@ -251,9 +251,9 @@ const TeacherHomework: React.FC = () => {
                                                 <Chip
                                                     label={hw.className}
                                                     size="small"
-                                                    sx={{ 
-                                                        fontWeight: 700, 
-                                                        bgcolor: 'primary.50', 
+                                                    sx={{
+                                                        fontWeight: 700,
+                                                        bgcolor: 'primary.50',
                                                         color: 'primary.700',
                                                         borderRadius: 1,
                                                         fontSize: '0.65rem',
@@ -264,8 +264,8 @@ const TeacherHomework: React.FC = () => {
                                                     label={hw.subjectName}
                                                     size="small"
                                                     variant="outlined"
-                                                    sx={{ 
-                                                        fontWeight: 700, 
+                                                    sx={{
+                                                        fontWeight: 700,
                                                         borderColor: 'divider',
                                                         borderRadius: 1,
                                                         fontSize: '0.65rem',
@@ -302,9 +302,9 @@ const TeacherHomework: React.FC = () => {
                                             {hw.description}
                                         </Typography>
 
-                                        <Box sx={{ 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
+                                        <Box sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
                                             justifyContent: 'space-between',
                                             pt: 2,
                                             borderTop: '1px solid',
@@ -316,7 +316,7 @@ const TeacherHomework: React.FC = () => {
                                                     Due: {formatDate(hw.dueDate)}
                                                 </Typography>
                                             </Box>
-                                            
+
                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                 <IconButton
                                                     size="small"
@@ -324,8 +324,8 @@ const TeacherHomework: React.FC = () => {
                                                         setHomeworkToEdit(hw);
                                                         setIsHomeworkDialogOpen(true);
                                                     }}
-                                                    sx={{ 
-                                                        color: 'primary.main', 
+                                                    sx={{
+                                                        color: 'primary.main',
                                                         bgcolor: 'primary.50',
                                                         '&:hover': { bgcolor: 'primary.100' }
                                                     }}
@@ -339,7 +339,7 @@ const TeacherHomework: React.FC = () => {
                                                         setHomeworkToDelete(hw);
                                                         setDeleteDialogOpen(true);
                                                     }}
-                                                    sx={{ 
+                                                    sx={{
                                                         bgcolor: 'error.50',
                                                         '&:hover': { bgcolor: 'error.100' }
                                                     }}
@@ -377,7 +377,7 @@ const TeacherHomework: React.FC = () => {
                 </DialogActions>
             </Dialog>
 
-            <HomeworkDialog 
+            <HomeworkDialog
                 open={isHomeworkDialogOpen}
                 onClose={() => {
                     setIsHomeworkDialogOpen(false);

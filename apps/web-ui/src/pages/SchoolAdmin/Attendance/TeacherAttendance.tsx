@@ -17,8 +17,8 @@ import {
 } from "@mui/material";
 import { Save as SaveIcon, Refresh as RefreshIcon } from "@mui/icons-material";
 import { useGetTeachers } from "../../../queries/Teacher";
-import { AppButton } from "../../../components/ui/AppButton";
-import { AppDatePicker } from "../../../components/ui/AppDatePicker";
+import { AppButton } from "../../../components/shared/AppButton";
+import { AppDatePicker } from "../../../components/shared/AppDatePicker";
 import { format } from "date-fns";
 import {
   useGetTeachersAttendance,

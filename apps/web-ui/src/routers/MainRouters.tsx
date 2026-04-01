@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import ProtectedRoute from "./RouterProtect";
-import PageSkeleton from "../components/ui/PageSkeleton";
+import PageSkeleton from "../components/shared/PageSkeleton";
 
 // Public Pages
 const LoginPage = lazy(() => import("../pages/LoginPage"));
@@ -28,6 +28,8 @@ const SchoolAdminClasses = lazy(() => import("../pages/SchoolAdmin/Classes"));
 const SchoolAdminSubjects = lazy(() => import("../pages/SchoolAdmin/Subjects"));
 const SchoolAdminAttendance = lazy(() => import("../pages/SchoolAdmin/Attendance"));
 const SchoolAdminLeaveRequests = lazy(() => import("../pages/SchoolAdmin/Leave/Requests"));
+const SchoolAdminTransport = lazy(() => import("../pages/SchoolAdmin/Transport/TransportRoutes"));
+
 
 const TimetableConfig = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableConfig"));
 const TimetableMaster = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableMaster"));
@@ -165,6 +167,9 @@ const MainRouters = () => {
 
           {/* Notifications & Activity Logs */}
           <Route path="/school-admin/notifications" element={<SchoolAdminNotificationsPage />} />
+
+          {/* Transport Management */}
+          <Route path="/school-admin/transport" element={<SchoolAdminTransport />} />
 
           <Route path="/school-admin/location" element={<SchoolLocation />} />
           <Route path="/school-admin/profile" element={<SchoolAdminProfile />} />

@@ -18,10 +18,10 @@ import { useGetClasses } from '../../queries/Class';
 import type { CreateStudentPayload, Student, Parent, Class, Section } from '../../types';
 import { ImageUpload } from '../ImageUpload';
 import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
-import { AppInput } from '../ui/AppInput';
-import { AppSelect } from '../ui/AppSelect';
-import { AppButton } from '../ui/AppButton';
-import { AppDatePicker } from '../ui/AppDatePicker';
+import { AppInput } from '../shared/AppInput';
+import { AppSelect } from '../shared/AppSelect';
+import { AppButton } from '../shared/AppButton';
+import { AppDatePicker } from '../shared/AppDatePicker';
 import { format } from 'date-fns';
 
 interface StudentDialogProps {
@@ -275,7 +275,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                         <AppInput name="password" label="Portal Access Password" type="password" value={formData.password} onChange={handleChange} error={!!errors.password} helperText={errors.password} required={!isEditMode} labelHint={isEditMode ? 'Leave blank to keep current' : ''} />
 
                         <Divider sx={{ my: 1 }} />
-                        
+
                         <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                             Academic Placement
                         </Typography>
@@ -300,7 +300,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                         </Box>
 
                         <Divider sx={{ my: 1 }} />
-                        
+
                         <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                             Additional Information
                         </Typography>

@@ -63,6 +63,22 @@ const TeachersPage = () => {
     { id: "email", label: "Email", minWidth: 180 },
     { id: "phone", label: "Phone", minWidth: 120 },
     {
+      id: "subjectNames",
+      label: "Assigned Subjects",
+      minWidth: 200,
+      format: (value) => (
+        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+          {Array.isArray(value) && value.length > 0 ? (
+            (value as string[]).map((name, idx) => (
+              <Chip key={idx} label={name} size="small" variant="outlined" color="secondary" />
+            ))
+          ) : (
+            "None"
+          )}
+        </Box>
+      ),
+    },
+    {
       id: "classTeacherSectionId",
       label: "Class Teacher Of",
       minWidth: 150,

@@ -11,6 +11,7 @@ import {
   Paper,
   Grid,
   Switch,
+  Typography,
 } from "@mui/material";
 import { Edit as EditIcon } from "@mui/icons-material";
 import DataTable, { StatusChip } from "../../components/Table/DataTable";
@@ -26,7 +27,6 @@ const SubjectsPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editData, setEditData] = useState<Subject | null>(null);
   const [selectedClass, setSelectedClass] = useState<string>("");
-  const [selectedSection, setSelectedSection] = useState<string>("");
   const { showNotification } = useNotificationStore();
 
   const schoolId = TokenService.getSchoolId() || "";
@@ -35,15 +35,8 @@ const SubjectsPage = () => {
   const { data: classesData } = useGetClasses(schoolId);
   const classes = classesData?.data || [];
 
-  // Filter to get sections of the selected class
-  const selectedClassData = classes.find(
-    (c: Class) => c.classId === selectedClass,
-  );
-  const sections = selectedClassData?.sections || [];
-
   const { data, isLoading, error } = useGetSubjects(schoolId, {
     classId: selectedClass || undefined,
-    sectionId: selectedSection || undefined,
   });
   const updateMutation = useUpdateSubject(schoolId);
 
@@ -97,14 +90,25 @@ const SubjectsPage = () => {
     {
       id: "assignedTeacherName",
       label: "Assigned Teacher",
-      minWidth: 150,
+      minWidth: 220,
       format: (value) => (
-        <Chip
-          label={(value as string) || "Not Assigned"}
-          size="small"
-          color={value ? "primary" : "default"}
-          variant={value ? "filled" : "outlined"}
-        />
+        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+          {value ? (
+            (value as string).split(", ").map((name, idx) => (
+              <Chip
+                key={idx}
+                label={name}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            ))
+          ) : (
+            <Typography variant="caption" color="text.secondary">
+              Not Assigned
+            </Typography>
+          )}
+        </Box>
       ),
     },
     { id: "description", label: "Description", minWidth: 200 },
@@ -165,7 +169,6 @@ const SubjectsPage = () => {
                 label="Class"
                 onChange={(e) => {
                   setSelectedClass(e.target.value);
-                  setSelectedSection("");
                 }}
               >
                 <MenuItem value="">All Classes</MenuItem>
@@ -177,23 +180,7 @@ const SubjectsPage = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <FormControl fullWidth size="small" disabled={!selectedClass}>
-              <InputLabel>Section</InputLabel>
-              <Select
-                value={selectedSection}
-                label="Section"
-                onChange={(e) => setSelectedSection(e.target.value)}
-              >
-                <MenuItem value="">All Sections</MenuItem>
-                {sections.map((s) => (
-                  <MenuItem key={s.sectionId} value={s.sectionId}>
-                    {s.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+
         </Grid>
       </Paper>
 
@@ -220,7 +207,6 @@ const SubjectsPage = () => {
         schoolId={schoolId}
         editData={editData}
         initialClassId={selectedClass}
-        initialSectionId={selectedSection}
       />
     </Box>
   );

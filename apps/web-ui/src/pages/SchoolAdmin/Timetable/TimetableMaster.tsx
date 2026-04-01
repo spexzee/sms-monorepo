@@ -58,7 +58,7 @@ import type {
 import TokenService from "../../../queries/token/tokenService";
 import { useNotificationStore } from "../../../stores/notificationStore";
 import ConfirmationDialog from "../../../components/Dialogs/ConfirmationDialog";
-import { AppButton } from "../../../components/ui/AppButton";
+import { AppButton } from "../../../components/shared/AppButton";
 import { generateTimetableTemplate, parseTimetableTemplate } from "../../../utils/timetableExcelUtils";
 
 type ViewMode = "table" | "list";
@@ -481,11 +481,11 @@ const TimetableMaster = () => {
       );
 
       const filteredEntries = parsedEntries.filter(parsed => {
-        const exists = entries.find(existing => 
-            existing.dayOfWeek.toLowerCase() === parsed.dayOfWeek.toLowerCase() &&
-            existing.periodNumber === parsed.periodNumber &&
-            existing.subjectId === parsed.subjectId &&
-            existing.teacherId === parsed.teacherId
+        const exists = entries.find(existing =>
+          existing.dayOfWeek.toLowerCase() === parsed.dayOfWeek.toLowerCase() &&
+          existing.periodNumber === parsed.periodNumber &&
+          existing.subjectId === parsed.subjectId &&
+          existing.teacherId === parsed.teacherId
         );
         return !exists;
       });
@@ -672,11 +672,11 @@ const TimetableMaster = () => {
         <Typography variant="h5" fontWeight={600}>
           Master Timetable
         </Typography>
-        <Box 
-          sx={{ 
-            display: "flex", 
-            gap: 1.5, 
-            alignItems: "center", 
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1.5,
+            alignItems: "center",
             flexWrap: "wrap",
             width: { xs: "100%", md: "auto" }
           }}
@@ -796,15 +796,15 @@ const TimetableMaster = () => {
             const todayName = days[new Date().getDay()];
             return teachersOnLeave.includes(entry.teacherId) && entry.dayOfWeek.toLowerCase() === todayName;
           }) && (
-            <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', ml: { md: 2 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 16, height: 16, bgcolor: '#ffc107', borderRadius: 0.5 }} />
-                  <Typography variant="caption" color="text.secondary">Teacher on Leave</Typography>
+              <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', ml: { md: 2 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ width: 16, height: 16, bgcolor: '#ffc107', borderRadius: 0.5 }} />
+                    <Typography variant="caption" color="text.secondary">Teacher on Leave</Typography>
+                  </Box>
                 </Box>
-              </Box>
-            </Grid>
-          )}
+              </Grid>
+            )}
         </Grid>
       </Paper>
 

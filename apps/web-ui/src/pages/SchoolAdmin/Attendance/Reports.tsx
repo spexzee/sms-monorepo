@@ -21,9 +21,9 @@ import {
 import { FileDownload as DownloadIcon } from '@mui/icons-material';
 import { useGetDailyReport, useGetClassWiseReport, useGetMonthlyReport } from '../../../queries/Attendance';
 import { useGetClasses } from '../../../queries/Class';
-import { AppSelect } from '../../../components/ui/AppSelect';
-import { AppDatePicker } from '../../../components/ui/AppDatePicker';
-import { AppButton } from '../../../components/ui/AppButton';
+import { AppSelect } from '../../../components/shared/AppSelect';
+import { AppDatePicker } from '../../../components/shared/AppDatePicker';
+import { AppButton } from '../../../components/shared/AppButton';
 import { format } from 'date-fns';
 import { useGetSchoolById } from '../../../queries/School';
 import type { Class } from '../../../types';
@@ -100,11 +100,11 @@ const AttendanceReports = () => {
             </Typography>
 
             <Paper sx={{ mb: 3 }}>
-                <Tabs 
-                    value={tab} 
+                <Tabs
+                    value={tab}
                     onChange={(_, v) => setTab(v)}
                     sx={{
-                        borderBottom: 1, 
+                        borderBottom: 1,
                         borderColor: 'divider',
                         '& .MuiTab-root': { fontWeight: 500 }
                     }}
@@ -195,8 +195,8 @@ const AttendanceReports = () => {
                     </AppButton>
                 </Box>
                 <Box sx={{ mt: 1 }}>
-                    <Chip 
-                        label={`System Mode: ${mode.replace('_', ' ').toUpperCase()}`} 
+                    <Chip
+                        label={`System Mode: ${mode.replace('_', ' ').toUpperCase()}`}
                         size="small"
                         variant="outlined"
                         color="primary"
@@ -305,7 +305,7 @@ const AttendanceReports = () => {
                                     <TableCell align="center">{row.late}</TableCell>
                                     <TableCell align="center">{row.total}</TableCell>
                                     <TableCell align="right">
-                                        <Chip 
+                                        <Chip
                                             label={`${row.percentage}%`}
                                             size="small"
                                             color={getPercentageColor(row.percentage)}
@@ -362,7 +362,7 @@ const AttendanceReports = () => {
                                         <TableCell align="center">{row.late}</TableCell>
                                         <TableCell align="center">{row.leave}</TableCell>
                                         <TableCell align="right">
-                                            <Chip 
+                                            <Chip
                                                 label={`${row.percentage}%`}
                                                 size="small"
                                                 color={getPercentageColor(row.percentage)}

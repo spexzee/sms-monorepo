@@ -8,7 +8,7 @@ interface ApiError {
 }
 
 // Service types for different microservices
-type ServiceType = "auth" | "user" | "platform" | "academics";
+type ServiceType = "auth" | "user" | "platform" | "academics" | "transport";
 
 // Get base URL for each service from environment variables
 const getServiceUrl = (service: ServiceType): string => {
@@ -21,6 +21,8 @@ const getServiceUrl = (service: ServiceType): string => {
             return import.meta.env.VITE_PLATFORM_API_URL || "http://localhost:5000";
         case "academics":
             return import.meta.env.VITE_ACADEMICS_API_URL || "http://localhost:5003";
+        case "transport":
+            return import.meta.env.VITE_TRANSPORT_API_URL || "http://localhost:5004";
         default:
             return import.meta.env.VITE_PLATFORM_API_URL || "http://localhost:5000";
     }
@@ -43,6 +45,9 @@ const detectServiceFromPath = (path: string): ServiceType => {
     }
     if (path.startsWith("/api/school")) {
         return "user";
+    }
+    if (path.startsWith("/api/transport")) {
+        return "transport";
     }
     // Default: /api/admin/* and others go to platform
     return "platform";

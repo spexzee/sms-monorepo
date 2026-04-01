@@ -13,9 +13,9 @@ import {
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateRequest } from '../../queries/Request';
 import type { CreateRequestPayload } from '../../types';
-import { AppInput } from '../ui/AppInput';
-import { AppSelect } from '../ui/AppSelect';
-import { AppButton } from '../ui/AppButton';
+import { AppInput } from '../shared/AppInput';
+import { AppSelect } from '../shared/AppSelect';
+import { AppButton } from '../shared/AppButton';
 
 interface RequestChangeDialogProps {
     open: boolean;
@@ -162,7 +162,7 @@ const RequestChangeDialog: React.FC<RequestChangeDialogProps> = ({
                         )}
 
                         <Divider sx={{ my: 0.5 }} />
-                        
+
                         <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                             Validation & Reason
                         </Typography>
