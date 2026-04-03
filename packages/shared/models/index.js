@@ -3,6 +3,8 @@ module.exports = {
     // Existing exports ...
     // Add TransportRouteSchema export
     TransportRouteSchema: require('./transport-route.model'),
+    VehicleSchema: require('./vehicle.model'),
+    DriverSchema: require('./driver.model'),
     // Keep other exports unchanged
 
     SchoolModel: require('./schools.model'),

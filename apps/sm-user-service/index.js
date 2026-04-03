@@ -17,6 +17,7 @@ const parentPortalRoutes = require('./routes/parent-portal.routes');
 const announcementRoutes = require('./routes/announcement.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const activityLogRoutes = require('./routes/activityLog.routes');
+const driverRoutes = require('./routes/driver.routes');
 const emailTemplateRoutes = require('./routes/emailTemplate.routes');
 const testEmailRoutes = require('./routes/testEmail.routes');
 const { initCronJobs } = require('./utils/cronJobs');
@@ -69,6 +70,7 @@ app.use('/api/school/:schoolId/announcements', announcementRoutes);
 app.use('/api/school/:schoolId/notifications', notificationRoutes);
 app.use('/api/school/:schoolId/logs', activityLogRoutes);
 app.use('/api/school/:schoolId/email-templates', emailTemplateRoutes);
+app.use('/api/school/:schoolId/drivers', driverRoutes);
 app.use('/api/test', testEmailRoutes);
 app.use('/api/school/upload', uploadRoutes);
 

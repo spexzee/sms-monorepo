@@ -4,16 +4,18 @@ const { v4: uuidv4 } = require('uuid');
 const { getSchoolDbConnection } = require('../configs/db');
 const { NotificationSchema, TransportRouteSchema } = require('@sms/shared/models');
 const { sendEmail: sendEmailUtil } = require('@sms/shared/utils');
+const { getSchoolDbName } = require('../utils/schoolDbHelper');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const getNotificationModel = (schoolId) => {
+const getNotificationModel = async (schoolId) => {
     if (!schoolId || schoolId === 'routes' || schoolId === 'notifications') {
         throw new Error(`Invalid schoolId: ${schoolId}`);
     }
-    const db = getSchoolDbConnection(`school-db-${schoolId}`);
+    const schoolDbName = await getSchoolDbName(schoolId);
+    const db = getSchoolDbConnection(schoolDbName);
     try {
         return db.model('Notification');
     } catch {
@@ -21,11 +23,12 @@ const getNotificationModel = (schoolId) => {
     }
 };
 
-const getRouteModel = (schoolId) => {
+const getRouteModel = async (schoolId) => {
     if (!schoolId || schoolId === 'routes' || schoolId === 'notifications') {
         throw new Error(`Invalid schoolId: ${schoolId}`);
     }
-    const db = getSchoolDbConnection(`school-db-${schoolId}`);
+    const schoolDbName = await getSchoolDbName(schoolId);
+    const db = getSchoolDbConnection(schoolDbName);
     try {
         return db.model('TransportRoute');
     } catch {
@@ -85,8 +88,8 @@ exports.sendNotification = async (req, res) => {
     }
 
     try {
-        const Route = getRouteModel(schoolId);
-        const Notification = getNotificationModel(schoolId);
+        const Route = await getRouteModel(schoolId);
+        const Notification = await getNotificationModel(schoolId);
 
         const isValidId = require('mongoose').isValidObjectId(routeId);
         const routeQuery = isValidId ? { $or: [{ _id: routeId }, { routeId }] } : { routeId };
@@ -205,7 +208,7 @@ exports.getNotificationHistory = async (req, res) => {
     const { limit = 50, skip = 0, type } = req.query;
 
     try {
-        const Notification = getNotificationModel(schoolId);
+        const Notification = await getNotificationModel(schoolId);
 
         const filter = {
             schoolId,

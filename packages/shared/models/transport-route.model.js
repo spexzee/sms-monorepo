@@ -46,8 +46,10 @@ const TransportRouteSchema = new Schema({
     routeName: { type: String, required: true },
     routeNumber: { type: String },
     color: { type: String, default: '#4285F4' }, // hex color for map display
-    busNumber: { type: String },
-    driver: TransportDriverSchema,
+    driver: TransportDriverSchema, // Embedded for snapshot/legacy
+    driverId: { type: String, index: true }, // Reference to New Driver Model
+    vehicleId: { type: String, index: true }, // Reference to New Vehicle Model
+    busNumber: { type: String }, // Can be derived from Vehicle, but kept for simplicity
     stops: [TransportStopSchema],
     routeCoordinates: { type: [[Number]], default: [] }, // array of [lat, lng]
     currentLocation: {
@@ -59,6 +61,11 @@ const TransportRouteSchema = new Schema({
     },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     totalStudents: { type: Number, default: 0 },
+    currentTrip: {
+        startTime: { type: Date },
+        status: { type: String, enum: ['on-time', 'delayed', 'stopped'], default: 'stopped' },
+        lastCheckIn: { type: Date },
+    },
 }, { timestamps: true });
 
 // Virtual to compute totalStudents from stops

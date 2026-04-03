@@ -26,6 +26,9 @@ import { Map, MapRoute, MapMarker, MapControls, MarkerContent } from '@/componen
 import { fetchRoadRoute } from '../../../utils/transport_routing';
 import { useEffect, useState, useRef } from 'react';
 import type { TransportStop } from '../../../types/transport';
+import { io, Socket } from 'socket.io-client';
+
+const SOCKET_URL = "http://localhost:5004";
 
 const ParentTransport = () => {
     const navigate = useNavigate();
@@ -43,7 +46,9 @@ const ParentTransport = () => {
 
     const [roadRoute, setRoadRoute] = useState<[number, number][]>([]);
     const [isRouting, setIsRouting] = useState(false);
+    const [busLocation, setBusLocation] = useState<{lat: number, lng: number} | null>(null);
     const mapRef = useRef<any>(null);
+    const socketRef = useRef<Socket | null>(null);
 
     const getStopCoords = (stop: TransportStop): [number, number] => {
         if (stop.longitude !== undefined && stop.latitude !== undefined) {
@@ -78,6 +83,29 @@ const ParentTransport = () => {
             }
         });
     }, [route, schoolOrigin, assignedStop]);
+
+    useEffect(() => {
+        if (!route?.routeId) return;
+
+        // Initialize Socket
+        socketRef.current = io(SOCKET_URL);
+        
+        socketRef.current.on('connect', () => {
+            socketRef.current?.emit('join-route', { schoolId, routeId: route.routeId });
+        });
+
+        socketRef.current.on('location-update', (data: any) => {
+            setBusLocation({ lat: data.latitude, lng: data.longitude });
+        });
+
+        socketRef.current.on('trip-started', () => {
+            console.log("Trip has started!");
+        });
+
+        return () => {
+            if (socketRef.current) socketRef.current.disconnect();
+        };
+    }, [route?.routeId, schoolId]);
 
     if (!studentId) {
         return (
@@ -212,6 +240,17 @@ const ParentTransport = () => {
                                 {/* Road route polyline */}
                                 {roadRoute.length > 0 && (
                                     <MapRoute coordinates={roadRoute} color="#4F46E5" width={4} opacity={0.8} />
+                                )}
+
+                                {/* Live Bus Marker */}
+                                {busLocation && (
+                                    <MapMarker longitude={busLocation.lng} latitude={busLocation.lat}>
+                                        <MarkerContent>
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full border-4 border-white bg-blue-600 text-white shadow-2xl animate-bounce">
+                                                <BusIcon sx={{ fontSize: 20 }} />
+                                            </div>
+                                        </MarkerContent>
+                                    </MapMarker>
                                 )}
                             </Map>
 
@@ -361,21 +400,23 @@ const ParentTransport = () => {
                         </CardContent>
                     </Card>
 
-                    {/* Live tracking placeholder */}
+                    {/* Live tracking status */}
                     <Card sx={{
                         borderRadius: 2,
-                        border: '1px dashed',
-                        borderColor: 'primary.light',
-                        bgcolor: 'rgba(79,70,229,0.04)',
+                        border: '1px solid',
+                        borderColor: busLocation ? 'success.light' : 'primary.light',
+                        bgcolor: busLocation ? 'rgba(34, 197, 94, 0.04)' : 'rgba(79,70,229,0.04)',
                     }}>
                         <CardContent sx={{ p: 2 }}>
-                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
-                                📡 Live Bus Tracking
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {busLocation ? <Box className="animate-pulse h-2 w-2 rounded-full bg-green-500" /> : <Box className="h-2 w-2 rounded-full bg-slate-400" />}
+                                📡 {busLocation ? 'Live Bus Tracking Active' : 'Waiting for Bus GPS...'}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                                Real-time GPS tracking is coming soon. You'll be able to see your child's bus location live on the map.
+                            <Typography variant="body2" color="text.secondary">
+                                {busLocation 
+                                    ? `The bus is currently active on its route. You can see its live position above.`
+                                    : `The bus has not started its trip yet. You'll see its position here once the driver checks in.`}
                             </Typography>
-                            <Chip size="small" label="Coming Soon" variant="outlined" color="primary" sx={{ fontSize: 11 }} />
                         </CardContent>
                     </Card>
 

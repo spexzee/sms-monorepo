@@ -29,6 +29,11 @@ const SchoolAdminSubjects = lazy(() => import("../pages/SchoolAdmin/Subjects"));
 const SchoolAdminAttendance = lazy(() => import("../pages/SchoolAdmin/Attendance"));
 const SchoolAdminLeaveRequests = lazy(() => import("../pages/SchoolAdmin/Leave/Requests"));
 const SchoolAdminTransport = lazy(() => import("../pages/SchoolAdmin/Transport/TransportRoutes"));
+const VehicleManagement = lazy(() => import("../pages/SchoolAdmin/Transport/VehicleManagement"));
+const DriverManagement = lazy(() => import("../pages/SchoolAdmin/Transport/DriverManagement"));
+
+// Driver Pages
+const DriverDashboard = lazy(() => import("../pages/Driver/DriverDashboard"));
 
 
 const TimetableConfig = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableConfig"));
@@ -171,6 +176,8 @@ const MainRouters = () => {
 
           {/* Transport Management */}
           <Route path="/school-admin/transport" element={<SchoolAdminTransport />} />
+          <Route path="/school-admin/transport/vehicles" element={<VehicleManagement />} />
+          <Route path="/school-admin/transport/drivers" element={<DriverManagement />} />
 
           <Route path="/school-admin/location" element={<SchoolLocation />} />
           <Route path="/school-admin/profile" element={<SchoolAdminProfile />} />
@@ -240,6 +247,13 @@ const MainRouters = () => {
           <Route path="/parent/exam/results" element={<ParentExamResults />} />
           <Route path="/parent/notifications" element={<NotificationsPage />} />
           <Route path="/parent/transport" element={<ParentTransport />} />
+        </Route>
+
+        {/* Driver Routes */}
+        <Route element={<ProtectedRoute allowedRoles={["driver"]} />}>
+          <Route path="/driver/dashboard" element={<DriverDashboard />} />
+          <Route path="/driver/profile" element={<TeacherProfile />} /> {/* Reuse profile for now */}
+          <Route path="/driver/notifications" element={<NotificationsPage />} />
         </Route>
 
         {/* 404 Not Found - Catch All */}
