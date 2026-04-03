@@ -108,25 +108,25 @@ const TransportRoutesPage = () => {
       id: 'busNumber',
       label: 'Vehicle No',
       minWidth: 100,
-      format: (_value: any, row: TransportRoute) => row.busNumber || row.vehicleNumber || 'N/A'
+      format: (_, row) => row.busNumber || row.vehicleNumber || row.vehicle?.plateNumber || 'N/A'
     },
     {
       id: 'stops',
       label: 'Stops',
       minWidth: 80,
-      format: (value: any) => Array.isArray(value) ? value.length : 0
+      format: (value) => Array.isArray(value) ? value.length : 0
     },
     {
       id: 'driver',
       label: 'Driver',
       minWidth: 120,
-      format: (_value: any, row: TransportRoute) => row.driver?.name || row.driverName || 'N/A'
+      format: (_, row) => row.driver?.name || row.driverName || 'N/A'
     },
     {
       id: 'driver',
       label: 'Contact',
       minWidth: 120,
-      format: (_value: any, row: TransportRoute) => row.driver?.phone || row.driverPhone || 'N/A'
+      format: (_, row) => row.driver?.phone || row.driverPhone || 'N/A'
     },
     {
       id: 'status',

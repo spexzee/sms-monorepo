@@ -141,7 +141,7 @@ export const useRemoveStop = (schoolId: string, routeId: string) => {
 // DRIVER
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const useUpdateDriver = (schoolId: string, routeId: string) => {
+export const useUpdateRouteDriver = (schoolId: string, routeId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (driver: Partial<TransportDriver>) =>
@@ -153,6 +153,94 @@ export const useUpdateDriver = (schoolId: string, routeId: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transport-routes", schoolId] });
       queryClient.invalidateQueries({ queryKey: ["transport-route", schoolId, routeId] });
+    },
+  });
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VEHICLE & DRIVER LISTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const useGetVehicles = (schoolId: string) =>
+  useQuery({
+    queryKey: ["transport-vehicles", schoolId],
+    queryFn: () => useApi<ApiResponse<any[]>>("GET", `${base(schoolId)}/vehicles`),
+    enabled: !!schoolId,
+  });
+
+export const useGetDrivers = (schoolId: string) =>
+  useQuery({
+    queryKey: ["transport-drivers", schoolId],
+    queryFn: () => useApi<ApiResponse<any[]>>("GET", `/api/school/${schoolId}/drivers`),
+    enabled: !!schoolId,
+  });
+
+export const useCreateDriver = (schoolId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) =>
+      useApi<ApiResponse<any>>("POST", `/api/school/${schoolId}/drivers`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transport-drivers", schoolId] });
+    },
+  });
+};
+
+export const useUpdateDriver = (schoolId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      useApi<ApiResponse<any>>("PUT", `/api/school/${schoolId}/drivers/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transport-drivers", schoolId] });
+    },
+  });
+};
+
+export const useDeleteDriver = (schoolId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      useApi<ApiResponse<any>>("DELETE", `/api/school/${schoolId}/drivers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transport-drivers", schoolId] });
+    },
+  });
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VEHICLE CRUD
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const useCreateVehicle = (schoolId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) =>
+      useApi<ApiResponse<any>>("POST", `${base(schoolId)}/vehicles`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transport-vehicles", schoolId] });
+    },
+  });
+};
+
+export const useUpdateVehicle = (schoolId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      useApi<ApiResponse<any>>("PUT", `${base(schoolId)}/vehicles/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transport-vehicles", schoolId] });
+    },
+  });
+};
+
+export const useDeleteVehicle = (schoolId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      useApi<ApiResponse<any>>("DELETE", `${base(schoolId)}/vehicles/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transport-vehicles", schoolId] });
     },
   });
 };

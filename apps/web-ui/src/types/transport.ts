@@ -42,9 +42,13 @@ export interface TransportRoute {
   color?: string;
   busNumber?: string;
   vehicleNumber?: string;
+  vehicleId?: string;
+  driverId?: string;
   driver?: TransportDriver;
   driverName?: string;
   driverPhone?: string;
+  licenseNumber?: string;
+  vehicle?: { plateNumber: string };
   stops: TransportStop[];
   routeCoordinates?: number[][];
   currentLocation?: {
@@ -121,6 +125,8 @@ export interface CreateTransportRoutePayload {
   routeNumber?: string;
   busNumber?: string;
   vehicleNumber?: string;
+  vehicleId?: string;
+  driverId?: string;
   driverName?: string;
   driverPhone?: string;
   licenseNumber?: string;

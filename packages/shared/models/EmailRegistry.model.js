@@ -18,7 +18,7 @@ const emailRegistrySchema = new mongoose.Schema(
         role: {
             type: String,
             required: true,
-            enum: ["super_admin", "sch_admin", "teacher", "student", "parent"],
+            enum: ["super_admin", "sch_admin", "teacher", "student", "parent", "driver"],
             index: true,
         },
         schoolId: {

@@ -3,18 +3,20 @@
 const { v4: uuidv4 } = require('uuid');
 const { getSchoolDbConnection } = require('../configs/db');
 const { TransportRouteSchema } = require('@sms/shared/models');
+const { getSchoolDbName } = require('../utils/schoolDbHelper');
 
 // Helper to get TransportRoute model bound to the school DB
 const buildRouteQuery = (id) => {
     const isValidId = require('mongoose').isValidObjectId(id);
     return isValidId ? { $or: [{ _id: id }, { routeId: id }] } : { routeId: id };
 };
-const getModel = (schoolId) => {
+const getModel = async (schoolId) => {
     // Safety check: if schoolId is a path segment, something is wrong
     if (!schoolId || schoolId === 'routes' || schoolId === 'summary') {
         throw new Error(`Invalid schoolId: ${schoolId}`);
     }
-    const db = getSchoolDbConnection(`school-db-${schoolId}`);
+    const schoolDbName = await getSchoolDbName(schoolId);
+    const db = getSchoolDbConnection(schoolDbName);
     // Always use the schema to ensure we're getting the right model definition for this connection
     try {
         return db.model('TransportRoute');
@@ -31,7 +33,7 @@ const getModel = (schoolId) => {
 exports.getAllRoutes = async (req, res) => {
     const { schoolId } = req.params;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const routes = await Route.find({}).lean();
         res.json({ success: true, data: routes });
     } catch (err) {
@@ -44,7 +46,7 @@ exports.getAllRoutes = async (req, res) => {
 exports.getRoute = async (req, res) => {
     const { schoolId, routeId } = req.params;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const route = await Route.findOne(buildRouteQuery(routeId)).lean();
         if (!route) return res.status(404).json({ success: false, message: 'Route not found' });
         res.json({ success: true, data: route });
@@ -59,7 +61,22 @@ exports.createRoute = async (req, res) => {
     const { schoolId } = req.params;
     const payload = req.body;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
+
+        // Check if driver or vehicle are already assigned
+        if (payload.driverId) {
+            const assignedDriver = await Route.findOne({ driverId: payload.driverId });
+            if (assignedDriver) {
+                return res.status(400).json({ success: false, message: `Driver is already assigned to route: ${assignedDriver.routeName}` });
+            }
+        }
+        if (payload.vehicleId) {
+            const assignedVehicle = await Route.findOne({ vehicleId: payload.vehicleId });
+            if (assignedVehicle) {
+                return res.status(400).json({ success: false, message: `Vehicle is already assigned to route: ${assignedVehicle.routeName}` });
+            }
+        }
+
         // Compute totalStudents from stops
         const totalStudents = (payload.stops || []).reduce(
             (sum, s) => sum + (s.students?.length || 0), 0
@@ -77,15 +94,39 @@ exports.updateRoute = async (req, res) => {
     const { schoolId, routeId } = req.params;
     const updates = req.body;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
+        
+        // Find existing route to get its internal _id for exclusion
+        const currentRoute = await Route.findOne(buildRouteQuery(routeId));
+        if (!currentRoute) return res.status(404).json({ success: false, message: 'Route not found' });
+
+        // Check if driver or vehicle are already assigned to OTHER routes
+        if (updates.driverId && updates.driverId !== currentRoute.driverId) {
+            const assignedDriver = await Route.findOne({ 
+                driverId: updates.driverId, 
+                _id: { $ne: currentRoute._id } 
+            });
+            if (assignedDriver) {
+                return res.status(400).json({ success: false, message: `Driver is already assigned to route: ${assignedDriver.routeName}` });
+            }
+        }
+        if (updates.vehicleId && updates.vehicleId !== currentRoute.vehicleId) {
+            const assignedVehicle = await Route.findOne({ 
+                vehicleId: updates.vehicleId, 
+                _id: { $ne: currentRoute._id } 
+            });
+            if (assignedVehicle) {
+                return res.status(400).json({ success: false, message: `Vehicle is already assigned to route: ${assignedVehicle.routeName}` });
+            }
+        }
+
         // Recompute totalStudents if stops changed
         if (updates.stops) {
             updates.totalStudents = updates.stops.reduce(
                 (sum, s) => sum + (s.students?.length || 0), 0
             );
         }
-        const updated = await Route.findOneAndUpdate(buildRouteQuery(routeId), updates, { new: true });
-        if (!updated) return res.status(404).json({ success: false, message: 'Route not found' });
+        const updated = await Route.findOneAndUpdate({ _id: currentRoute._id }, updates, { new: true });
         res.json({ success: true, data: updated });
     } catch (err) {
         console.error(err);
@@ -97,7 +138,7 @@ exports.updateRoute = async (req, res) => {
 exports.deleteRoute = async (req, res) => {
     const { schoolId, routeId } = req.params;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const result = await Route.findOneAndDelete(buildRouteQuery(routeId));
         if (!result) return res.status(404).json({ success: false, message: 'Route not found' });
         res.json({ success: true, message: 'Route deleted successfully' });
@@ -116,7 +157,7 @@ exports.addStop = async (req, res) => {
     const { schoolId, routeId } = req.params;
     const stopData = req.body;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const route = await Route.findOne(buildRouteQuery(routeId));
         if (!route) return res.status(404).json({ success: false, message: 'Route not found' });
 
@@ -147,7 +188,7 @@ exports.updateStop = async (req, res) => {
     const { schoolId, routeId, stopId } = req.params;
     const updates = req.body;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const route = await Route.findOne(buildRouteQuery(routeId));
         if (!route) return res.status(404).json({ success: false, message: 'Route not found' });
 
@@ -169,7 +210,7 @@ exports.updateStop = async (req, res) => {
 exports.removeStop = async (req, res) => {
     const { schoolId, routeId, stopId } = req.params;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const route = await Route.findOne(buildRouteQuery(routeId));
         if (!route) return res.status(404).json({ success: false, message: 'Route not found' });
 
@@ -199,7 +240,7 @@ exports.updateDriver = async (req, res) => {
     const { schoolId, routeId } = req.params;
     const driverData = req.body; // { name, phone, licenseNumber, profileImage }
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const updated = await Route.findOneAndUpdate(
             buildRouteQuery(routeId),
             { driver: driverData },
@@ -222,7 +263,7 @@ exports.assignStudents = async (req, res) => {
     const { schoolId, routeId, stopId } = req.params;
     const { students } = req.body; // Array of TransportStopStudent
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const route = await Route.findOne(buildRouteQuery(routeId));
         if (!route) return res.status(404).json({ success: false, message: 'Route not found' });
 
@@ -247,7 +288,7 @@ exports.assignStudents = async (req, res) => {
 exports.removeStudent = async (req, res) => {
     const { schoolId, routeId, stopId, studentId } = req.params;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const route = await Route.findOne(buildRouteQuery(routeId));
         if (!route) return res.status(404).json({ success: false, message: 'Route not found' });
 
@@ -275,7 +316,7 @@ exports.removeStudent = async (req, res) => {
 exports.getStudentRoute = async (req, res) => {
     const { schoolId, studentId } = req.params;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         // Find route where any stop contains this studentId
         const route = await Route.findOne({
             'stops.students.studentId': studentId,
@@ -302,7 +343,7 @@ exports.getStudentRoute = async (req, res) => {
 exports.getSummary = async (req, res) => {
     const { schoolId } = req.params;
     try {
-        const Route = getModel(schoolId);
+        const Route = await getModel(schoolId);
         const routes = await Route.find({}).lean();
 
         const totalRoutes = routes.length;

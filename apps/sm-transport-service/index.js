@@ -6,7 +6,11 @@ require('dotenv').config();
 
 const { connectDB, ensureDbConnection } = require('./configs/db');
 const transportRoutes = require('./routes/transport.routes');
+const vehicleRoutes = require('./routes/vehicle.routes');
 const { commonRateLimiter } = require('@sms/shared/middlewares');
+const { initSocket } = require('./utils/socketManager');
+const { initCronJobs } = require('./utils/cronJobs');
+const http = require('http');
 
 const app = express();
 
@@ -40,6 +44,7 @@ app.use(ensureDbConnection);
 
 // Transport routes – scoped per school
 app.use('/api/transport/school/:schoolId', transportRoutes);
+app.use('/api/transport/school/:schoolId/vehicles', vehicleRoutes);
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
@@ -53,10 +58,14 @@ app.get('/', (_req, res) => {
 
 const PORT = process.env.PORT || 5004;
 
+const server = http.createServer(app);
+const io = initSocket(server);
+
 connectDB()
     .then(() => {
-        app.listen(PORT, () => {
-            console.log(`🚌 Transport Service is running on port ${PORT}`);
+        server.listen(PORT, () => {
+            console.log(`🚌 Transport Service (Socket + API) is running on port ${PORT}`);
+            initCronJobs();
         });
     })
     .catch(error => {

@@ -32,7 +32,7 @@ import {
     Check as CheckIcon,
     Person as PersonIcon,
 } from '@mui/icons-material';
-import { useCreateTransportRoute, useUpdateTransportRoute } from '../../queries/transport';
+import { useCreateTransportRoute, useUpdateTransportRoute, useGetVehicles, useGetDrivers, useGetTransportRoutes } from '../../queries/transport';
 import type { TransportRoute, CreateTransportRoutePayload, TransportStop, TransportStopStudent } from '../../types/transport';
 import type { Student } from '../../types';
 import { AppInput } from '../shared/AppInput';
@@ -43,6 +43,7 @@ import { getSchoolOrigin } from '../../config/transportConfig';
 import { useGetSchoolById } from '../../queries/School';
 import { useGetStudents } from '../../queries/Student';
 import TokenService from '../../queries/token/tokenService';
+import { useNotificationStore } from '../../stores/notificationStore';
 
 interface TransportRouteDialogProps {
     open: boolean;
@@ -315,13 +316,16 @@ const TransportRouteDialog: React.FC<TransportRouteDialogProps> = ({ open, onClo
     const [formData, setFormData] = useState<CreateTransportRoutePayload>({
         routeId: '',
         routeName: '',
-        vehicleNumber: '',
+        vehicleNumber: '', // UI maps busNumber -> vehicleNumber
+        vehicleId: '',
+        driverId: '',
         driverName: '',
         driverPhone: '',
         licenseNumber: '',
         stops: [],
         status: 'active',
     });
+    const { showNotification } = useNotificationStore();
 
     const [newStop, setNewStop] = useState<TransportStop>({
         stopId: '',
@@ -344,6 +348,35 @@ const TransportRouteDialog: React.FC<TransportRouteDialogProps> = ({ open, onClo
 
     const createMutation = useCreateTransportRoute(resolvedSchoolId);
     const updateMutation = useUpdateTransportRoute(resolvedSchoolId);
+    
+    const { data: vehiclesData } = useGetVehicles(resolvedSchoolId);
+    const { data: driversData } = useGetDrivers(resolvedSchoolId);
+    const { data: allRoutesData } = useGetTransportRoutes(resolvedSchoolId);
+    
+    const vehicles = vehiclesData?.data || [];
+    const drivers = driversData?.data || [];
+    const allRoutes = allRoutesData?.data || [];
+
+    // Filter out drivers and vehicles already assigned to OTHER routes
+    const availableVehicles = useMemo(() => {
+        const busyVehicleIds = new Set(
+            allRoutes
+                .filter(r => !isEditMode || r._id !== editData?._id)
+                .map(r => r.vehicleId)
+                .filter(Boolean)
+        );
+        return vehicles.filter(v => !busyVehicleIds.has(v.vehicleId));
+    }, [vehicles, allRoutes, isEditMode, editData]);
+
+    const availableDrivers = useMemo(() => {
+        const busyDriverIds = new Set(
+            allRoutes
+                .filter(r => !isEditMode || r._id !== editData?._id)
+                .map(r => r.driverId)
+                .filter(Boolean)
+        );
+        return drivers.filter(d => !busyDriverIds.has(d.driverId));
+    }, [drivers, allRoutes, isEditMode, editData]);
 
     // Map center from school origin or geolocation
     useEffect(() => {
@@ -365,9 +398,11 @@ const TransportRouteDialog: React.FC<TransportRouteDialogProps> = ({ open, onClo
                 routeId: editData.routeId || '',
                 routeName: editData.routeName || '',
                 vehicleNumber: editData.busNumber || editData.vehicleNumber || '',
+                vehicleId: editData.vehicleId || '',
+                driverId: editData.driverId || '',
                 driverName: editData.driver?.name || editData.driverName || '',
                 driverPhone: editData.driver?.phone || editData.driverPhone || '',
-                licenseNumber: editData.driver?.licenseNumber || '',
+                licenseNumber: editData.driver?.licenseNumber || editData.licenseNumber || '',
                 stops: editData.stops || [],
                 status: editData.status || 'active',
             });
@@ -380,6 +415,8 @@ const TransportRouteDialog: React.FC<TransportRouteDialogProps> = ({ open, onClo
                 routeId: `RT-${Math.floor(100000 + Math.random() * 900000)}`,
                 routeName: '',
                 vehicleNumber: '',
+                vehicleId: '',
+                driverId: '',
                 driverName: '',
                 driverPhone: '',
                 licenseNumber: '',
@@ -468,6 +505,7 @@ const TransportRouteDialog: React.FC<TransportRouteDialogProps> = ({ open, onClo
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Explicitly sync busNumber and driver object for backend consistency
             const payload: CreateTransportRoutePayload = {
                 ...formData,
                 busNumber: formData.vehicleNumber,
@@ -477,13 +515,18 @@ const TransportRouteDialog: React.FC<TransportRouteDialogProps> = ({ open, onClo
                     licenseNumber: formData.licenseNumber || '',
                 },
             };
+            
             if (isEditMode && editData) {
                 await updateMutation.mutateAsync({ routeId: editData._id, data: payload });
+                showNotification('Transport route updated successfully', 'success');
             } else {
                 await createMutation.mutateAsync(payload);
+                showNotification('Transport route created successfully', 'success');
             }
             onClose();
-        } catch { }
+        } catch (err: any) {
+            showNotification(err?.message || 'Failed to save transport route', 'error');
+        }
     };
 
     const handleMapClick = (lngLat: { lng: number; lat: number }) => {
@@ -533,13 +576,41 @@ const TransportRouteDialog: React.FC<TransportRouteDialogProps> = ({ open, onClo
                                 <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>Route Details</Typography>
                                 <AppInput name="routeName" label="Route Name" value={formData.routeName} onChange={handleChange} required />
                                 <AppInput name="routeId" label="Route ID" value={formData.routeId} onChange={handleChange} required disabled={isEditMode} />
-                                <AppInput name="vehicleNumber" label="Vehicle Number" value={formData.vehicleNumber} onChange={handleChange} required />
+                                
+                                <Autocomplete
+                                    options={availableVehicles}
+                                    getOptionLabel={(opt) => `${opt.name} (${opt.plateNumber})`}
+                                    value={vehicles.find(v => v.vehicleId === formData.vehicleId) || null}
+                                    onChange={(_, val) => setFormData({...formData, vehicleId: val?.vehicleId || '', vehicleNumber: val?.plateNumber || ''})}
+                                    renderInput={(params) => <TextField {...params} label="Select Vehicle" size="small" required />}
+                                    sx={{ mb: 1 }}
+                                />
 
                                 <Divider sx={{ my: 1 }} />
-                                <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>Driver Information</Typography>
-                                <AppInput name="driverName" label="Driver Name" value={formData.driverName} onChange={handleChange} required />
-                                <AppInput name="driverPhone" label="Driver Phone" value={formData.driverPhone} onChange={handleChange} required />
-                                <AppInput name="licenseNumber" label="Driver License Number" value={formData.licenseNumber} onChange={handleChange} required />
+                                <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>Driver Selection</Typography>
+                                
+                                <Autocomplete
+                                    options={availableDrivers}
+                                    getOptionLabel={(opt) => `${opt.firstName} ${opt.lastName} (Driver ID: ${opt.driverId})`}
+                                    value={drivers.find(d => d.driverId === formData.driverId) || null}
+                                    onChange={(_, val) => setFormData({
+                                        ...formData, 
+                                        driverId: val?.driverId || '', 
+                                        driverName: val ? `${val.firstName} ${val.lastName}` : '',
+                                        driverPhone: val?.phone || '',
+                                        licenseNumber: val?.licenseNumber || ''
+                                    })}
+                                    renderInput={(params) => <TextField {...params} label="Select Driver" size="small" required />}
+                                    sx={{ mb: 1 }}
+                                />
+                                
+                                {formData.driverId && (
+                                    <Box sx={{ p: 1.5, bgcolor: 'rgba(59, 130, 246, 0.05)', borderRadius: 2, border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Driver Details:</Typography>
+                                        <Typography variant="caption" sx={{ display: 'block' }}>Phone: {formData.driverPhone}</Typography>
+                                        <Typography variant="caption" sx={{ display: 'block' }}>License: {formData.licenseNumber}</Typography>
+                                    </Box>
+                                )}
 
                                 <Divider sx={{ my: 1 }} />
                                 <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>Add Stop</Typography>
