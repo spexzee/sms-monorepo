@@ -22,6 +22,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import type { SideBarMenuItemType } from "./SidebarUtils";
 import TokenService from "../../queries/token/tokenService";
 import { useUserStore } from "../../stores/userStore";
+import { useRoleStore } from "../../stores/roleStore";
 import LogoutConfirmDialog from "./LogoutConfirmDialog";
 
 interface SidebarProps {
@@ -42,13 +43,15 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
 
   // Get user and school data from Zustand store
   const { user, fetchProfile } = useUserStore();
+  const { fetchRoles, getRoleByCode } = useRoleStore();
 
-  // Fetch profile on component mount
+  // Fetch profile and roles on component mount
   useEffect(() => {
     if (!user) {
       fetchProfile();
     }
-  }, [user, fetchProfile]);
+    fetchRoles();
+  }, [user, fetchProfile, fetchRoles]);
 
   useEffect(() => {
     if (closingItem) {
@@ -99,14 +102,10 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
       role === "sch_admin" ? role : "",
     );
 
-  // Get dynamic menus for student/teacher/parent
+  // Get dynamic menus for school-specific roles (teacher, student, parent, driver, etc.)
   const { data: userMenus, isLoading: isLoadingUserMenus } = useGetUserMenus(
-    role === "teacher" || role === "student" || role === "parent"
-      ? schoolId || ""
-      : "",
-    role === "teacher" || role === "student" || role === "parent"
-      ? role || ""
-      : "",
+    role !== "super_admin" && role !== "sch_admin" ? schoolId || "" : "",
+    role !== "super_admin" && role !== "sch_admin" ? role || "" : "",
   );
 
   const isLoading =
@@ -116,15 +115,12 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
   const getMenuItems = () => {
     switch (role) {
       case "super_admin":
-        return transformMenuData(superAdminMenus?.data || [], role);
+        return transformMenuData(superAdminMenus?.data || [], role || undefined);
       case "sch_admin":
-        return transformMenuData(schoolAdminMenus?.data || [], role);
-      case "teacher":
-      case "student":
-      case "parent":
-        return transformMenuData(userMenus?.data || [], role);
+        return transformMenuData(schoolAdminMenus?.data || [], role || undefined);
       default:
-        return [];
+        // Handle all other school-specific roles
+        return transformMenuData(userMenus?.data || [], role || undefined);
     }
   };
 
@@ -224,7 +220,7 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
                   whiteSpace: "nowrap",
                 }}
               >
-                {role?.replace("_", " ") || "User"}
+                {role ? getRoleByCode(role)?.roleName || role.replace("_", " ") : "User"}
               </Typography>
             </div>
           </div>

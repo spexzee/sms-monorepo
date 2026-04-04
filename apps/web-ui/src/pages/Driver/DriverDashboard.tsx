@@ -11,6 +11,7 @@ import {
 import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 import TokenService from '../../queries/token/tokenService';
+import { useUserStore } from '../../stores/userStore';
 
 const TRANSPORT_API = "http://localhost:5004/api/transport";
 const SOCKET_URL = "http://localhost:5004";
@@ -22,8 +23,9 @@ const DriverDashboard: React.FC = () => {
     
     const socketRef = useRef<Socket | null>(null);
     const watchIdRef = useRef<number | null>(null);
-    const user = TokenService.getUser();
-    const schoolId = TokenService.getSchoolId();
+    const { user, school } = useUserStore();
+    const schoolId = school?.schoolId || TokenService.getSchoolId();
+    const userId = user?.userId || TokenService.getUserId();
 
     useEffect(() => {
         const fetchAssignedRoute = async () => {
@@ -31,7 +33,7 @@ const DriverDashboard: React.FC = () => {
                 // Fetch route assigned to this driver
                 const res = await axios.get(`${TRANSPORT_API}/school/${schoolId}/routes`);
                 const assigned = res.data.data.find((r: any) => 
-                    user && (r.driverId === user.userId || r.driver?.userId === user.userId)
+                    userId && (r.driverId === userId || r.driver?.userId === userId || r.email === user?.email)
                 );
                 setCurrentRoute(assigned);
             } catch (err) {
@@ -52,7 +54,7 @@ const DriverDashboard: React.FC = () => {
             if (socketRef.current) socketRef.current.disconnect();
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
         };
-    }, [schoolId, user]);
+    }, [schoolId, userId]);
 
     const handleStartTrip = () => {
         if (!navigator.geolocation) {

@@ -137,3 +137,20 @@ exports.deleteDriver = async (req, res) => {
   }
 };
 
+exports.getDriverById = async (req, res) => {
+  try {
+    const { schoolId, id: driverId } = req.params;
+    const schoolDbName = await getSchoolDbName(schoolId);
+    const Driver = getDriverModel(schoolDbName);
+
+    const driver = await Driver.findOne({ driverId }).select("-password");
+    if (!driver) {
+      return res.status(404).json({ success: false, message: "Driver not found" });
+    }
+
+    res.json({ success: true, data: driver });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

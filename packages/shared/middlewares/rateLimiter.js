@@ -13,8 +13,11 @@ const commonRateLimiter = rateLimit({
         success: false,
         message: "Too many requests from this IP, please try again after 15 minutes",
     },
-    // Skip rate limiting for localhost in development if needed
-    skip: (req) => process.env.NODE_ENV === 'development' && req.ip === '::1',
+    // Skip rate limiting for localhost and loopback addresses
+    skip: (req) => {
+        const ip = req.ip || req.connection.remoteAddress;
+        return ip === '::1' || ip === '127.0.0.1' || ip.includes('::ffff:127.0.0.1');
+    },
 });
 
 /**

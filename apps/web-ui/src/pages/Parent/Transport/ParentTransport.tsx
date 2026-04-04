@@ -292,22 +292,24 @@ const ParentTransport = () => {
                                             <Box sx={{
                                                 flex: 1, pb: 1.5,
                                                 ...(isHighlighted && {
-                                                    bgcolor: 'success.light',
-                                                    p: 1, borderRadius: 1.5, mb: 0.5,
+                                                    bgcolor: 'rgba(34, 197, 94, 0.08)',
+                                                    border: '1px solid rgba(34, 197, 94, 0.2)',
+                                                    p: 1.5, borderRadius: 2, mb: 1,
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
                                                 }),
                                             }}>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Typography variant="body2" fontWeight={isHighlighted ? 700 : 500}>
+                                                    <Typography variant="body2" fontWeight={isHighlighted ? 800 : 500} color={isHighlighted ? 'success.dark' : 'text.primary'}>
                                                         {stop.name}
                                                         {isHighlighted && (
                                                             <Chip size="small" label="Your Stop" color="success" sx={{ ml: 1, height: 18, fontSize: 10 }} />
                                                         )}
                                                     </Typography>
                                                 </Box>
-                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', gap: 1.5, mt: 0.25 }}>
-                                                    <span>📥 {stop.pickupTime || '—'}</span>
-                                                    <span>📤 {stop.dropTime || '—'}</span>
-                                                    <span>👨‍👩‍👧 {stop.students?.length || 0} students</span>
+                                                <Typography variant="caption" color={isHighlighted ? 'text.primary' : 'text.secondary'} sx={{ display: 'flex', gap: 1.5, mt: 0.5, fontWeight: isHighlighted ? 600 : 400 }}>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><TimeIcon sx={{ fontSize: 13, color: 'primary.main' }}/> {stop.pickupTime || '—'}</span>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><TimeIcon sx={{ fontSize: 13, color: 'secondary.main' }}/> {stop.dropTime || '—'}</span>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><ChildIcon sx={{ fontSize: 13, color: 'action.active' }}/> {stop.students?.length || 0} students</span>
                                                 </Typography>
                                             </Box>
                                         </Box>

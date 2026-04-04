@@ -53,4 +53,7 @@ module.exports = {
 
     // Logs
     ActivityLogSchema: require('./activity-log.model'),
+
+    // Role Management
+    RoleModel: require('./role.model'),
 };

@@ -4,7 +4,6 @@ import "./App.css";
 import { BrowserRouter } from "react-router-dom";
 import MainRouters from "./routers/MainRouters";
 import { AuthProvider } from "./context/AuthContext";
-import { ChildSelectorProvider } from "./context/ChildSelectorContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import GlobalNotification from "./components/GlobalNotification";
 
@@ -26,11 +25,9 @@ function App() {
         <ThemeProvider theme={theme}>
           <GlobalNotification />
           <AuthProvider>
-            <ChildSelectorProvider>
-              <BrowserRouter>
-                <MainRouters />
-              </BrowserRouter>
-            </ChildSelectorProvider>
+            <BrowserRouter>
+              <MainRouters />
+            </BrowserRouter>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

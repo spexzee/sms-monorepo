@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import TokenService from '../queries/token/tokenService';
 import { useUserStore } from '../stores/userStore';
+import { useRoleStore } from '../stores/roleStore';
 import { AppInput } from '../components/shared/AppInput';
 import { AppButton } from '../components/shared/AppButton';
 
@@ -74,14 +75,10 @@ const LoginPage: React.FC = () => {
   };
 
   const getRedirectPath = (userRole: string): string => {
-    switch (userRole) {
-      case 'super_admin': return '/super-admin/dashboard';
-      case 'sch_admin': return '/school-admin/dashboard';
-      case 'teacher': return '/teacher/dashboard';
-      case 'student': return '/student/dashboard';
-      case 'parent': return '/parent/dashboard';
-      default: return '/';
-    }
+    if (!userRole) return '/';
+    const basePath = useRoleStore.getState().getBasePath(userRole);
+    if (!basePath) return '/';
+    return `${basePath}/dashboard`;
   };
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -49,6 +49,9 @@ const detectServiceFromPath = (path: string): ServiceType => {
     if (path.startsWith("/api/transport")) {
         return "transport";
     }
+    if (path.startsWith("/api/roles")) {
+        return "user";
+    }
     // Default: /api/admin/* and others go to platform
     return "platform";
 };
