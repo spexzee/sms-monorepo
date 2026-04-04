@@ -1600,13 +1600,13 @@ function MapSearch({
         `https://nominatim.openstreetmap.org/search?${params.toString()}`,
         { headers: { "Accept-Language": "en" } }
       );
-      
+
       if (response.status === 429) {
         setError("Rate limit reached. Please wait a moment before searching again.");
         setResults([]);
         return;
       }
-      
+
       if (!response.ok) throw new Error("Search service temporarily unavailable");
 
       const data = await response.json();
@@ -1732,10 +1732,10 @@ function MapSearch({
           ) : (
             <div className="p-8 text-center">
               <span className="block text-2xl mb-2">🔍</span>
-              <Typography variant="body2" fontWeight={600} color="text.primary">
+              <Typography variant="body2" fontWeight={600} color="#fff">
                 No results found
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="#fff">
                 We couldn't find a location matching "{query}"
               </Typography>
             </div>
