@@ -24,10 +24,10 @@ const NotFoundPage: React.FC = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundImage: `radial-gradient(#C7D2FE 1px, transparent 1px)`,
-          backgroundSize: '40px 40px',
-          opacity: 0.4,
-          zindex: 0,
+          backgroundImage: `radial-gradient(#C7D2FE 1.5px, transparent 1.5px)`,
+          backgroundSize: '36px 36px',
+          opacity: 0.5,
+          zIndex: 0,
         }
       }}
     >
@@ -35,8 +35,8 @@ const NotFoundPage: React.FC = () => {
       <Box
         component={motion.div}
         animate={{
-          y: [0, -20, 0],
-          rotate: [0, 10, 0],
+          y: [0, -25, 0],
+          rotate: [0, 15, 0],
         }}
         transition={{
           duration: 5,
@@ -45,11 +45,12 @@ const NotFoundPage: React.FC = () => {
         }}
         sx={{
           position: 'absolute',
-          top: '15%',
-          left: '10%',
-          opacity: 0.2,
-          fontSize: '4rem',
-          zIndex: 0
+          top: '20%',
+          left: '12%',
+          opacity: 0.35,
+          fontSize: '4.5rem',
+          zIndex: 0,
+          filter: 'blur(0.5px)'
         }}
       >
         📚
@@ -57,61 +58,79 @@ const NotFoundPage: React.FC = () => {
       <Box
         component={motion.div}
         animate={{
-          y: [0, 20, 0],
-          rotate: [0, -15, 0],
+          y: [0, 25, 0],
+          rotate: [0, -20, 0],
         }}
         transition={{
-          duration: 6,
+          duration: 7,
           repeat: Infinity,
           ease: "easeInOut",
-          delay: 1
+          delay: 1.5
         }}
         sx={{
           position: 'absolute',
-          bottom: '20%',
-          right: '15%',
-          opacity: 0.2,
-          fontSize: '4rem',
-          zIndex: 0
+          bottom: '15%',
+          right: '10%',
+          opacity: 0.35,
+          fontSize: '5rem',
+          zIndex: 0,
+          filter: 'blur(0.5px)'
         }}
       >
         ✏️
       </Box>
+      <Box
+        component={motion.div}
+        animate={{
+          x: [0, 15, 0],
+          y: [0, -10, 0],
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        sx={{ position: 'absolute', top: '10%', right: '20%', opacity: 0.25, fontSize: '2.5rem', zIndex: 0 }}
+      >
+        📏
+      </Box>
+      <Box
+        component={motion.div}
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.2, 0.3, 0.2]
+        }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        sx={{ position: 'absolute', bottom: '10%', left: '15%', opacity: 0.25, fontSize: '3rem', zIndex: 0 }}
+      >
+        🎓
+      </Box>
 
       <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
         <Box sx={{ textAlign: 'center' }}>
-          {/* 404 Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <Box sx={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, width: '100%' }}>
             <Typography
               variant="h1"
               sx={{
-                fontSize: { xs: '6rem', md: '9rem' },
+                fontSize: { xs: '8rem', md: '14rem' },
                 fontWeight: 900,
                 color: 'primary.main',
                 lineHeight: 1,
-                mb: 0,
-                opacity: 0.1,
-                userSelect: 'none'
+                opacity: 0.08,
+                userSelect: 'none',
+                letterSpacing: '-0.05em'
               }}
             >
               404
             </Typography>
-          </motion.div>
+          </Box>
 
           {/* Illustration Container */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            style={{ marginTop: '-4rem', marginBottom: '2rem' }}
+            style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'center' }}
           >
             <Box
               component={motion.img}
-              src="/not_found.png"
+              src="/not_found-bell.png"
               alt="404 Illustration"
               animate={{
                 y: [0, -10, 0],

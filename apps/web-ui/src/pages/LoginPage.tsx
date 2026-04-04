@@ -77,8 +77,22 @@ const LoginPage: React.FC = () => {
   const getRedirectPath = (userRole: string): string => {
     if (!userRole) return '/';
     const basePath = useRoleStore.getState().getBasePath(userRole);
-    if (!basePath) return '/';
-    return `${basePath}/dashboard`;
+    if (basePath) return `${basePath}/dashboard`;
+
+    // Hardcoded fallback for standard roles if store is not yet initialized
+    const standardPaths: Record<string, string> = {
+      'super_admin': '/super-admin',
+      'sch_admin': '/school-admin',
+      'teacher': '/teacher',
+      'student': '/student',
+      'parent': '/parent',
+      'driver': '/driver'
+    };
+    
+    const fallback = standardPaths[userRole] || "";
+    if (fallback) return `${fallback}/dashboard`;
+    
+    return '/';
   };
 
   const handleSubmit = (e: React.FormEvent) => {

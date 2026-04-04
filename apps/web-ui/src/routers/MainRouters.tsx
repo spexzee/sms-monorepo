@@ -111,11 +111,32 @@ const MainRouters = () => {
         <Route
           path="/"
           element={
-            userRole ? (
-              <Navigate to={`${getBasePath(userRole)}/dashboard`} replace />
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            (() => {
+              if (!userRole) return <Navigate to="/login" replace />;
+              
+              const basePath = getBasePath(userRole);
+              if (basePath) {
+                return <Navigate to={`${basePath}/dashboard`} replace />;
+              }
+
+              // Hardcoded fallback for standard roles if store is not yet initialized
+              const standardPaths: Record<string, string> = {
+                'super_admin': '/super-admin',
+                'sch_admin': '/school-admin',
+                'teacher': '/teacher',
+                'student': '/student',
+                'parent': '/parent',
+                'driver': '/driver'
+              };
+              
+              const fallback = standardPaths[userRole];
+              if (fallback) {
+                return <Navigate to={`${fallback}/dashboard`} replace />;
+              }
+
+              // If we have a role but still no path, roles might be loading
+              return <PageSkeleton />;
+            })()
           }
         />
         <Route path="/login" element={<LoginPage />} />
