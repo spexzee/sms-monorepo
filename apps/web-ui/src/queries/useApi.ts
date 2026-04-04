@@ -115,7 +115,7 @@ const getApiInstance = (service: ServiceType): AxiosInstance => {
  * useApi("GET", "/api/admin/school")                → platform service
  */
 const useApi = async <T>(
-    method: "GET" | "POST" | "PUT" | "DELETE",
+    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
     path: string,
     data?: unknown,
     params?: Record<string, unknown>

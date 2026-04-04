@@ -327,6 +327,18 @@ export const useUpdateBusStatus = (schoolId: string) =>
       ),
   });
 
+export const useUpdateTripStatus = (schoolId: string, routeId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { status: 'on-time' | 'stopped' | 'delayed'; driverId?: string; vehicleId?: string }) =>
+      useApi<ApiResponse<TransportRoute>>("PATCH", `${base(schoolId)}/routes/${routeId}/status`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transport-routes", schoolId] });
+      queryClient.invalidateQueries({ queryKey: ["transport-route", schoolId, routeId] });
+    },
+  });
+};
+
 export const useGetTransportNotifications = (
   schoolId: string,
   params?: { limit?: number; skip?: number; type?: string }

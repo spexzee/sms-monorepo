@@ -10,19 +10,41 @@ let io;
 const initSocket = (server) => {
     io = socketIo(server, {
         cors: {
-            origin: "*", // Adjust for production
-            methods: ["GET", "POST"]
-        }
+            origin: ["http://localhost:3000", "http://localhost:5173", "https://sms-web-ui.vercel.app"],
+            methods: ["GET", "POST"],
+            credentials: true
+        },
+        transports: ['websocket', 'polling']
     });
 
     io.on('connection', (socket) => {
         console.log('🔌 New client connected:', socket.id);
 
         // Join a route-specific room
-        socket.on('join-route', ({ schoolId, routeId }) => {
+        socket.on('join-route', async ({ schoolId, routeId }) => {
             const room = `${schoolId}_${routeId}`;
             socket.join(room);
             console.log(`📡 Client ${socket.id} joined route room: ${room}`);
+
+            // Push initial data from DB if available
+            try {
+                const db = getSchoolDbConnection(`school-db-${schoolId}`);
+                const Route = db.model('TransportRoute', TransportRouteSchema);
+                const route = await Route.findOne({ routeId }).lean();
+                
+                if (route && route.currentLocation) {
+                    socket.emit('location-update', {
+                        ...route.currentLocation,
+                        timestamp: route.currentLocation.lastUpdated || new Date()
+                    });
+                }
+                
+                if (route && route.currentTrip) {
+                    socket.emit('trip-status', route.currentTrip);
+                }
+            } catch (err) {
+                console.error("Error pushing initial route data:", err);
+            }
         });
 
         // Driver starts trip / check-in
@@ -30,7 +52,7 @@ const initSocket = (server) => {
             const room = `${schoolId}_${routeId}`;
             socket.join(room);
             
-            // Update trip status in DB
+            // 2. Update trip status in DB
             const db = getSchoolDbConnection(`school-db-${schoolId}`);
             const Route = db.model('TransportRoute', TransportRouteSchema);
             await Route.findOneAndUpdate({ routeId }, {
@@ -38,7 +60,7 @@ const initSocket = (server) => {
                 'currentTrip.startTime': new Date(),
                 'currentTrip.lastCheckIn': new Date(),
                 driverId, vehicleId
-            });
+            }, { upsert: false });
 
             console.log(`🚛 Driver ${driverId} checked in for route ${routeId}`);
             io.to(room).emit('trip-started', { routeId, startTime: new Date() });
@@ -64,6 +86,21 @@ const initSocket = (server) => {
             if (route && route.stops) {
                 checkProximity(route, schoolId, latitude, longitude);
             }
+        });
+
+        // Driver ends trip / check-out
+        socket.on('driver-check-out', async ({ schoolId, routeId }) => {
+            const room = `${schoolId}_${routeId}`;
+            
+            const db = getSchoolDbConnection(`school-db-${schoolId}`);
+            const Route = db.model('TransportRoute', TransportRouteSchema);
+            await Route.findOneAndUpdate({ routeId }, {
+                'currentTrip.status': 'stopped',
+                'currentTrip.endTime': new Date()
+            });
+
+            console.log(`🚛 Driver checked out for route ${routeId}`);
+            io.to(room).emit('trip-stopped', { routeId, endTime: new Date() });
         });
 
         socket.on('disconnect', () => {

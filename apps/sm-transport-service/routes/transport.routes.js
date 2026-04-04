@@ -19,6 +19,7 @@ router.get('/notifications', notificationController.getNotificationHistory);
 router.post('/routes', transportController.createRoute);
 router.get('/routes/:routeId', transportController.getRoute);
 router.put('/routes/:routeId', transportController.updateRoute);
+router.patch('/routes/:routeId/status', transportController.updateTripStatus);
 router.delete('/routes/:routeId', transportController.deleteRoute);
 
 // ── Stops ─────────────────────────────────────────────────────────────────────

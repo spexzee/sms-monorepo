@@ -82,13 +82,24 @@ const ParentTransport = () => {
                 }, 500); // Slight delay for smoother UX after route loads
             }
         });
+
+        // Bootstrap bus location from DB initial state
+        if (route.currentLocation?.latitude && route.currentLocation?.longitude) {
+            setBusLocation({ 
+                lat: route.currentLocation.latitude, 
+                lng: route.currentLocation.longitude 
+            });
+        }
     }, [route, schoolOrigin, assignedStop]);
 
     useEffect(() => {
         if (!route?.routeId) return;
 
         // Initialize Socket
-        socketRef.current = io(SOCKET_URL);
+        socketRef.current = io(SOCKET_URL, {
+            transports: ['websocket', 'polling'],
+            withCredentials: true
+        });
         
         socketRef.current.on('connect', () => {
             socketRef.current?.emit('join-route', { schoolId, routeId: route.routeId });
@@ -100,6 +111,11 @@ const ParentTransport = () => {
 
         socketRef.current.on('trip-started', () => {
             console.log("Trip has started!");
+        });
+
+        socketRef.current.on('trip-stopped', () => {
+            console.log("Trip has ended!");
+            setBusLocation(null);
         });
 
         return () => {
@@ -196,7 +212,7 @@ const ParentTransport = () => {
                 {/* Map */}
                 <Grid size={{ xs: 12, lg: 8 }}>
                     <Card sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
-                        <CardContent sx={{ p: 0, height: '380px', position: 'relative' }}>
+                        <CardContent sx={{ p: 0, height: '380px', position: 'relative', '&:last-child': { pb: 0 } }}>
                             <Map ref={mapRef} center={initialCenter} zoom={13} className="h-full w-full">
                                 <MapControls showZoom showLocate />
 
@@ -246,8 +262,9 @@ const ParentTransport = () => {
                                 {busLocation && (
                                     <MapMarker longitude={busLocation.lng} latitude={busLocation.lat}>
                                         <MarkerContent>
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full border-4 border-white bg-blue-600 text-white shadow-2xl animate-bounce">
-                                                <BusIcon sx={{ fontSize: 20 }} />
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-blue-600 text-white shadow-2xl transition-all duration-1000 ease-linear">
+                                                <div className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-25"></div>
+                                                <BusIcon sx={{ fontSize: 24, zIndex: 10 }} />
                                             </div>
                                         </MarkerContent>
                                     </MapMarker>

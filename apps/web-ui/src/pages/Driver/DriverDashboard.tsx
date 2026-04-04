@@ -12,6 +12,7 @@ import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 import TokenService from '../../queries/token/tokenService';
 import { useUserStore } from '../../stores/userStore';
+import { useUpdateTripStatus } from '../../queries/transport';
 
 const TRANSPORT_API = "http://localhost:5004/api/transport";
 const SOCKET_URL = "http://localhost:5004";
@@ -24,8 +25,10 @@ const DriverDashboard: React.FC = () => {
     const socketRef = useRef<Socket | null>(null);
     const watchIdRef = useRef<number | null>(null);
     const { user, school } = useUserStore();
-    const schoolId = school?.schoolId || TokenService.getSchoolId();
-    const userId = user?.userId || TokenService.getUserId();
+    const schoolId = school?.schoolId || TokenService.getSchoolId() || '';
+    const userId = user?.userId || TokenService.getUserId() || '';
+
+    const updateStatus = useUpdateTripStatus(schoolId, currentRoute?.routeId || '');
 
     useEffect(() => {
         const fetchAssignedRoute = async () => {
@@ -48,7 +51,10 @@ const DriverDashboard: React.FC = () => {
         }
 
         // Initialize Socket
-        socketRef.current = io(SOCKET_URL);
+        socketRef.current = io(SOCKET_URL, {
+            transports: ['websocket', 'polling'],
+            withCredentials: true
+        });
         
         return () => {
             if (socketRef.current) socketRef.current.disconnect();
@@ -56,36 +62,83 @@ const DriverDashboard: React.FC = () => {
         };
     }, [schoolId, userId]);
 
-    const handleStartTrip = () => {
+    // Auto-resume tracking if DB says trip is active
+    useEffect(() => {
+        if (currentRoute && currentRoute.currentTrip?.status !== 'stopped' && !isTripActive) {
+            console.log("🚦 Resuming active trip from DB status...");
+            handleStartTrip();
+        }
+    }, [currentRoute]);
+
+    const handleStartTrip = async () => {
         if (!navigator.geolocation) {
             alert("Geolocation is not supported by your browser");
             return;
         }
 
         setIsTripActive(true);
+
+        // New: Explicit API call to save check-in status
+        try {
+            await updateStatus.mutateAsync({
+                status: 'on-time',
+                driverId: userId,
+                vehicleId: currentRoute?.vehicleId || currentRoute?.vehicle?.id
+            });
+        } catch (err) {
+            console.error("Failed to save check-in status to DB:", err);
+            // We continue anyway so tracking works, but ideally this should succeed
+        }
         
-        // Start watching position
+        // 1. Check-in to the route room
+        if (socketRef.current && currentRoute) {
+            socketRef.current.emit('driver-check-in', {
+                schoolId,
+                routeId: currentRoute.routeId,
+                driverId: userId,
+                vehicleId: currentRoute.vehicleId || currentRoute.vehicle?.id
+            });
+        }
+
+        // 2. Start watching position
         watchIdRef.current = navigator.geolocation.watchPosition(
             (position) => {
-                const { latitude, longitude, heading } = position.coords;
+                const { latitude, longitude, heading, speed } = position.coords;
                 
                 // Emit location update via websocket
                 if (socketRef.current && currentRoute) {
-                    socketRef.current.emit('updateLocation', {
+                    socketRef.current.emit('update-location', {
+                        schoolId,
                         routeId: currentRoute.routeId,
-                        location: { latitude, longitude },
+                        latitude,
+                        longitude,
                         heading: heading || 0,
-                        driverId: user?.userId
+                        speed: speed || 0,
+                        driverId: userId
                     });
                 }
             },
-            (err) => console.error(err),
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            (err) => console.error("GPS Error:", err),
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
         );
     };
 
-    const handleStopTrip = () => {
+    const handleStopTrip = async () => {
         setIsTripActive(false);
+
+        // New: Explicit API call to save check-out status
+        try {
+            await updateStatus.mutateAsync({ status: 'stopped' });
+        } catch (err) {
+            console.error("Failed to save check-out status to DB:", err);
+        }
+        
+        // 1. Notify Backend
+        if (socketRef.current && currentRoute) {
+            socketRef.current.emit('driver-check-out', { schoolId, routeId: currentRoute.routeId });
+        }
+
+        // 2. Stop GPS
         if (watchIdRef.current !== null) {
             navigator.geolocation.clearWatch(watchIdRef.current);
             watchIdRef.current = null;

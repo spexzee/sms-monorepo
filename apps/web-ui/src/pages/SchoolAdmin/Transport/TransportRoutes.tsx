@@ -268,7 +268,7 @@ const TransportRoutesPage = () => {
           boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
           bgcolor: 'background.paper',
         }}>
-          <CardContent sx={{ p: 0, height: '450px', position: 'relative' }}>
+          <CardContent sx={{ p: 0, height: '450px', position: 'relative', '&:last-child': { pb: 0 } }}>
             <Map center={initialCenter} zoom={14} className="h-full w-full">
               <MapFlyTo schoolOrigin={schoolOrigin} selectedRoute={selectedRoute} getStopCoords={getStopCoordinates} />
               <MapControls showZoom showLocate />

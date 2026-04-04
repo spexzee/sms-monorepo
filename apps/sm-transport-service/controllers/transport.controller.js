@@ -254,6 +254,40 @@ exports.updateDriver = async (req, res) => {
     }
 };
 
+/** PATCH /routes/:routeId/status — Update trip status (check-in/out) */
+exports.updateTripStatus = async (req, res) => {
+    const { schoolId, routeId } = req.params;
+    const { status, driverId, vehicleId } = req.body; // status: 'on-time' | 'stopped' | 'delayed'
+    
+    try {
+        const Route = await getModel(schoolId);
+        const update = {
+            'currentTrip.status': status,
+            'currentTrip.lastCheckIn': new Date()
+        };
+        
+        if (status !== 'stopped') {
+            update['currentTrip.startTime'] = new Date();
+            if (driverId) update.driverId = driverId;
+            if (vehicleId) update.vehicleId = vehicleId;
+        } else {
+            update['currentTrip.endTime'] = new Date();
+        }
+
+        const updated = await Route.findOneAndUpdate(
+            buildRouteQuery(routeId),
+            update,
+            { new: true }
+        );
+
+        if (!updated) return res.status(404).json({ success: false, message: 'Route not found' });
+        res.json({ success: true, data: updated });
+    } catch (err) {
+        console.error(err);
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // STUDENTS — Assign / remove students from a stop
 // ─────────────────────────────────────────────────────────────────────────────
