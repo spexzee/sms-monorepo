@@ -57,12 +57,12 @@ const NOTIFICATION_TEMPLATES = {
     },
     child_picked: {
         title: '✅ Child Picked Up',
-        message: (routeName, _bus, _extra, stopName) =>
+        message: (_routeName, _bus, _extra, stopName) =>
             `Your child has been picked up at ${stopName || 'the stop'}. Bus is en route to school.`,
     },
     child_dropped: {
         title: '🏠 Child Dropped',
-        message: (routeName, _bus, _extra, stopName) =>
+        message: (_routeName, _bus, _extra, stopName) =>
             `Your child has been safely dropped off at ${stopName || 'the stop'}.`,
     },
     transport_update: {

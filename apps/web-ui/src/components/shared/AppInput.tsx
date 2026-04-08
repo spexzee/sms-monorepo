@@ -3,16 +3,18 @@ import { TextField, type TextFieldProps, alpha, Typography, Box } from '@mui/mat
 
 export type AppInputProps = TextFieldProps & {
   labelHint?: string;
+  textFieldSx?: any;
 };
 
 export const AppInput: React.FC<AppInputProps> = ({ 
   label, 
   labelHint, 
   sx, 
+  textFieldSx,
   ...props 
 }) => {
   return (
-    <Box sx={{ mb: 2, width: '100%' }}>
+    <Box sx={{ mb: 2, width: '100%', ...sx }}>
       {label && (
         <Box sx={{ display: 'flex', alignItems: 'baseline', mb: 0.5 }}>
           <Typography variant="subtitle2" component="label" sx={{ fontWeight: 600, color: 'text.primary' }}>
@@ -40,7 +42,7 @@ export const AppInput: React.FC<AppInputProps> = ({
               boxShadow: (theme) => `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
             },
           },
-          ...sx
+          ...textFieldSx
         }}
         {...props}
       />

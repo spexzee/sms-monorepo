@@ -23,6 +23,7 @@ import {
   ToggleOff as ToggleOffIcon,
 } from "@mui/icons-material";
 import { useUpdateMenu } from "../../queries/Menus";
+import { useRoleStore } from "../../stores/roleStore";
 import type { Menu } from "../../types";
 import { AppButton } from "../shared/AppButton";
 
@@ -35,13 +36,7 @@ interface ManageMenuAccessDialogProps {
   onSuccess?: (message: string) => void;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  super_admin: "Super Admin",
-  sch_admin: "School Admin",
-  teacher: "Teacher",
-  student: "Student",
-  parent: "Parent",
-};
+// ROLE_LABELS is now handled dynamically via useRoleStore
 
 const ManageMenuAccessDialog: React.FC<ManageMenuAccessDialogProps> = ({
   open,
@@ -196,7 +191,7 @@ const ManageMenuAccessDialog: React.FC<ManageMenuAccessDialogProps> = ({
                             {role}
                           </Typography>
                         </TableCell>
-                        <TableCell>{ROLE_LABELS[role] || role}</TableCell>
+                        <TableCell>{useRoleStore.getState().getRoleByCode(role)?.roleName || role}</TableCell>
                         <TableCell align="center">
                           <Chip
                             label={isDeactivated ? "Inactive" : "Active"}

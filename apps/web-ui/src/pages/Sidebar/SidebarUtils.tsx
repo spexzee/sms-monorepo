@@ -1,5 +1,6 @@
 import React from "react";
 import { MuiIcons } from "../../utils/Icons";
+import { useRoleStore } from "../../stores/roleStore";
 
 export interface SideBarMenuItemType {
   name: string;
@@ -40,20 +41,8 @@ export const transformMenuData = (
   const sidebarMenus = menus.filter((m) => m.showInSidebar !== false);
 
   const getBasePath = (userRole?: string) => {
-    switch (userRole) {
-      case "super_admin":
-        return "/super-admin";
-      case "sch_admin":
-        return "/school-admin";
-      case "teacher":
-        return "/teacher";
-      case "student":
-        return "/student";
-      case "parent":
-        return "/parent";
-      default:
-        return "";
-    }
+    if (!userRole) return "";
+    return useRoleStore.getState().getBasePath(userRole);
   };
 
   const basePath = getBasePath(role);
@@ -80,15 +69,7 @@ export const transformMenuData = (
   // Helper to sort menu orders alphanumerically (e.g. SA1, SA2, SA10)
   const sortMenuOrder = (a: any, b: any) => {
     // Determine the relevant order string for the current role
-    let prefix = "M";
-    if (role) {
-      const r = role.toLowerCase();
-      if (r === "super_admin") prefix = "SA";
-      else if (r === "school_admin" || r === "sch_admin") prefix = "A";
-      else if (r === "teacher") prefix = "T";
-      else if (r === "student") prefix = "S";
-      else if (r === "parent") prefix = "P";
-    }
+    const prefix = role ? useRoleStore.getState().getPrefix(role) : "M";
 
     const getOrder = (item: any) => {
       const orders = Array.isArray(item.menuOrder)

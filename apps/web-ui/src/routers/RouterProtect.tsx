@@ -6,6 +6,7 @@ import {
   useGetSchoolAdminMenus,
   useGetUserMenus,
 } from "../queries/Menus";
+import { useRoleStore } from "../stores/roleStore";
 import { Box, CircularProgress } from "@mui/material";
 
 interface ProtectedRouteProps {
@@ -42,10 +43,10 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     );
 
   const { data: userMenus, isLoading: isLoadingUserMenus } = useGetUserMenus(
-    userRole === "teacher" || userRole === "student" || userRole === "parent"
+    userRole !== "super_admin" && userRole !== "sch_admin"
       ? schoolId || ""
       : "",
-    userRole === "teacher" || userRole === "student" || userRole === "parent"
+    userRole !== "super_admin" && userRole !== "sch_admin"
       ? userRole || ""
       : "",
   );
@@ -77,17 +78,10 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         : userMenus?.data || [];
 
 
-  // Build activePaths from RAW menus (not sidebar-filtered) so routes hidden
-  // from the sidebar (showInSidebar: false) are still accessible via navigation.
+  // Build activePaths from RAW menus
   const buildPathsFromRawMenus = (rawMenus: any[], role: string): string[] => {
-    const rolePrefixMap: Record<string, string> = {
-      super_admin: "/super-admin",
-      sch_admin: "/school-admin",
-      teacher: "/teacher",
-      student: "/student",
-      parent: "/parent",
-    };
-    const basePath = rolePrefixMap[role] || "";
+    const { getBasePath } = useRoleStore.getState();
+    const basePath = getBasePath(role);
     const paths: string[] = [];
     (rawMenus || []).forEach((menu: any) => {
       if (menu.menuUrl) {
@@ -114,13 +108,7 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     return currentPath === path || currentPath.startsWith(path + "/");
   });
 
-  const rolePrefixes = [
-    "/super-admin",
-    "/school-admin",
-    "/teacher",
-    "/student",
-    "/parent",
-  ];
+  const rolePrefixes = useRoleStore.getState().roles.map(r => r.basePath);
   const isRoleRoute = rolePrefixes.some(
     (prefix) => currentPath === prefix || currentPath.startsWith(prefix + "/"),
   );

@@ -20,6 +20,8 @@ import { createPortal } from "react-dom";
 import { X, Minus, Plus, Locate, Maximize, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { AppInput } from "../shared/AppInput";
+import { InputAdornment, Typography } from "@mui/material";
 
 const defaultStyles = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
@@ -314,7 +316,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   // Handle container resizing (essential for maps inside animating Dialogs)
   useEffect(() => {
     if (!mapInstance) return;
-    
+
     // Initial resize after a short delay to account for Dialog animations
     const resizeTimer = setTimeout(() => {
       mapInstance.resize();
@@ -1563,6 +1565,7 @@ function MapSearch({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1578,9 +1581,10 @@ function MapSearch({
   }, []);
 
   const doSearch = useCallback(async (val: string) => {
-    if (val.length < 3) { setResults([]); return; }
+    if (val.length < 3) { setResults([]); setError(null); return; }
     setIsSearching(true);
     setIsOpen(true);
+    setError(null);
     try {
       const params = new URLSearchParams({
         format: "json",
@@ -1596,10 +1600,21 @@ function MapSearch({
         `https://nominatim.openstreetmap.org/search?${params.toString()}`,
         { headers: { "Accept-Language": "en" } }
       );
+
+      if (response.status === 429) {
+        setError("Rate limit reached. Please wait a moment before searching again.");
+        setResults([]);
+        return;
+      }
+
+      if (!response.ok) throw new Error("Search service temporarily unavailable");
+
       const data = await response.json();
       setResults(data);
-    } catch (error) {
-      console.error("Search failed:", error);
+    } catch (err) {
+      console.error("Search failed:", err);
+      setError("Unable to search right now. Please try again later.");
+      setResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -1640,49 +1655,91 @@ function MapSearch({
         className
       )}
     >
-      <form onSubmit={handleSubmit} className="relative flex items-center gap-1.5">
-        <input
-          type="text"
+      <form onSubmit={handleSubmit} className="relative w-full">
+        <AppInput
+          fullWidth
+          placeholder={placeholder}
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
           onFocus={() => query.length >= 3 && setIsOpen(true)}
-          placeholder={placeholder}
-          className="bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 w-full rounded-xl border px-4 py-2.5 text-sm shadow-xl backdrop-blur-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 focus:outline-none transition-all"
+          size="small"
+          sx={{ mb: 0 }}
+          slotProps={{
+            input: {
+              sx: {
+                borderRadius: "12px",
+                bgcolor: "background.paper",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+                pr: 1
+              },
+              endAdornment: (
+                <InputAdornment position="end">
+                  {isSearching ? (
+                    <Loader2 className="text-primary size-4 animate-spin" />
+                  ) : (
+                    searchOnSubmit && (
+                      <button
+                        type="submit"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-2.5 py-1 text-[10px] font-bold transition-all uppercase tracking-wider"
+                      >
+                        Search
+                      </button>
+                    )
+                  )}
+                </InputAdornment>
+              )
+            }
+          }}
         />
-        {isSearching ? (
-          <div className="absolute top-3 right-3">
-            <Loader2 className="text-indigo-500 size-4 animate-spin" />
-          </div>
-        ) : (
-          searchOnSubmit && (
-            <button
-              type="submit"
-              className="absolute top-2 right-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
-            >
-              Search
-            </button>
-          )
-        )}
       </form>
 
-      {isOpen && results.length > 0 && (
-        <div className="bg-white/98 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 animate-in fade-in-0 zoom-in-95 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border p-1.5 shadow-2xl backdrop-blur-sm">
-          {results.map((result, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => selectResult(result)}
-              className="hover:bg-indigo-50 dark:hover:bg-slate-800 block w-full rounded-lg px-3 py-2 text-left text-xs transition-colors"
-            >
-              <span className="font-medium text-slate-700 dark:text-slate-200">
-                {result.display_name.split(",")[0]}
-              </span>
-              <span className="block text-[10px] text-slate-400 truncate mt-0.5">
-                {result.display_name}
-              </span>
-            </button>
-          ))}
+      {isOpen && query.length >= 3 && !isSearching && (
+        <div className="bg-white/98 dark:bg-slate-900 border-slate-200 dark:border-slate-800 animate-in fade-in-0 zoom-in-95 mt-1.5 max-h-72 w-full overflow-auto rounded-xl border p-1 shadow-2xl backdrop-blur-md">
+          {error ? (
+            <div className="p-8 text-center">
+              <span className="block text-2xl mb-2">⏳</span>
+              <Typography variant="body2" fontWeight={600} color="error.main">
+                Too many requests
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {error}
+              </Typography>
+            </div>
+          ) : results.length > 0 ? (
+            <div className="flex flex-col">
+              {results.map((result, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => selectResult(result)}
+                  className={cn(
+                    "hover:bg-indigo-50/50 dark:hover:bg-slate-800/50 block w-full px-4 py-3 text-left transition-colors",
+                    "border-b border-slate-100 dark:border-slate-800 last:border-0",
+                    i === 0 && "rounded-t-lg",
+                    i === results.length - 1 && "rounded-b-lg"
+                  )}
+                >
+                  <span className="block font-bold text-slate-900 dark:text-white text-xs mb-0.5">
+                    {result.display_name.split(",")[0]}
+                  </span>
+                  <span className="block text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+                    {result.display_name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center">
+              <span className="block text-2xl mb-2">🔍</span>
+              <Typography variant="body2" fontWeight={600} color="#fff">
+                No results found
+              </Typography>
+              <Typography variant="caption" color="#fff">
+                We couldn't find a location matching "{query}"
+              </Typography>
+            </div>
+          )}
         </div>
       )}
     </div>

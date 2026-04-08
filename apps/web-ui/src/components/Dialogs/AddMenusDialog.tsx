@@ -30,6 +30,7 @@ import {
 import { Close as CloseIcon, Apps as AppsIcon, SelectAll as SelectAllIcon, SyncAlt as SyncAltIcon } from "@mui/icons-material";
 import { useCreateMenu, useGetMenus, useUpdateMenu } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
+import { useRoleStore } from "../../stores/roleStore";
 import type { CreateMenuPayload, Menu } from "../../types";
 import IconPickerDialog from "./IconPickerDialog";
 import { AppInput } from "../shared/AppInput";
@@ -112,35 +113,101 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
       });
     }
   }, [selectedParentRoles, menuToEdit]);
+  
+  // Helper to get the next sequence number for a role prefix
+  const getNextSequence = (prefix: string) => {
+    if (!menus || menus.length === 0) return "01";
+    const sequences = menus
+      .map((m: any) => {
+        const orders = Array.isArray(m.menuOrder) ? m.menuOrder : [m.menuOrder];
+        const match = orders.find((o: any) => String(o).startsWith(prefix));
+        if (!match) return 0;
+        const numStr = String(match).replace(prefix, "");
+        const num = parseInt(numStr, 10);
+        return isNaN(num) ? 0 : num;
+      })
+      .filter((n: number) => n > 0);
 
-  // Synchronize activeOrderPrefix with available roles
+    const max = sequences.length > 0 ? Math.max(...sequences) : 0;
+    return String(max + 1).padStart(2, "0");
+  };
+
+  // Automatically add sequences when roles are added to menuAccessRoles
+  useEffect(() => {
+    if (menuToEdit) return; // Only for new menus
+
+    const selectedRoles = Array.isArray(formData.menuAccessRoles)
+      ? formData.menuAccessRoles
+      : [formData.menuAccessRoles];
+
+    if (selectedRoles.length === 0) return;
+
+    const { roles: allRoles } = useRoleStore.getState();
+    const currentOrders = Array.isArray(formData.menuOrder)
+      ? formData.menuOrder
+      : formData.menuOrder ? [formData.menuOrder] : [];
+
+    let updated = false;
+    const newOrders = [...currentOrders.map(String)];
+
+    selectedRoles.forEach(roleCode => {
+      const role = allRoles.find(r => r.roleCode === roleCode);
+      if (role?.prefix) {
+        const hasOrder = newOrders.some(o => o.startsWith(role.prefix!));
+        if (!hasOrder) {
+          const nextSeq = getNextSequence(role.prefix);
+          newOrders.push(`${role.prefix}${nextSeq}`);
+          updated = true;
+          // Set as active prefix if it's the first one
+          if (newOrders.length === 1) setActiveOrderPrefix(role.prefix);
+        }
+      }
+    });
+
+    if (updated) {
+      setFormData(prev => ({ ...prev, menuOrder: newOrders }));
+    }
+  }, [formData.menuAccessRoles, menuToEdit, menus]);
+
+  // Synchronize activeOrderPrefix with available roles and suggest next sequence if missing
   useEffect(() => {
     const selectedRoles = Array.isArray(formData.menuAccessRoles)
       ? formData.menuAccessRoles
       : [formData.menuAccessRoles];
 
-    const prefixToRoleMap: Record<string, string> = {
-      SA: "super_admin",
-      A: "sch_admin",
-      T: "teacher",
-      S: "student",
-      P: "parent",
-    };
-
-    const currentRole = prefixToRoleMap[activeOrderPrefix];
+    const { roles: allRoles } = useRoleStore.getState();
+    const currentRole = allRoles.find(r => r.prefix === activeOrderPrefix)?.roleCode;
 
     // If current prefix is not valid for selected roles, pick the first valid one
     if (
-      selectedRoles.length > 0 &&
-      (!currentRole || !selectedRoles.includes(currentRole))
+        selectedRoles.length > 0 &&
+        (!currentRole || !selectedRoles.includes(currentRole))
     ) {
-      const firstRole = selectedRoles[0];
-      const newPrefix = Object.keys(prefixToRoleMap).find(
-        (key) => prefixToRoleMap[key] === firstRole,
-      );
-      if (newPrefix) setActiveOrderPrefix(newPrefix);
+      const firstRoleCode = selectedRoles[0];
+      const role = allRoles.find(r => r.roleCode === firstRoleCode);
+      if (role?.prefix) {
+          setActiveOrderPrefix(role.prefix);
+      }
+      return;
     }
-  }, [formData.menuAccessRoles, activeOrderPrefix]);
+
+    // If active prefix has no order in formData, suggest one (auto-increment)
+    if (activeOrderPrefix && selectedRoles.length > 0) {
+      const currentOrders = (Array.isArray(formData.menuOrder) 
+          ? formData.menuOrder 
+          : [formData.menuOrder]
+      ).filter(Boolean).map(String);
+
+      const hasOrder = currentOrders.some(o => o.startsWith(activeOrderPrefix));
+      if (!hasOrder) {
+          const nextSeq = getNextSequence(activeOrderPrefix);
+          setFormData(prev => ({
+              ...prev,
+              menuOrder: [...currentOrders, `${activeOrderPrefix}${nextSeq}`]
+          }));
+      }
+    }
+  }, [formData.menuAccessRoles, activeOrderPrefix, menus]);
 
   // Filter for potential parent menus (Main Menus that are not submenus themselves)
   const parentMenuOptions =
@@ -231,15 +298,20 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
     e.preventDefault();
     if (!validate()) return;
 
+    const normalizedData = {
+      ...formData,
+      menuUrl: formData.menuUrl.startsWith("/") ? formData.menuUrl : `/${formData.menuUrl.trim()}`
+    };
+
     try {
       if (menuToEdit) {
         const res = await updateMutation.mutateAsync({
           menuId: menuToEdit.menuId,
-          data: formData,
+          data: normalizedData,
         });
         onSuccess?.(res.message);
       } else {
-        const res = await createMutation.mutateAsync(formData);
+        const res = await createMutation.mutateAsync(normalizedData);
         onSuccess?.(res.message);
       }
       handleClose();
@@ -277,14 +349,11 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
     (updateMutation.error as { message?: string })?.message ||
     "Operation failed";
 
-  // Role options
-  const roles = [
-    { value: "super_admin", label: "Super Admin" },
-    { value: "sch_admin", label: "School Admin" },
-    { value: "teacher", label: "Teacher" },
-    { value: "student", label: "Student" },
-    { value: "parent", label: "Parent" },
-  ];
+  // Role options from store
+  const roles = useRoleStore((state) => state.roles).map(r => ({
+    value: r.roleCode,
+    label: r.roleName
+  }));
 
   return (
     <>
@@ -574,9 +643,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                 />
               )}
 
-              {/* Menu Order - Only show when editing, as it's auto-generated on create */}
-              {menuToEdit && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {/* Menu Order - Priority Sequencing */}
                   <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
                     Priority Sequencing
                   </Typography>
@@ -590,12 +657,10 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       .filter(Boolean)
                       .map((order) => {
                         const o = String(order);
-                        let color: any = "default";
-                        if (o.startsWith("SA")) color = "error";
-                        else if (o.startsWith("A")) color = "primary";
-                        else if (o.startsWith("T")) color = "warning";
-                        else if (o.startsWith("S")) color = "success";
-                        else if (o.startsWith("P")) color = "secondary";
+                        const { roles: allRoles } = useRoleStore.getState();
+                        const prefix = o.match(/^[A-Z]+/)?.[0];
+                        const role = allRoles.find(r => r.prefix === prefix);
+                        const color = role?.colorTheme || "default";
 
                         return (
                           <Chip
@@ -632,16 +697,10 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       <AppSelect
                         label="Target Domain"
                         value={activeOrderPrefix}
-                        options={[
-                          { value: "SA", label: "Super Admin (SA)", role: "super_admin" },
-                          { value: "A", label: "School Admin (A)", role: "sch_admin" },
-                          { value: "T", label: "Educator (T)", role: "teacher" },
-                          { value: "S", label: "Scholar (S)", role: "student" },
-                          { value: "P", label: "Guardian (P)", role: "parent" },
-                        ].filter(p => {
+                        options={useRoleStore.getState().roles.filter(r => {
                           const selectedRoles = Array.isArray(formData.menuAccessRoles) ? formData.menuAccessRoles : [formData.menuAccessRoles];
-                          return selectedRoles.includes(p.role);
-                        }).map(p => ({ value: p.value, label: p.label }))}
+                          return selectedRoles.includes(r.roleCode);
+                        }).map(r => ({ value: r.prefix, label: `${r.roleName} (${r.prefix})` }))}
                         onChange={(e) => setActiveOrderPrefix(e.target.value as string)}
                         disabled={!formData.menuAccessRoles?.length}
                       />
@@ -689,8 +748,6 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
                       />
                     </Grid>
                   </Grid>
-                </Box>
-              )}
 
               <Divider sx={{ my: 0.5 }} />
 

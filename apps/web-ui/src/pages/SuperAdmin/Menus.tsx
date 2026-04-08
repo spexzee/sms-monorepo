@@ -55,27 +55,12 @@ import { useNotificationStore } from "../../stores/notificationStore";
 import ManageMenuAccessDialog from "../../components/Dialogs/ManageMenuAccessDialog";
 import HtmlTooltip from "../../components/Common/HtmlTooltip";
 import type { Menu } from "../../types";
-
-const ROLE_COLOR_MAP: Record<
-  string,
-  "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning"
-> = {
-  super_admin: "error",
-  sch_admin: "primary",
-  teacher: "warning",
-  student: "success",
-  parent: "warning",
-  SA: "error",
-  A: "primary",
-  T: "warning",
-  S: "success",
-  P: "warning",
-};
+import { useRoleStore } from "../../stores/roleStore";
 
 const getRoleChipColor = (value: string) => {
-  if (ROLE_COLOR_MAP[value]) return ROLE_COLOR_MAP[value];
-  const prefix = value.match(/^(SA|A|T|S|P)/)?.[0];
-  return (prefix && ROLE_COLOR_MAP[prefix]) || "default";
+  const { roles } = useRoleStore.getState();
+  const role = roles.find(r => r.roleCode === value.toLowerCase() || r.prefix === value.toUpperCase());
+  return role?.colorTheme || "default";
 };
 
 interface GroupedMenu extends Menu {

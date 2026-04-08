@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import TokenService from '../queries/token/tokenService';
 import { useUserStore } from '../stores/userStore';
+import { useRoleStore } from '../stores/roleStore';
 import { AppInput } from '../components/shared/AppInput';
 import { AppButton } from '../components/shared/AppButton';
 
@@ -74,14 +75,24 @@ const LoginPage: React.FC = () => {
   };
 
   const getRedirectPath = (userRole: string): string => {
-    switch (userRole) {
-      case 'super_admin': return '/super-admin/dashboard';
-      case 'sch_admin': return '/school-admin/dashboard';
-      case 'teacher': return '/teacher/dashboard';
-      case 'student': return '/student/dashboard';
-      case 'parent': return '/parent/dashboard';
-      default: return '/';
-    }
+    if (!userRole) return '/';
+    const basePath = useRoleStore.getState().getBasePath(userRole);
+    if (basePath) return `${basePath}/dashboard`;
+
+    // Hardcoded fallback for standard roles if store is not yet initialized
+    const standardPaths: Record<string, string> = {
+      'super_admin': '/super-admin',
+      'sch_admin': '/school-admin',
+      'teacher': '/teacher',
+      'student': '/student',
+      'parent': '/parent',
+      'driver': '/driver'
+    };
+    
+    const fallback = standardPaths[userRole] || "";
+    if (fallback) return `${fallback}/dashboard`;
+    
+    return '/';
   };
 
   const handleSubmit = (e: React.FormEvent) => {

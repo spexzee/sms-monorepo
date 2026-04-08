@@ -1,7 +1,10 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, Outlet } from "react-router-dom";
 import ProtectedRoute from "./RouterProtect";
+import { ChildSelectorProvider } from "../context/ChildSelectorContext";
 import PageSkeleton from "../components/shared/PageSkeleton";
+import { useRoleStore } from "../stores/roleStore";
+import TokenService from "../queries/token/tokenService";
 
 // Public Pages
 const LoginPage = lazy(() => import("../pages/LoginPage"));
@@ -13,6 +16,7 @@ const SuperAdminDashboard = lazy(() => import("../pages/SuperAdmin/Dashboard"));
 const Schools = lazy(() => import("../pages/SuperAdmin/Schools"));
 const Users = lazy(() => import("../pages/SuperAdmin/Users"));
 const Menus = lazy(() => import("../pages/SuperAdmin/Menus"));
+const RoleManagement = lazy(() => import("../pages/SuperAdmin/RoleManagement"));
 
 // School Admin Pages
 const SchoolAdminDashboard = lazy(() => import("../pages/SchoolAdmin/Dashboard"));
@@ -98,10 +102,43 @@ const ParentTransport = lazy(() => import("../pages/Parent/Transport/ParentTrans
 const NotificationsPage = lazy(() => import("../pages/Shared/Notifications"));
 
 const MainRouters = () => {
+  const { getBasePath } = useRoleStore();
+  const userRole = TokenService.getRole();
+
   return (
     <Suspense fallback={<PageSkeleton />}>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route
+          path="/"
+          element={
+            (() => {
+              if (!userRole) return <Navigate to="/login" replace />;
+              
+              const basePath = getBasePath(userRole);
+              if (basePath) {
+                return <Navigate to={`${basePath}/dashboard`} replace />;
+              }
+
+              // Hardcoded fallback for standard roles if store is not yet initialized
+              const standardPaths: Record<string, string> = {
+                'super_admin': '/super-admin',
+                'sch_admin': '/school-admin',
+                'teacher': '/teacher',
+                'student': '/student',
+                'parent': '/parent',
+                'driver': '/driver'
+              };
+              
+              const fallback = standardPaths[userRole];
+              if (fallback) {
+                return <Navigate to={`${fallback}/dashboard`} replace />;
+              }
+
+              // If we have a role but still no path, roles might be loading
+              return <PageSkeleton />;
+            })()
+          }
+        />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
@@ -114,6 +151,7 @@ const MainRouters = () => {
           <Route path="/super-admin/schools" element={<Schools />} />
           <Route path="/super-admin/users" element={<Users />} />
           <Route path="/super-admin/menus" element={<Menus />} />
+          <Route path="/super-admin/roles" element={<RoleManagement />} />
         </Route>
 
         {/* School Admin Routes */}
@@ -233,20 +271,22 @@ const MainRouters = () => {
 
         {/* Parent Routes */}
         <Route element={<ProtectedRoute allowedRoles={["parent"]} />}>
-          <Route path="/parent/dashboard" element={<ParentDashboard />} />
-          <Route path="/parent/children" element={<ParentChildren />} />
-          <Route path="/parent/children/:studentId" element={<ChildProfile />} />
-          <Route path="/parent/announcements" element={<ParentAnnouncements />} />
-          <Route path="/parent/homework" element={<ParentHomework />} />
-          <Route path="/parent/attendance" element={<ParentAttendance />} />
-          <Route path="/parent/teachers" element={<ParentTeachers />} />
-          <Route path="/parent/timetable" element={<ParentTimetable />} />
-          <Route path="/parent/leave/apply" element={<ParentApplyLeave />} />
-          <Route path="/parent/leave/history" element={<ParentLeaveHistory />} />
-          <Route path="/parent/exam/scheduler" element={<ParentExamSchedule />} />
-          <Route path="/parent/exam/results" element={<ParentExamResults />} />
-          <Route path="/parent/notifications" element={<NotificationsPage />} />
-          <Route path="/parent/transport" element={<ParentTransport />} />
+          <Route element={<ChildSelectorProvider><Outlet /></ChildSelectorProvider>}>
+            <Route path="/parent/dashboard" element={<ParentDashboard />} />
+            <Route path="/parent/children" element={<ParentChildren />} />
+            <Route path="/parent/children/:studentId" element={<ChildProfile />} />
+            <Route path="/parent/announcements" element={<ParentAnnouncements />} />
+            <Route path="/parent/homework" element={<ParentHomework />} />
+            <Route path="/parent/attendance" element={<ParentAttendance />} />
+            <Route path="/parent/teachers" element={<ParentTeachers />} />
+            <Route path="/parent/timetable" element={<ParentTimetable />} />
+            <Route path="/parent/leave/apply" element={<ParentApplyLeave />} />
+            <Route path="/parent/leave/history" element={<ParentLeaveHistory />} />
+            <Route path="/parent/exam/scheduler" element={<ParentExamSchedule />} />
+            <Route path="/parent/exam/results" element={<ParentExamResults />} />
+            <Route path="/parent/notifications" element={<NotificationsPage />} />
+            <Route path="/parent/transport" element={<ParentTransport />} />
+          </Route>
         </Route>
 
         {/* Driver Routes */}
