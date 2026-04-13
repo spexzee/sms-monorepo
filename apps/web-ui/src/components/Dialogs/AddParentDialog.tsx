@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateParent, useUpdateParent } from '../../queries/Parent';
+import { useNotification } from '../../hooks/useNotification';
 import { searchStudentsApi } from '../../queries/Student';
 import type { CreateParentPayload, Parent, Student } from '../../types';
 import { ImageUpload } from '../ImageUpload';
@@ -22,6 +23,7 @@ import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
 import { AppInput } from '../shared/AppInput';
 import { AppSelect } from '../shared/AppSelect';
 import { AppButton } from '../shared/AppButton';
+import { PhoneInput } from '../shared/PhoneInput';
 
 interface ParentDialogProps {
     open: boolean;
@@ -42,6 +44,7 @@ const useDebounce = <T,>(value: T, delay: number): T => {
 
 const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, editData }) => {
     const isEditMode = !!editData;
+    const notification = useNotification();
 
     const [formData, setFormData] = useState<CreateParentPayload>({
         firstName: '',
@@ -77,7 +80,10 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
             if (debouncedStudentQuery.length >= 2) {
                 setStudentLoading(true);
                 try {
-                    const response = await searchStudentsApi(schoolId, debouncedStudentQuery);
+                    const response = await searchStudentsApi(schoolId, debouncedStudentQuery, {
+                        unlinkedOnly: true,
+                        currentParentId: editData?.parentId
+                    });
                     setStudentOptions(response.data || []);
                 } catch {
                     setStudentOptions([]);
@@ -89,7 +95,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
             }
         };
         fetchStudents();
-    }, [debouncedStudentQuery, schoolId]);
+    }, [debouncedStudentQuery, schoolId, editData?.parentId]);
 
     // Fetch real student details for already-linked students when editing
     useEffect(() => {
@@ -195,12 +201,14 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                     parentId: editData.parentId,
                     data: updatePayload,
                 });
+                notification.success("Parent profile updated successfully");
             } else {
                 await createMutation.mutateAsync(formData);
+                notification.success("New parent registered successfully");
             }
             handleClose();
         } catch {
-            // Error handled by mutation
+            notification.error("Operation failed. Please verify parent details.");
         }
     };
 
@@ -272,7 +280,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                                 ]}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, relationship: e.target.value as 'father' | 'mother' | 'guardian' | 'other' }))}
                             />
-                            <AppInput name="phone" label="Contact Number" value={formData.phone}
+                            <PhoneInput name="phone" label="Contact Number" value={formData.phone}
                                 onChange={handleChange} error={!!errors.phone} helperText={errors.phone}
                                 required />
                         </Box>
@@ -311,9 +319,13 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                             value={selectedStudents}
                             onChange={handleStudentSelect}
                             loading={studentLoading}
-                            getOptionLabel={(option) =>
-                                `${option.studentId} - ${option.firstName} ${option.lastName} (${option.class || 'N/A'})`
-                            }
+                            getOptionLabel={(option) => {
+                                const name = `${option.firstName} ${option.lastName}`;
+                                const className = option.className || option.class || 'N/A';
+                                const sectionName = option.sectionName ? ` - ${option.sectionName}` : '';
+                                const roll = option.rollNumber ? `${option.rollNumber} ` : '';
+                                return `${roll} - ${name} (${className}${sectionName})`;
+                            }}
                             isOptionEqualToValue={(option, value) => option.studentId === value.studentId}
                             onInputChange={(_, value) => setStudentSearchQuery(value)}
                             renderTags={(value, getTagProps) =>
@@ -322,7 +334,7 @@ const ParentDialog: React.FC<ParentDialogProps> = ({ open, onClose, schoolId, ed
                                     return (
                                         <Chip
                                             key={key}
-                                            label={option.firstName ? `${option.studentId} - ${option.firstName}` : option.studentId}
+                                            label={option.firstName ? `${option.rollNumber || option.studentId} - ${option.firstName}` : option.studentId}
                                             {...tagProps}
                                             size="small"
                                             color="primary"

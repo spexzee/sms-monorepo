@@ -28,6 +28,7 @@ import {
 
 import { useUserStore } from "../../stores/userStore";
 import { useNotification } from "../../hooks/useNotification";
+import { PhoneInput } from "../../components/shared/PhoneInput";
 
 const SchoolAdminProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -411,12 +412,12 @@ const SchoolAdminProfile = () => {
                       fullWidth
                       size="small"
                     />
-                    <TextField
+                    <PhoneInput
                       name="phone"
                       label="Phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      fullWidth
+                      textFieldSx={{ mb: 0 }}
                       size="small"
                     />
                   </>

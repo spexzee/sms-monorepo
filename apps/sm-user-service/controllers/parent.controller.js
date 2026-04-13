@@ -113,6 +113,21 @@ const createParent = async (req, res) => {
 
     const Parent = getParentModel(schoolDbName);
 
+    // Validate if students are already linked to another parent
+    if (studentIds && studentIds.length > 0) {
+      const Student = getStudentModel(schoolDbName);
+      const alreadyLinked = await Student.findOne({
+        studentId: { $in: studentIds },
+        parentId: { $exists: true, $ne: null, $ne: "" },
+      });
+      if (alreadyLinked) {
+        return res.status(400).json({
+          success: false,
+          message: `Student ${alreadyLinked.firstName} ${alreadyLinked.lastName} (${alreadyLinked.studentId}) is already linked to another parent.`,
+        });
+      }
+    }
+
     // Generate parentId
     const parentId = await generateParentId(Parent);
 
@@ -313,7 +328,25 @@ const getAllParents = async (req, res) => {
       Parent.countDocuments(query),
     ]);
 
-    const response = formatPaginationResponse(parents, total, page, limit);
+    // Populate student names for each parent
+    const allStudentIds = [...new Set(parents.flatMap(p => p.studentIds || []))];
+    const studentNamesMap = {};
+    
+    if (allStudentIds.length > 0) {
+      const students = await Student.find({ studentId: { $in: allStudentIds } }).select("studentId firstName lastName");
+      students.forEach(s => {
+        studentNamesMap[s.studentId] = `${s.firstName} ${s.lastName}`;
+      });
+    }
+
+    const parentsWithStudents = parents.map(p => {
+      const parentObj = p.toObject();
+      parentObj.childrenNames = (p.studentIds || []).map(id => studentNamesMap[id] || id);
+      return parentObj;
+    });
+
+    const response = formatPaginationResponse(parentsWithStudents, total, page, limit);
+
 
     return res.status(200).json({
       success: true,
@@ -394,6 +427,24 @@ const updateParentById = async (req, res) => {
 
     const oldStudentIds = currentParent.studentIds || [];
     const newStudentIds = updateData.studentIds;
+
+    // Validate if newly added students are already linked to another parent
+    if (newStudentIds !== undefined) {
+      const addedStudents = newStudentIds.filter(id => !oldStudentIds.includes(id));
+      if (addedStudents.length > 0) {
+        const Student = getStudentModel(schoolDbName);
+        const alreadyLinked = await Student.findOne({
+          studentId: { $in: addedStudents },
+          parentId: { $exists: true, $ne: null, $ne: "", $ne: parentId }
+        });
+        if (alreadyLinked) {
+          return res.status(400).json({
+            success: false,
+            message: `Student ${alreadyLinked.firstName} ${alreadyLinked.lastName} (${alreadyLinked.studentId}) is already linked to another parent.`
+          });
+        }
+      }
+    }
 
     const updatedParent = await Parent.findOneAndUpdate(
       { parentId },

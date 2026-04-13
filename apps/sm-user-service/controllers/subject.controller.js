@@ -45,7 +45,7 @@ const getSchoolDbName = async (schoolId) => {
 const createSubject = async (req, res) => {
   try {
     const { schoolId } = req.params;
-    const { name, code, description, classId } = req.body;
+    const { name, code, description, classId, teacherIds } = req.body;
 
     // Validate required fields
     if (!name || !code) {
@@ -63,6 +63,7 @@ const createSubject = async (req, res) => {
       });
     }
 
+    const schoolDb = getSchoolDbConnection(schoolDbName);
     const SubjectModel = getSubjectModel(schoolDbName);
 
     // Check if subject with same name or code exists
@@ -90,6 +91,17 @@ const createSubject = async (req, res) => {
     });
 
     const savedSubject = await newSubject.save();
+
+    // Bidirectional sync: Update teachers' subjects array
+    if (teacherIds && Array.isArray(teacherIds) && teacherIds.length > 0) {
+      const { TeacherSchema: teacherSchema } = require("@sms/shared");
+      const TeacherModel = schoolDb.model("Teacher", teacherSchema);
+      
+      await TeacherModel.updateMany(
+        { teacherId: { $in: teacherIds } },
+        { $addToSet: { subjects: savedSubject.subjectId } }
+      );
+    }
 
     const response = res.status(201).json({
       success: true,
@@ -124,7 +136,7 @@ const createSubject = async (req, res) => {
 const getAllSubjects = async (req, res) => {
   try {
     const { schoolId } = req.params;
-    const { status } = req.query;
+    const { status, search, classId } = req.query;
 
     const schoolDbName = await getSchoolDbName(schoolId);
     if (!schoolDbName) {
@@ -139,8 +151,12 @@ const getAllSubjects = async (req, res) => {
     // Build query filters
     const query = {};
     if (status) query.status = status;
-    const { classId } = req.query;
     if (classId) query.classId = classId;
+    
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      query.$or = [{ name: searchRegex }, { code: searchRegex }];
+    }
 
     const subjects = await SubjectModel.find(query).sort({ name: 1 });
 
@@ -170,9 +186,25 @@ const getAllSubjects = async (req, res) => {
     const allTeachers = await TeacherModel.find(teacherQuery)
       .select("teacherId firstName lastName subjects");
 
+    // Fetch classes to populate className
+    const { ClassSchema: classSchema } = require("@sms/shared");
+    const ClassModel = schoolDb.model("Class", classSchema);
+    const allClasses = await ClassModel.find({ schoolId }).select("classId name");
+    const classMap = {};
+    allClasses.forEach(c => {
+      classMap[c.classId] = c.name;
+    });
+
     response.data = subjects.map((s) => {
       const subjectObj = s.toObject();
       
+      // Populate className
+      if (subjectObj.classId) {
+        subjectObj.className = classMap[subjectObj.classId] || "General";
+      } else {
+        subjectObj.className = "General";
+      }
+
       // Find all teachers who have this subjectId in their subjects array
       const assignedTeachers = allTeachers.filter((t) =>
         t.subjects.includes(subjectObj.subjectId),
@@ -182,10 +214,13 @@ const getAllSubjects = async (req, res) => {
         subjectObj.assignedTeacherName = assignedTeachers
           .map(t => `${t.firstName} ${t.lastName}`)
           .join(", ");
+        subjectObj.assignedTeacherIds = assignedTeachers.map(t => t.teacherId);
         subjectObj.assignedTeacherId = assignedTeachers[0].teacherId; // Keep primary ID for compatibility
       } else {
         subjectObj.assignedTeacherName = "";
+        subjectObj.assignedTeacherIds = [];
       }
+
       return subjectObj;
     });
 
@@ -243,8 +278,11 @@ const updateSubjectById = async (req, res) => {
   try {
     const { schoolId, id: subjectId } = req.params;
     const updateData = req.body;
-
+    const { teacherIds } = updateData;
+    
     // Prevent updating subjectId and schoolId
+    delete updateData.teacherIds;
+
     delete updateData.subjectId;
     delete updateData.schoolId;
 
@@ -256,6 +294,7 @@ const updateSubjectById = async (req, res) => {
       });
     }
 
+    const schoolDb = getSchoolDbConnection(schoolDbName);
     const SubjectModel = getSubjectModel(schoolDbName);
 
     // Check if subject exists
@@ -301,6 +340,24 @@ const updateSubjectById = async (req, res) => {
       updateData,
       { new: true, runValidators: true },
     );
+
+    // Bidirectional sync: Update teachers' subjects array
+    if (teacherIds && Array.isArray(teacherIds)) {
+      const { TeacherSchema: teacherSchema } = require("@sms/shared");
+      const TeacherModel = schoolDb.model("Teacher", teacherSchema);
+      
+      // 1. Remove subjectId from all teachers who had it but are not in teacherIds
+      await TeacherModel.updateMany(
+        { subjects: subjectId, teacherId: { $nin: teacherIds } },
+        { $pull: { subjects: subjectId } }
+      );
+
+      // 2. Add subjectId to all teachers in teacherIds
+      await TeacherModel.updateMany(
+        { teacherId: { $in: teacherIds } },
+        { $addToSet: { subjects: subjectId } }
+      );
+    }
 
     const response = res.status(200).json({
       success: true,

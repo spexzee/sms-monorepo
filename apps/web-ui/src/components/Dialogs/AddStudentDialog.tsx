@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCreateStudent, useUpdateStudent } from '../../queries/Student';
+import { useNotification } from '../../hooks/useNotification';
 import { searchParentsApi } from '../../queries/Parent';
 import { useGetClasses } from '../../queries/Class';
 import type { CreateStudentPayload, Student, Parent, Class, Section } from '../../types';
@@ -22,6 +23,7 @@ import { AppInput } from '../shared/AppInput';
 import { AppSelect } from '../shared/AppSelect';
 import { AppButton } from '../shared/AppButton';
 import { AppDatePicker } from '../shared/AppDatePicker';
+import { PhoneInput } from '../shared/PhoneInput';
 import { format } from 'date-fns';
 
 interface StudentDialogProps {
@@ -42,6 +44,7 @@ const useDebounce = <T,>(value: T, delay: number): T => {
 
 const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, editData }) => {
     const isEditMode = !!editData;
+    const notification = useNotification();
 
     const [formData, setFormData] = useState<CreateStudentPayload>({
         firstName: '',
@@ -201,11 +204,15 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                 const updatePayload: Record<string, unknown> = { ...formData };
                 if (!formData.password) delete updatePayload.password;
                 await updateMutation.mutateAsync({ studentId: editData.studentId, data: updatePayload });
+                notification.success("Student profile synchronized successfully");
             } else {
                 await createMutation.mutateAsync(formData);
+                notification.success("New student enrolled successfully");
             }
             handleClose();
-        } catch { }
+        } catch {
+            notification.error("Enrollment failed. Please check student details.");
+        }
     };
 
     const handleClose = () => {
@@ -305,7 +312,7 @@ const StudentDialog: React.FC<StudentDialogProps> = ({ open, onClose, schoolId, 
                             Additional Information
                         </Typography>
 
-                        <AppInput name="phone" label="Contact Phone" value={formData.phone} onChange={handleChange} labelHint="Optional" />
+                        <PhoneInput name="phone" label="Contact Phone" value={formData.phone} onChange={handleChange} labelHint="Optional" />
 
                         <Autocomplete
                             options={parentOptions}

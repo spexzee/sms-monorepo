@@ -16,6 +16,7 @@ import type { CreateRequestPayload } from '../../types';
 import { AppInput } from '../shared/AppInput';
 import { AppSelect } from '../shared/AppSelect';
 import { AppButton } from '../shared/AppButton';
+import { PhoneInput } from '../shared/PhoneInput';
 
 interface RequestChangeDialogProps {
     open: boolean;
@@ -148,16 +149,28 @@ const RequestChangeDialog: React.FC<RequestChangeDialogProps> = ({
                             />
                         )}
 
-                        {requestType !== "general" && (
+                        {requestType === "email_change" && (
                             <AppInput
-                                label={requestType === "email_change" ? "Proposed New Email" : "Proposed New Phone"}
+                                label="Proposed New Email"
                                 value={newValue}
                                 onChange={(e) => setNewValue(e.target.value)}
                                 error={!!errors.newValue}
                                 helperText={errors.newValue}
                                 required
                                 fullWidth
-                                placeholder={requestType === "email_change" ? "new.email@example.com" : "+1234567890"}
+                                placeholder="new.email@example.com"
+                            />
+                        )}
+
+                        {requestType === "phone_change" && (
+                            <PhoneInput
+                                label="Proposed New Phone"
+                                value={newValue}
+                                onChange={(e) => setNewValue(e.target.value)}
+                                error={!!errors.newValue}
+                                helperText={errors.newValue}
+                                required
+                                fullWidth
                             />
                         )}
 

@@ -28,6 +28,7 @@ import {
   Switch,
 } from "@mui/material";
 import { Close as CloseIcon, Apps as AppsIcon, SelectAll as SelectAllIcon, SyncAlt as SyncAltIcon } from "@mui/icons-material";
+import { useNotification } from "../../hooks/useNotification";
 import { useCreateMenu, useGetMenus, useUpdateMenu } from "../../queries/Menus";
 import { useGetSchools } from "../../queries/School";
 import { useRoleStore } from "../../stores/roleStore";
@@ -50,6 +51,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
   onSuccess,
   menuToEdit,
 }) => {
+  const notification = useNotification();
   const [formData, setFormData] = useState<CreateMenuPayload>({
     schoolId: [],
     menuName: "",
@@ -309,14 +311,16 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
           menuId: menuToEdit.menuId,
           data: normalizedData,
         });
+        notification.success(res.message || "Menu configuration updated");
         onSuccess?.(res.message);
       } else {
         const res = await createMutation.mutateAsync(normalizedData);
+        notification.success(res.message || "New navigation gateway registered");
         onSuccess?.(res.message);
       }
       handleClose();
     } catch {
-      // Error handled by mutation
+      notification.error("Operation failed. Please verify your configuration and try again.");
     }
   };
 

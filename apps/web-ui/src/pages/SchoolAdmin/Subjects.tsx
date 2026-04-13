@@ -8,10 +8,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Paper,
-  Grid,
   Switch,
   Typography,
+  TextField,
 } from "@mui/material";
 import { Edit as EditIcon } from "@mui/icons-material";
 import DataTable, { StatusChip } from "../../components/Table/DataTable";
@@ -27,6 +26,7 @@ const SubjectsPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editData, setEditData] = useState<Subject | null>(null);
   const [selectedClass, setSelectedClass] = useState<string>("");
+  const [search, setSearch] = useState("");
   const { showNotification } = useNotificationStore();
 
   const schoolId = TokenService.getSchoolId() || "";
@@ -37,7 +37,8 @@ const SubjectsPage = () => {
 
   const { data, isLoading, error } = useGetSubjects(schoolId, {
     classId: selectedClass || undefined,
-  });
+    search: search || undefined,
+  } as any);
   const updateMutation = useUpdateSubject(schoolId);
 
   const subjects = data?.data || [];
@@ -73,7 +74,7 @@ const SubjectsPage = () => {
 
   const columns: Column<Subject>[] = [
     { id: "subjectId", label: "ID", minWidth: 100 },
-    { id: "name", label: "Subject Name", minWidth: 150 },
+    { id: "name", label: "Subject Name", minWidth: 180 },
     {
       id: "code",
       label: "Code",
@@ -84,12 +85,19 @@ const SubjectsPage = () => {
           size="small"
           color="secondary"
           variant="outlined"
+          sx={{ fontWeight: 600 }}
         />
       ),
     },
     {
+      id: "className",
+      label: "Assigned Class",
+      minWidth: 150,
+      format: (value) => value || "General",
+    },
+    {
       id: "assignedTeacherName",
-      label: "Assigned Teacher",
+      label: "Assigned Faculty",
       minWidth: 220,
       format: (value) => (
         <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
@@ -111,7 +119,6 @@ const SubjectsPage = () => {
         </Box>
       ),
     },
-    { id: "description", label: "Description", minWidth: 200 },
     {
       id: "status",
       label: "Status",
@@ -159,33 +166,46 @@ const SubjectsPage = () => {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Class</InputLabel>
-              <Select
-                value={selectedClass}
-                label="Class"
-                onChange={(e) => {
-                  setSelectedClass(e.target.value);
-                }}
-              >
-                <MenuItem value="">All Classes</MenuItem>
-                {classes.map((c: Class) => (
-                  <MenuItem key={c.classId} value={c.classId}>
-                    {c.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-        </Grid>
-      </Paper>
+      {/* Search + Filter Bar */}
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          mb: 3,
+          alignItems: "center",
+        }}
+      >
+        <TextField
+          label="Search Subjects"
+          variant="outlined"
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name or code..."
+          sx={{ minWidth: 240, flex: { xs: 1, sm: "none" } }}
+        />
+        
+        <FormControl size="small" sx={{ minWidth: 180, flex: { xs: 1, sm: "none" } }}>
+          <InputLabel>Filter by Class</InputLabel>
+          <Select
+            value={selectedClass}
+            label="Filter by Class"
+            onChange={(e) => setSelectedClass(e.target.value)}
+          >
+            <MenuItem value="">All Classes</MenuItem>
+            <MenuItem value="general">General (No Class)</MenuItem>
+            {classes.filter((c: Class) => c.status === "active").map((c: Class) => (
+              <MenuItem key={c.classId} value={c.classId}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
 
       <DataTable<Subject>
-        title="Subjects"
+        title="Curriculum Subjects"
         columns={columns}
         data={subjects}
         isLoading={isLoading}
@@ -197,7 +217,7 @@ const SubjectsPage = () => {
         }
         onAddClick={handleAdd}
         addButtonLabel="Add Subject"
-        emptyMessage="No subjects found. Click 'Add Subject' to create one."
+        emptyMessage="No subjects match your criteria. Click 'Add Subject' to create one."
         getRowKey={(row) => row.subjectId}
       />
 
@@ -206,7 +226,7 @@ const SubjectsPage = () => {
         onClose={handleDialogClose}
         schoolId={schoolId}
         editData={editData}
-        initialClassId={selectedClass}
+        initialClassId={selectedClass === 'general' ? "" : selectedClass}
       />
     </Box>
   );

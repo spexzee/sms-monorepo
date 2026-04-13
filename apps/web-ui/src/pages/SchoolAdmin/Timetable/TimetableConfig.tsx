@@ -44,7 +44,7 @@ import {
     useUpdateConfig,
     useUpsertPeriod,
     useRemovePeriod,
-    useRemoveShift,
+    // useRemoveShift,
     useToggleTimetableDisable,
 } from '../../../queries/Timetable';
 import type { Period, Shift } from '../../../types/timetable.types';
@@ -357,7 +357,7 @@ const TimetableConfigPage = () => {
     const config = configData?.data;
     const upsertPeriod = useUpsertPeriod(schoolId, config?.configId || '');
     const removePeriod = useRemovePeriod(schoolId, config?.configId || '');
-    const removeShift = useRemoveShift(schoolId, config?.configId || '');
+    // const removeShift = useRemoveShift(schoolId, config?.configId || '');
     const updateConfig = useUpdateConfig(schoolId, config?.configId || '');
     const toggleDisable = useToggleTimetableDisable(schoolId);
 
@@ -689,7 +689,7 @@ const TimetableConfigPage = () => {
                     </Paper>
 
                     {/* Shifts (Optional) */}
-                    <Paper sx={{ p: 3 }}>
+                    {/* <Paper sx={{ p: 3 }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Shifts (Optional)</Typography>
                         {config.shifts.length === 0 ? (
                             <Typography color="text.secondary">
@@ -708,7 +708,7 @@ const TimetableConfigPage = () => {
                                 ))}
                             </Box>
                         )}
-                    </Paper>
+                    </Paper> */}
                 </>
             )}
 

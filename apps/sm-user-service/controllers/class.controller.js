@@ -468,8 +468,21 @@ const removeSection = async (req, res) => {
             });
         }
 
+        const removedSection = classData.sections[sectionIndex];
         classData.sections.splice(sectionIndex, 1);
         await classData.save();
+
+        // Remove classId#sectionId from the assigned teacher's classes array
+        if (removedSection.classTeacherId) {
+            const schoolDb = getSchoolDbConnection(schoolDbName);
+            const { TeacherSchema: teacherSchema } = require("@sms/shared");
+            const Teacher = schoolDb.model("Teacher", teacherSchema);
+            const pair = `${classId}#${sectionId}`;
+            await Teacher.findOneAndUpdate(
+                { teacherId: removedSection.classTeacherId },
+                { $pull: { classes: pair } }
+            );
+        }
 
         const response = res.status(200).json({
             success: true,
@@ -501,7 +514,7 @@ const removeSection = async (req, res) => {
     }
 };
 
-// Assign class teacher to section
+// Assign class teacher to section — bidirectionally syncs the Teacher model
 const assignClassTeacher = async (req, res) => {
     try {
         const { schoolId, id: classId, sectionId } = req.params;
@@ -533,8 +546,30 @@ const assignClassTeacher = async (req, res) => {
             });
         }
 
+        const schoolDb = getSchoolDbConnection(schoolDbName);
+        const { TeacherSchema: teacherSchema } = require("@sms/shared");
+        const Teacher = schoolDb.model("Teacher", teacherSchema);
+        const pair = `${classId}#${sectionId}`;
+
+        // Remove pair from old teacher's classes array (if any)
+        if (section.classTeacherId && section.classTeacherId !== teacherId) {
+            await Teacher.findOneAndUpdate(
+                { teacherId: section.classTeacherId },
+                { $pull: { classes: pair } }
+            );
+        }
+
+        // Update section.classTeacherId in Class document
         section.classTeacherId = teacherId || null;
         await classData.save();
+
+        // Add pair to new teacher's classes array (if assigning, not clearing)
+        if (teacherId) {
+            await Teacher.findOneAndUpdate(
+                { teacherId },
+                { $addToSet: { classes: pair } }
+            );
+        }
 
         return res.status(200).json({
             success: true,
