@@ -123,12 +123,16 @@ export const useDeleteStudent = (schoolId: string) => {
 };
 
 // Search students for autocomplete
-export const searchStudentsApi = (schoolId: string, query: string) =>
+export const searchStudentsApi = (schoolId: string, query: string, filters?: { unlinkedOnly?: boolean; currentParentId?: string }) =>
   useApi<ApiResponse<Student[]>>(
     "GET",
     `/api/school/${schoolId}/students/search`,
     undefined,
-    { query }
+    { 
+      query,
+      unlinkedOnly: filters?.unlinkedOnly ? "true" : undefined,
+      currentParentId: filters?.currentParentId
+    }
   );
 
 // Bulk create students (from Excel upload)

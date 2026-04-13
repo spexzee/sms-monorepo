@@ -730,8 +730,23 @@ const searchStudents = async (req, res) => {
     }
 
     const Student = getStudentModel(schoolDbName);
+    const { unlinkedOnly, currentParentId } = req.query;
 
     const mongoQuery = { status: "active" };
+    const andConditions = [];
+
+    // Apply filtering for already linked students if requested
+    if (unlinkedOnly === "true") {
+      const unlinkedConditions = [
+        { parentId: { $exists: false } },
+        { parentId: "" },
+        { parentId: null },
+      ];
+      if (currentParentId) {
+        unlinkedConditions.push({ parentId: currentParentId });
+      }
+      andConditions.push({ $or: unlinkedConditions });
+    }
 
     // Search filter
     if (searchTerm) {
@@ -760,16 +775,57 @@ const searchStudents = async (req, res) => {
           });
         }
       }
-      mongoQuery.$or = searchConditions;
+      andConditions.push({ $or: searchConditions });
+    }
+
+    if (andConditions.length > 0) {
+      mongoQuery.$and = andConditions;
     }
 
     const students = await Student.find(mongoQuery)
-      .select("studentId firstName lastName email class section")
+      .select("studentId firstName lastName email class section rollNumber")
       .limit(10);
+
+    // Get unique class IDs to fetch class details
+    const classIds = [
+      ...new Set(students.filter((s) => s.class).map((s) => s.class)),
+    ];
+
+    // Fetch class details with sections
+    const Class = getClassModel(schoolDbName);
+    const classData = await Class.find({ classId: { $in: classIds } }).select(
+      "classId name sections",
+    );
+
+    // Create maps for class names and sections
+    const classMap = {};
+    const sectionMap = {}; // Use compound key: classId_sectionId
+    classData.forEach((c) => {
+      classMap[c.classId] = c.name;
+      if (c.sections) {
+        c.sections.forEach((s) => {
+          sectionMap[`${c.classId}_${s.sectionId}`] = s.name;
+        });
+      }
+    });
+
+    const studentsWithDetails = students.map((student) => {
+      const studentObj = student.toObject();
+      // Add class name
+      if (studentObj.class && classMap[studentObj.class]) {
+        studentObj.className = classMap[studentObj.class];
+      }
+      // Add section name
+      const sectionKey = `${studentObj.class}_${studentObj.section}`;
+      if (sectionKey && sectionMap[sectionKey]) {
+        studentObj.sectionName = sectionMap[sectionKey];
+      }
+      return studentObj;
+    });
 
     return res.status(200).json({
       success: true,
-      data: students,
+      data: studentsWithDetails,
       count: students.length,
     });
   } catch (error) {

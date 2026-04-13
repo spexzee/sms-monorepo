@@ -31,6 +31,7 @@ export const useGetTeachers = (schoolId: string, filters?: TeacherFilters) => {
       if (params.status) queryParams.append("status", params.status);
       if (params.department)
         queryParams.append("department", params.department);
+      if (params.search) queryParams.append("search", params.search);
 
       const queryString = queryParams.toString();
       if (queryString) url += `?${queryString}`;
@@ -48,13 +49,13 @@ export const useGetTeacherById = (schoolId: string, teacherId: string) => {
     queryFn: () =>
       useApi<ApiResponse<Teacher>>(
         "GET",
-                `/api/school/${schoolId}/teachers/${teacherId}`
+        `/api/school/${schoolId}/teachers/${teacherId}`
       ),
     enabled: !!schoolId && !!teacherId,
   });
 };
 
-// Create teacher
+// Create teacher — also invalidates class cache so Classes page reflects new assignments
 export const useCreateTeacher = (schoolId: string) => {
   const queryClient = useQueryClient();
 
@@ -63,10 +64,13 @@ export const useCreateTeacher = (schoolId: string) => {
       useApi<ApiResponse<Teacher>>(
         "POST",
         `/api/school/${schoolId}/teachers`,
-                data
+        data
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: teacherKeys.all(schoolId) });
+      // Invalidate ALL teacher query variants (filtered, detail, all)
+      queryClient.invalidateQueries({ queryKey: ["teachers", schoolId], exact: false });
+      // Also refresh classes so section.classTeacherId changes are visible
+      queryClient.invalidateQueries({ queryKey: ["classes", schoolId], exact: false });
     },
   });
 };
@@ -81,18 +85,20 @@ export const useUpdateTeacher = (schoolId: string) => {
       data,
     }: {
       teacherId: string;
-      data: UpdateTeacherPayload;
+      data: UpdateTeacherPayload | Record<string, unknown>;
     }) =>
       useApi<ApiResponse<Teacher>>(
         "PUT",
         `/api/school/${schoolId}/teachers/${teacherId}`,
-                data
+        data
       ),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: teacherKeys.all(schoolId) });
+      queryClient.invalidateQueries({ queryKey: ["teachers", schoolId], exact: false });
       queryClient.invalidateQueries({
         queryKey: teacherKeys.detail(schoolId, variables.teacherId),
       });
+      // Refresh classes in case section.classTeacherId changed
+      queryClient.invalidateQueries({ queryKey: ["classes", schoolId], exact: false });
     },
   });
 };
@@ -105,11 +111,11 @@ export const useDeleteTeacher = (schoolId: string) => {
     mutationFn: (teacherId: string) =>
       useApi<ApiResponse<Teacher>>(
         "DELETE",
-                `/api/school/${schoolId}/teachers/${teacherId}`
+        `/api/school/${schoolId}/teachers/${teacherId}`
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: teacherKeys.all(schoolId) });
+      queryClient.invalidateQueries({ queryKey: ["teachers", schoolId], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["classes", schoolId], exact: false });
     },
   });
 };
-

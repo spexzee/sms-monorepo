@@ -11,6 +11,7 @@ import {
   Divider,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
+import { useNotification } from '../../hooks/useNotification';
 import { useCreateSchoolAdmin, useUpdateSchoolAdmin } from '../../queries/SchoolAdmin';
 import { useGetSchools } from '../../queries/School';
 import type { CreateSchoolAdminPayload, SchoolAdmin } from '../../types';
@@ -19,6 +20,7 @@ import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
 import { AppInput } from '../shared/AppInput';
 import { AppSelect } from '../shared/AppSelect';
 import { AppButton } from '../shared/AppButton';
+import { PhoneInput } from '../shared/PhoneInput';
 
 interface SchoolAdminDialogProps {
   open: boolean;
@@ -34,6 +36,7 @@ const SchoolAdminDialog: React.FC<SchoolAdminDialogProps> = ({
   editData,
 }) => {
   const isEditMode = !!editData;
+  const notification = useNotification();
 
   const [formData, setFormData] = useState<
     CreateSchoolAdminPayload & { profileImage?: string }
@@ -136,14 +139,16 @@ const SchoolAdminDialog: React.FC<SchoolAdminDialogProps> = ({
           userId: editData.userId,
           data: updatePayload,
         });
+        notification.success("Administrator profile updated successfully");
         onSuccess?.(res.message);
       } else {
         const res = await createMutation.mutateAsync(formData);
+        notification.success("New school administrator account registered");
         onSuccess?.(res.message);
       }
       handleClose();
     } catch {
-      // Error is handled by mutation
+      notification.error("Operation failed. Please verify administrator credentials.");
     }
   };
 
@@ -233,7 +238,7 @@ const SchoolAdminDialog: React.FC<SchoolAdminDialogProps> = ({
                 required
               />
 
-              <AppInput
+              <PhoneInput
                 name="contactNumber"
                 label="Contact Number"
                 value={formData.contactNumber}

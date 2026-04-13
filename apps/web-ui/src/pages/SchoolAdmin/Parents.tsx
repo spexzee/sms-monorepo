@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Box, IconButton, Tooltip, Switch, TextField, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Box, IconButton, Tooltip, Switch, TextField, FormControl, InputLabel, Select, MenuItem, Chip, Typography } from "@mui/material";
+
 import { Edit as EditIcon } from "@mui/icons-material";
 import DataTable, { StatusChip } from "../../components/Table/DataTable";
 import type { Column } from "../../components/Table/DataTable";
@@ -85,6 +86,23 @@ const ParentsPage = () => {
         (value as string)?.charAt(0).toUpperCase() +
         (value as string)?.slice(1),
     },
+    {
+      id: "childrenNames",
+      label: "Linked Children",
+      minWidth: 200,
+      format: (value) => (
+        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+          {Array.isArray(value) && value.length > 0 ? (
+            (value as string[]).map((name, idx) => (
+              <Chip key={idx} label={name} size="small" variant="outlined" color="primary" />
+            ))
+          ) : (
+            <Typography variant="caption" color="text.secondary">None</Typography>
+          )}
+        </Box>
+      ),
+    },
+
     {
       id: "status",
       label: "Status",

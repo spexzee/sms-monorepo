@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { AppInput } from '../shared/AppInput';
 import { AppDatePicker } from '../shared/AppDatePicker';
+import { PhoneInput } from '../shared/PhoneInput';
 import { useNotification } from '../../hooks/useNotification';
 import { useCreateDriver, useUpdateDriver } from '../../queries/transport';
 
@@ -132,7 +133,7 @@ const AddDriverDialog: React.FC<AddDriverDialogProps> = ({ open, onClose, school
                             </Grid>
                         )}
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <AppInput 
+                            <PhoneInput 
                                 label="Phone Number" 
                                 value={formData.phone} 
                                 onChange={(e) => setFormData({...formData, phone: e.target.value})} 

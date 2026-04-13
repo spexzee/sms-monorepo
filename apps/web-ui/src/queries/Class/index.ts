@@ -33,6 +33,7 @@ export const useGetClasses = (schoolId: string, filters?: ClassFilters) => {
                 filters as Record<string, unknown>
             ),
         enabled: !!schoolId,
+        staleTime: 0, // Always refetch — section classTeacherId must be current
     });
 };
 
@@ -61,7 +62,7 @@ export const useCreateClass = (schoolId: string) => {
                 data
             ),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: classKeys.all(schoolId) });
+            queryClient.invalidateQueries({ queryKey: ["classes", schoolId], exact: false });
         },
     });
 };
@@ -84,7 +85,7 @@ export const useUpdateClass = (schoolId: string) => {
                 data
             ),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: classKeys.all(schoolId) });
+            queryClient.invalidateQueries({ queryKey: ["classes", schoolId], exact: false });
             queryClient.invalidateQueries({
                 queryKey: classKeys.detail(schoolId, variables.classId),
             });
@@ -103,7 +104,7 @@ export const useDeleteClass = (schoolId: string) => {
                 `/api/school/${schoolId}/classes/${classId}`
             ),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: classKeys.all(schoolId) });
+            queryClient.invalidateQueries({ queryKey: ["classes", schoolId], exact: false });
         },
     });
 };
@@ -126,7 +127,7 @@ export const useAddSection = (schoolId: string) => {
                 data
             ),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: classKeys.all(schoolId) });
+            queryClient.invalidateQueries({ queryKey: ["classes", schoolId], exact: false });
             queryClient.invalidateQueries({
                 queryKey: classKeys.detail(schoolId, variables.classId),
             });
@@ -151,7 +152,8 @@ export const useRemoveSection = (schoolId: string) => {
                 `/api/school/${schoolId}/classes/${classId}/sections/${sectionId}`
             ),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: classKeys.all(schoolId) });
+            queryClient.invalidateQueries({ queryKey: ["classes", schoolId], exact: false });
+            queryClient.invalidateQueries({ queryKey: ["teachers", schoolId], exact: false });
             queryClient.invalidateQueries({
                 queryKey: classKeys.detail(schoolId, variables.classId),
             });
@@ -179,7 +181,8 @@ export const useAssignClassTeacher = (schoolId: string) => {
                 data
             ),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: classKeys.all(schoolId) });
+            queryClient.invalidateQueries({ queryKey: ["classes", schoolId], exact: false });
+            queryClient.invalidateQueries({ queryKey: ["teachers", schoolId], exact: false });
             queryClient.invalidateQueries({
                 queryKey: classKeys.detail(schoolId, variables.classId),
             });

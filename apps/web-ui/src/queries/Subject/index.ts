@@ -59,7 +59,8 @@ export const useCreateSubject = (schoolId: string) => {
                 data
             ),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: subjectKeys.all(schoolId) });
+            queryClient.invalidateQueries({ queryKey: ["subjects", schoolId], exact: false });
+            queryClient.invalidateQueries({ queryKey: ["teachers", schoolId], exact: false });
         },
     });
 };
@@ -82,10 +83,11 @@ export const useUpdateSubject = (schoolId: string) => {
                 data
             ),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: subjectKeys.all(schoolId) });
+            queryClient.invalidateQueries({ queryKey: ["subjects", schoolId], exact: false });
             queryClient.invalidateQueries({
                 queryKey: subjectKeys.detail(schoolId, variables.subjectId),
             });
+            queryClient.invalidateQueries({ queryKey: ["teachers", schoolId], exact: false });
         },
     });
 };
@@ -101,7 +103,8 @@ export const useDeleteSubject = (schoolId: string) => {
                 `/api/school/${schoolId}/subjects/${subjectId}`
             ),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: subjectKeys.all(schoolId) });
+            queryClient.invalidateQueries({ queryKey: ["subjects", schoolId], exact: false });
+            queryClient.invalidateQueries({ queryKey: ["teachers", schoolId], exact: false });
         },
     });
 };

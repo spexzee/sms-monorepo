@@ -175,12 +175,10 @@ export interface CreateTeacherPayload {
   password: string;
   phone?: string;
   subjects?: string[];
-  classes?: string[];
+  classes?: string[];       // stores classId#sectionId pairs
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
-  sections?: string[];
-  classTeacherSectionId?: string | null;
 }
 
 export interface UpdateTeacherPayload {
@@ -190,12 +188,10 @@ export interface UpdateTeacherPayload {
   password?: string;
   phone?: string;
   subjects?: string[];
-  classes?: string[];
+  classes?: string[];       // stores classId#sectionId pairs
   status?: "active" | "inactive";
   profileImage?: string;
   signature?: string;
-  sections?: string[];
-  classTeacherSectionId?: string | null;
 }
 
 // Student Types
@@ -315,7 +311,9 @@ export interface TeacherFilters {
   department?: string;
   page?: number;
   limit?: number;
+  search?: string;
 }
+
 
 export interface StudentFilters {
   class?: string;
@@ -427,10 +425,12 @@ export interface Subject {
   status: "active" | "inactive";
   assignedTeacherName?: string;
   assignedTeacherId?: string;
+  assignedTeacherIds?: string[];
   classId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
+
 
 export interface CreateSubjectPayload {
   name: string;
@@ -451,7 +451,9 @@ export interface SubjectFilters {
   status?: "active" | "inactive";
   classId?: string;
   sectionId?: string;
+  search?: string;
 }
+
 
 // ==========================================
 // ATTENDANCE TYPES

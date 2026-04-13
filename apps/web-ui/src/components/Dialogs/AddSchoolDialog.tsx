@@ -18,6 +18,7 @@ import { IMAGEKIT_FOLDERS } from '../../utils/imagekit';
 import { AppInput } from '../shared/AppInput';
 import { AppSelect } from '../shared/AppSelect';
 import { AppButton } from '../shared/AppButton';
+import { PhoneInput } from '../shared/PhoneInput';
 
 interface SchoolDialogProps {
   open: boolean;
@@ -273,7 +274,7 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
                 helperText={errors.schoolEmail}
               />
 
-              <AppInput
+              <PhoneInput
                 name="schoolContact"
                 label="Contact Number"
                 value={formData.schoolContact}

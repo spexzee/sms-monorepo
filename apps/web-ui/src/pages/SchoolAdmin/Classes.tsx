@@ -38,7 +38,8 @@ const ClassesPage = () => {
 
     const schoolId = TokenService.getSchoolId() || '';
     const { data, isLoading, error } = useGetClasses(schoolId);
-    const { data: teachersData } = useGetTeachers(schoolId);
+    const { data: teachersData } = useGetTeachers(schoolId, { limit: 9999 } as any);
+
     const updateMutation = useUpdateClass(schoolId);
     const removeSectionMutation = useRemoveSection(schoolId);
 

@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { Box, IconButton, Tooltip, Chip, Switch } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Tooltip,
+  Chip,
+  Switch,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
 import { Edit as EditIcon } from "@mui/icons-material";
 import DataTable, { StatusChip } from "../../components/Table/DataTable";
 import type { Column } from "../../components/Table/DataTable";
@@ -18,7 +29,15 @@ const TeachersPage = () => {
   const schoolId = TokenService.getSchoolId() || "";
   const { page, setPage, limit, setLimit } = useAuth();
 
-  const { data, isLoading, error } = useGetTeachers(schoolId, { page, limit });
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+
+  const { data, isLoading, error } = useGetTeachers(schoolId, {
+    page,
+    limit,
+    status: statusFilter || undefined,
+    search: search || undefined,
+  } as any);
   const updateMutation = useUpdateTeacher(schoolId);
 
   const teachers = data?.data || [];
@@ -43,7 +62,6 @@ const TeachersPage = () => {
       notification.success(result.message || `Teacher status updated to ${newStatus}`);
     } catch (err) {
       notification.error((err as any)?.message || "Failed to update status");
-      console.error("Failed to update status:", err);
     }
   };
 
@@ -79,17 +97,19 @@ const TeachersPage = () => {
       ),
     },
     {
-      id: "classTeacherSectionId",
-      label: "Class Teacher Of",
-      minWidth: 150,
-      align: "center",
-      format: (_, row) => (
-        <Chip
-          label={row.classTeacherLabel || "N/A"}
-          size="small"
-          color={row.classTeacherLabel ? "primary" : "default"}
-          variant={row.classTeacherLabel ? "filled" : "outlined"}
-        />
+      id: "classNames",
+      label: "Assigned Classes",
+      minWidth: 180,
+      format: (value) => (
+        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+          {Array.isArray(value) && value.length > 0 ? (
+            (value as string[]).map((name, idx) => (
+              <Chip key={idx} label={name} size="small" variant="outlined" color="primary" />
+            ))
+          ) : (
+            "None"
+          )}
+        </Box>
       ),
     },
     {
@@ -139,6 +159,39 @@ const TeachersPage = () => {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      {/* Search + Filter bar */}
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          mb: 2,
+          alignItems: "center",
+        }}
+      >
+        <TextField
+          label="Search"
+          variant="outlined"
+          size="small"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          placeholder="Search by name or email..."
+          sx={{ minWidth: 240 }}
+        />
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={statusFilter}
+            label="Status"
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          >
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="active">Active</MenuItem>
+            <MenuItem value="inactive">Inactive</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+
       <DataTable<Teacher>
         title="Teachers"
         columns={columns}
@@ -146,8 +199,7 @@ const TeachersPage = () => {
         isLoading={isLoading}
         error={
           error
-            ? (error as { message?: string })?.message ||
-              "Failed to load teachers"
+            ? (error as { message?: string })?.message || "Failed to load teachers"
             : null
         }
         onAddClick={handleAdd}
