@@ -27,6 +27,7 @@ module.exports = {
     // Timetable Management
     TimetableConfigSchema: require('./timetable-config.model'),
     TimetableEntrySchema: require('./timetable-entry.model'),
+    TimetableAIDraftSchema: require('./timetable-ai-draft.model'),
     SubstituteAssignmentSchema: require('./substitute-assignment.model'),
     RoomSchema: require('./room.model'),
     PeriodSwapSchema: require('./period-swap.model'),

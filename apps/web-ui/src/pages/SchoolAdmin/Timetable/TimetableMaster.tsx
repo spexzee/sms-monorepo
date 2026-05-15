@@ -31,6 +31,7 @@ import {
   SwapHoriz as SwapIcon,
   Download as DownloadIcon,
   FileUpload as UploadIcon,
+  // AutoAwesome as MagicIcon,
 } from "@mui/icons-material";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -60,6 +61,7 @@ import { useNotificationStore } from "../../../stores/notificationStore";
 import ConfirmationDialog from "../../../components/Dialogs/ConfirmationDialog";
 import { AppButton } from "../../../components/shared/AppButton";
 import { generateTimetableTemplate, parseTimetableTemplate } from "../../../utils/timetableExcelUtils";
+import AITimetableGenerateDialog from "../../../components/Dialogs/AITimetableGenerateDialog";
 
 type ViewMode = "table" | "list";
 
@@ -291,6 +293,7 @@ const TimetableMaster = () => {
   const [selectedSlot, setSelectedSlot] = useState({ day: "", period: 0 });
   const [selectedCopySource, setSelectedCopySource] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [aiGenerateDialogOpen, setAiGenerateDialogOpen] = useState(false);
   const { showNotification } = useNotificationStore();
 
   // Get today's date for leave checking
@@ -316,7 +319,12 @@ const TimetableMaster = () => {
   const bulkCreateEntries = useBulkCreateEntries(schoolId);
 
   const config = configData?.data;
-  const classes = classesData?.data || [];
+  const classes = useMemo(() => {
+    return (classesData?.data || []).sort((a: any, b: any) =>
+      b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }, [classesData]);
+
   const teachers = teachersData?.data || [];
   const subjects = subjectsData?.data || [];
   const entries = timetableData?.data?.entries || [];
@@ -328,7 +336,11 @@ const TimetableMaster = () => {
   const selectedClassObj = classes.find(
     (c: any) => c.classId === selectedClass,
   );
-  const sections = selectedClassObj?.sections || [];
+  const sections = useMemo(() => {
+    return (selectedClassObj?.sections || []).sort((a: any, b: any) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }, [selectedClassObj]);
 
   const className = selectedClassObj?.name || selectedClass;
   const sectionName =
@@ -723,6 +735,15 @@ const TimetableMaster = () => {
                   onChange={handleUploadExcel}
                 />
               </AppButton>
+              {/* <AppButton
+                variant="outlined"
+                color="secondary"
+                startIcon={<MagicIcon />}
+                onClick={() => setAiGenerateDialogOpen(true)}
+                size="small"
+              >
+                AI Auto-Generate
+              </AppButton> */}
               {entries.length > 0 && (
                 <AppButton
                   variant="outlined"
@@ -1324,6 +1345,17 @@ const TimetableMaster = () => {
         variant="danger"
         isLoading={deleteClassTimetable.isPending}
       />
+
+      {aiGenerateDialogOpen && (
+        <AITimetableGenerateDialog
+          open={aiGenerateDialogOpen}
+          onClose={() => setAiGenerateDialogOpen(false)}
+          schoolId={schoolId}
+          subjects={subjects}
+          currentClassId={selectedClass}
+          currentSectionId={selectedSection}
+        />
+      )}
     </Box>
   );
 };

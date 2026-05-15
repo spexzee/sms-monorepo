@@ -42,6 +42,7 @@ const DriverDashboard = lazy(() => import("../pages/Driver/DriverDashboard"));
 
 const TimetableConfig = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableConfig"));
 const TimetableMaster = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableMaster"));
+const TimetableDraftPreview = lazy(() => import("../pages/SchoolAdmin/Timetable/TimetableDraftPreview"));
 const ConflictManagement = lazy(() => import("../pages/SchoolAdmin/Timetable/ConflictManagement"));
 const SubstituteManagement = lazy(() => import("../pages/SchoolAdmin/Timetable/SubstituteManagement"));
 
@@ -188,6 +189,10 @@ const MainRouters = () => {
           <Route
             path="/school-admin/timetable/master"
             element={<TimetableMaster />}
+          />
+          <Route
+            path="/school-admin/timetable/draft"
+            element={<TimetableDraftPreview />}
           />
           <Route
             path="/school-admin/timetable/conflicts"
