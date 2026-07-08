@@ -47,4 +47,10 @@ describe('AppCard', () => {
     );
     expect(screen.getByText('Nested Card')).toBeInTheDocument();
   });
+
+  // Covers the hover=false branch: whileHover={hover ? { y: -4, ... } : {}}
+  it('renders correctly when hover is disabled (hover=false)', () => {
+    render(<AppCard hover={false}><p>Static card</p></AppCard>);
+    expect(screen.getByText('Static card')).toBeInTheDocument();
+  });
 });

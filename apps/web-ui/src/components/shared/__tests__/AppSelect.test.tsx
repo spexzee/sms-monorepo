@@ -57,4 +57,17 @@ describe('AppSelect', () => {
     fireEvent.click(sciOption);
     expect(handleChange).toHaveBeenCalled();
   }, 10000);
+
+  // Covers the fullWidth=false branch: width: fullWidth ? '100%' : 'auto'
+  it('renders correctly when fullWidth is false', () => {
+    render(<AppSelect label="Subject" options={mockOptions} fullWidth={false} />);
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('renders in error state when error prop is true', () => {
+    render(
+      <AppSelect label="Subject" options={mockOptions} error helperText="Required field" />
+    );
+    expect(screen.getByText('Required field')).toBeInTheDocument();
+  });
 });

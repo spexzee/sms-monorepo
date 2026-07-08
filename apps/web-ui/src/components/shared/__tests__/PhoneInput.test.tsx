@@ -55,4 +55,21 @@ describe('PhoneInput', () => {
     render(<PhoneInput disabled />);
     expect(screen.getByRole('textbox')).toBeDisabled();
   });
+
+  // Covers the `if (onChange)` false branch — no onChange provided
+  it('handles typing gracefully when no onChange prop is provided', async () => {
+    render(<PhoneInput />);
+    const input = screen.getByPlaceholderText('00000 00000');
+    // Should not throw even though onChange is not provided
+    await userEvent.type(input, '99887766');
+    expect(input).toBeInTheDocument();
+  });
+
+  it('uses the name prop in the synthetic change event', async () => {
+    const handleChange = vi.fn();
+    render(<PhoneInput name="phone" onChange={handleChange} />);
+    await userEvent.type(screen.getByPlaceholderText('00000 00000'), '5');
+    const ev = handleChange.mock.calls[0][0] as React.ChangeEvent<HTMLInputElement>;
+    expect(ev.target.name).toBe('phone');
+  });
 });

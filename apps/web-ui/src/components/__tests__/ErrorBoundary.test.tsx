@@ -101,4 +101,24 @@ describe('ErrorBoundary', () => {
     );
     expect(reloadSpy).toHaveBeenCalledTimes(1);
   }, 15000);
+
+  // Covers handleGoHome (ErrorBoundary.tsx lines 40-41)
+  it('sets window.location.href to "/" when Go Home button is clicked', async () => {
+    // Replace location with a plain writable object so href assignment is captured
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, href: '' },
+      writable: true,
+      configurable: true,
+    });
+
+    render(
+      <ErrorBoundary>
+        <ThrowingComponent shouldThrow />
+      </ErrorBoundary>
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: /go home/i }, { timeout: 10000 })
+    );
+    expect(window.location.href).toBe('/');
+  }, 15000);
 });
