@@ -412,9 +412,34 @@ const updateMenu = async (req, res) => {
       });
     }
 
+    // Cascade: if a main menu is set to inactive, deactivate all its submenus automatically
+    let cascadedCount = 0;
+    if (
+      updatedMenu.menuType === "main" &&
+      updateData.status === "inactive"
+    ) {
+      const cascadeResult = await Menu.updateMany(
+        { parentMenuId: menuId, menuType: "sub" },
+        { $set: { status: "inactive" } }
+      );
+      cascadedCount = cascadeResult.modifiedCount;
+    }
+
+    // Cascade: if a main menu is re-activated, re-activate all its submenus
+    if (
+      updatedMenu.menuType === "main" &&
+      updateData.status === "active"
+    ) {
+      const cascadeResult = await Menu.updateMany(
+        { parentMenuId: menuId, menuType: "sub" },
+        { $set: { status: "active" } }
+      );
+      cascadedCount = cascadeResult.modifiedCount;
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Menu updated successfully",
+      message: `Menu updated successfully${cascadedCount > 0 ? `. ${cascadedCount} submenu(s) status updated automatically.` : ""}`,
       data: updatedMenu,
     });
   } catch (error) {

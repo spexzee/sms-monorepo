@@ -1,0 +1,22 @@
+{
+  "name": "sm-payment-service",
+  "version": "1.0.0",
+  "description": "Fee and Payment Management Service for School Management System",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --watch . --watch ../../packages/shared index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@sms/shared": "*",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^9.1.1",
+    "pdfkit": "^0.16.0"
+  }
+}

@@ -36,6 +36,20 @@ const SchoolAdminTransport = lazy(() => import("../pages/SchoolAdmin/Transport/T
 const VehicleManagement = lazy(() => import("../pages/SchoolAdmin/Transport/VehicleManagement"));
 const DriverManagement = lazy(() => import("../pages/SchoolAdmin/Transport/DriverManagement"));
 
+// Fee Management Pages
+const FeeDashboard = lazy(() => import("../pages/SchoolAdmin/Fees/Dashboard"));
+const FeeCategories = lazy(() => import("../pages/SchoolAdmin/Fees/Categories"));
+const FeeStructures = lazy(() => import("../pages/SchoolAdmin/Fees/Structures"));
+const StudentFeeAssignment = lazy(() => import("../pages/SchoolAdmin/Fees/Assignments"));
+const FeeAccounts = lazy(() => import("../pages/SchoolAdmin/Fees/Accounts"));
+const PaymentCollection = lazy(() => import("../pages/SchoolAdmin/Fees/PaymentCollection"));
+const Receipts = lazy(() => import("../pages/SchoolAdmin/Fees/Receipts"));
+const FeeReports = lazy(() => import("../pages/SchoolAdmin/Fees/Reports"));
+
+// Student / Parent Portal Fees
+const ParentFees = lazy(() => import("../pages/Parent/Fees"));
+const StudentFees = lazy(() => import("../pages/Student/Fees"));
+
 // Driver Pages
 const DriverDashboard = lazy(() => import("../pages/Driver/DriverDashboard"));
 
@@ -224,6 +238,16 @@ const MainRouters = () => {
 
           <Route path="/school-admin/location" element={<SchoolLocation />} />
           <Route path="/school-admin/profile" element={<SchoolAdminProfile />} />
+
+          {/* Fee Management Routes */}
+          <Route path="/school-admin/fees/dashboard" element={<FeeDashboard />} />
+          <Route path="/school-admin/fees/categories" element={<FeeCategories />} />
+          <Route path="/school-admin/fees/structures" element={<FeeStructures />} />
+          <Route path="/school-admin/fees/assignments" element={<StudentFeeAssignment />} />
+          <Route path="/school-admin/fees/accounts" element={<FeeAccounts />} />
+          <Route path="/school-admin/fees/payments" element={<PaymentCollection />} />
+          <Route path="/school-admin/fees/receipts" element={<Receipts />} />
+          <Route path="/school-admin/fees/reports" element={<FeeReports />} />
         </Route>
 
         {/* Teacher Routes */}
@@ -272,6 +296,7 @@ const MainRouters = () => {
           <Route path="/student/announcements" element={<StudentAnnouncements />} />
           <Route path="/student/notifications" element={<NotificationsPage />} />
           <Route path="/student/profile" element={<StudentProfile />} />
+          <Route path="/student/fees" element={<StudentFees />} />
         </Route>
 
         {/* Parent Routes */}
@@ -291,6 +316,7 @@ const MainRouters = () => {
             <Route path="/parent/exam/results" element={<ParentExamResults />} />
             <Route path="/parent/notifications" element={<NotificationsPage />} />
             <Route path="/parent/transport" element={<ParentTransport />} />
+            <Route path="/parent/fees" element={<ParentFees />} />
           </Route>
         </Route>
 

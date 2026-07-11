@@ -56,6 +56,9 @@ export * from "./ParentPortal";
 // Leave Management (User Service)
 export * from "./Leave";
 
+// Fee Management (Payment Service)
+export * from "./Fee";
+
 export { default as useApi } from "./useApi";
 
 
