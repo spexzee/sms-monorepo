@@ -105,23 +105,20 @@ const FeeStructures: React.FC = () => {
 
     // Assign structure state
     const [assignTarget, setAssignTarget] = useState<FeeStructure | null>(null);
-    const [assignClassId, setAssignClassId] = useState('');
     const assignMutation = useAssignFeeStructure(schoolId, assignTarget?.feeStructureId || '');
 
-    const handleAssignOpen = (row: FeeStructure) => {
-        setAssignTarget(row);
-        setAssignClassId('');
-    };
+    const handleAssignOpen = (row: FeeStructure) => setAssignTarget(row);
 
     const handleAssignSubmit = () => {
-        if (!assignClassId) return;
+        // Send empty body — backend uses structure's own applicableClasses
         assignMutation.mutate(
-            { classId: assignClassId },
+            {},
             {
                 onSuccess: (res: any) => {
-                    const { created = [], skipped = [] } = res.data || {};
+                    const created = res.data?.created ?? res.data ?? [];
+                    const skipped = res.data?.skipped ?? [];
                     showToast(
-                        `Assigned to ${created.length} student(s). ${skipped.length} already had an account.`,
+                        `Assigned to ${Array.isArray(created) ? created.length : 0} student(s). ${Array.isArray(skipped) ? skipped.length : 0} already had an account.`,
                         'success'
                     );
                     setAssignTarget(null);
@@ -672,38 +669,30 @@ const FeeStructures: React.FC = () => {
 
             {/* Assign Structure to Students Dialog */}
             <Dialog open={!!assignTarget} onClose={() => setAssignTarget(null)} maxWidth="xs" fullWidth>
-                <DialogTitle fontWeight={700}>
-                    Assign Structure to Students
-                </DialogTitle>
+                <DialogTitle fontWeight={700}>Assign to Students</DialogTitle>
                 <DialogContent>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        Assign <strong>{assignTarget?.name}</strong> to all active students in a class.
-                        Students who already have a ledger for this academic year will be skipped.
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        This will create fee ledgers for all active students in the applicable classes.
+                        Students who already have a ledger for <strong>{assignTarget?.academicYear}</strong> will be skipped automatically.
                     </Typography>
-                    <TextField
-                        select
-                        label="Target Class"
-                        fullWidth
-                        value={assignClassId}
-                        onChange={(e) => setAssignClassId(e.target.value)}
-                    >
-                        {CLASS_OPTIONS.map(opt => (
-                            <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                        {assignTarget?.applicableClasses?.map((cls) => (
+                            <Chip key={cls} label={cls.toUpperCase()} color="primary" variant="outlined" size="small" />
                         ))}
-                    </TextField>
+                    </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={() => setAssignTarget(null)} color="inherit">
+                    <Button onClick={() => setAssignTarget(null)} color="inherit" disabled={assignMutation.isPending}>
                         Cancel
                     </Button>
                     <Button
                         variant="contained"
                         color="primary"
-                        disabled={!assignClassId || assignMutation.isPending}
+                        disabled={assignMutation.isPending}
                         startIcon={assignMutation.isPending ? <CircularProgress size={18} color="inherit" /> : <GroupAddIcon />}
                         onClick={handleAssignSubmit}
                     >
-                        Assign Now
+                        {assignMutation.isPending ? 'Assigning...' : 'Assign Now'}
                     </Button>
                 </DialogActions>
             </Dialog>

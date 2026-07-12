@@ -67,4 +67,6 @@ module.exports = {
     FeeTransactionSchema: require('./fee-payment.model'),
     FeeReceiptSchema: require('./fee-receipt.model').FeeReceiptSchema,
     FeeReceiptCounterSchema: require('./fee-receipt.model').FeeReceiptCounterSchema,
+    FeeDiscountSchema: require('./fee-discount.model'),
+    StudentDiscountSchema: require('./student-discount.model'),
 };

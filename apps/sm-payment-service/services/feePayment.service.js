@@ -38,12 +38,20 @@ class FeePaymentService {
         const ReceiptModel = await FeeReceiptRepository.getModel(schoolId);
 
         // 1. Fetch student fee account ledger
-        const account = await AccountModel.findOne({
+        const query = {
             schoolId,
-            assignmentId: recordDto.accountId,
             studentId: recordDto.studentId,
             isDeleted: false
-        });
+        };
+        if (recordDto.accountId) {
+            query.assignmentId = recordDto.accountId;
+        }
+
+        let account = await AccountModel.findOne(query);
+        if (!account && !recordDto.accountId) {
+            // Sort by academicYear descending if finding by studentId to get the latest ledger
+            account = await AccountModel.findOne({ schoolId, studentId: recordDto.studentId, isDeleted: false }).sort({ academicYear: -1 });
+        }
 
         if (!account) {
             const error = new Error("Fee account ledger not found");
@@ -172,6 +180,7 @@ class FeePaymentService {
             receiptId,
             receiptNumber,
             schoolId,
+            assignmentId: account.assignmentId || account.accountId || transaction.assignmentId,
             academicYear: account.academicYear,
             paymentId: transaction.paymentId || transaction.transactionId,
             transactionId: transaction.transactionId,

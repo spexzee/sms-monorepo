@@ -94,20 +94,65 @@ const createTransaction = async ({
     // 4. Capture balanceAfter
     const balanceAfter = account.totalBalance;
 
-    // 5. Build transaction payload
+    // 5. Build transaction payload mapping properties to satisfy FeePaymentSchema (FeeTransaction) requirements
+    let studentName = account.studentName;
+    if (!studentName && account.studentId) {
+        try {
+            const schoolDb = account.constructor.db;
+            const StudentModel = schoolDb.model('Student');
+            const student = await StudentModel.findOne({ studentId: account.studentId }).lean();
+            if (student) {
+                studentName = `${student.firstName} ${student.lastName}`;
+            }
+        } catch (err) {
+            console.error('Error looking up student name for transaction:', err);
+        }
+    }
+    if (!studentName) studentName = 'Student';
+
+    // Map affectedItems to paymentItems
+    const paymentItems = affectedItems.map(item => {
+        const lineItem = account.feeBreakdown.find(f => f.feeCategoryId === item.feeCategoryId);
+        return {
+            feeCategoryId: item.feeCategoryId,
+            categoryName: item.categoryName || lineItem?.categoryName || 'Fee Category',
+            installmentNumber: item.installmentNumber || null,
+            outstandingAmount: item.outstandingAmount !== undefined ? item.outstandingAmount : (lineItem?.balanceAmount || 0),
+            lateFeeAmount: item.lateFeeAmount || 0,
+            paidAmount: item.amount || amount
+        };
+    });
+
+    const totalFeeAmount = paymentItems.reduce((sum, item) => sum + (item.paidAmount || 0), 0);
+    const totalLateFee = paymentItems.reduce((sum, item) => sum + (item.lateFeeAmount || 0), 0);
+
     const transactionPayload = {
+        paymentId: transactionId,
         transactionId,
         schoolId: account.schoolId,
-        accountId: account.accountId,
         studentId: account.studentId,
+        studentName,
+        assignmentId: account.assignmentId || account.accountId || `ASG-${Date.now()}`,
         academicYear: account.academicYear,
+        paymentType: type === 'refund_issued' ? 'refund' : 'payment',
         type,
-        amount,
+        paymentMode: paymentFields?.paymentMode || 'cash',
+        paymentDate: paymentFields?.paymentDate || new Date(),
+        referenceNumber: paymentFields?.referenceNumber || '',
+        bankName: paymentFields?.bankName || '',
+        remarks: reason || description || '',
+        paymentItems,
+        totalFeeAmount,
+        totalLateFee,
+        totalAmountReceived: totalFeeAmount + totalLateFee,
+        amount: totalFeeAmount + totalLateFee,
         description,
         reason,
         affectedItems,
         balanceBefore,
         balanceAfter,
+        createdBy: performedBy || 'system',
+        createdByName: performedByName || 'Admin',
         performedBy,
         performedByName,
         performedByRole,

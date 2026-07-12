@@ -8,8 +8,14 @@ class RecordPaymentDTO {
         this.paymentDate = data.paymentDate;
         this.referenceNumber = data.referenceNumber;
         this.bankName = data.bankName;
-        this.remarks = data.remarks;
-        this.paymentItems = data.paymentItems; // array of { feeCategoryId, paidAmount, lateFeeAmount }
+        this.remarks = data.remarks || data.notes;
+        
+        const rawItems = data.paymentItems || data.items || [];
+        this.paymentItems = rawItems.map(item => ({
+            feeCategoryId: item.feeCategoryId,
+            paidAmount: item.paidAmount !== undefined ? item.paidAmount : (item.amountPaid !== undefined ? item.amountPaid : item.amount),
+            lateFeeAmount: item.lateFeeAmount !== undefined ? item.lateFeeAmount : (item.lateFeePaid !== undefined ? item.lateFeePaid : 0)
+        }));
     }
 }
 

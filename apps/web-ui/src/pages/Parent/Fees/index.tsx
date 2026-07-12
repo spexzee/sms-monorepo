@@ -1,6 +1,6 @@
 // apps/web-ui/src/pages/Parent/Fees/index.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Box,
     Typography,
@@ -10,10 +10,15 @@ import {
     Paper,
     Alert,
     IconButton,
-    CircularProgress
+    CircularProgress,
+    Tabs,
+    Tab,
+    Avatar,
+    Stack
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import InfoIcon from '@mui/icons-material/Info';
+
 import TokenService from '../../../queries/token/tokenService';
 import { useChildSelector } from '../../../context/ChildSelectorContext';
 import {
@@ -22,71 +27,48 @@ import {
     useGetStudentReceipts
 } from '../../../queries/Fee';
 import { AppTable } from '../../../components/shared/AppTable';
+import type { Student } from '../../../types';
 
-const ParentFees: React.FC = () => {
-    const schoolId = TokenService.getSchoolId() || '';
-    const { selectedChild } = useChildSelector();
-    const studentId = selectedChild?.studentId || '';
+// ── Per-child fee panel ───────────────────────────────────────────────────────
+const ChildFeePanel: React.FC<{
+    child: Student & { className?: string; sectionName?: string };
+    schoolId: string;
+    formatCurrency: (v: number) => string;
+}> = ({ child, schoolId, formatCurrency }) => {
+    const { data: accountsData, isLoading: loadingAccount } = useGetStudentFeeAccounts(schoolId, child.studentId);
+    const { data: paymentsData, isLoading: loadingPayments } = useGetPaymentsByStudent(schoolId, child.studentId);
+    const { data: receiptsData, isLoading: loadingReceipts } = useGetStudentReceipts(schoolId, child.studentId);
 
-    const { data: accountsData, isLoading: isLoadingAccount } = useGetStudentFeeAccounts(schoolId, studentId);
-    const { data: paymentsData, isLoading: isLoadingPayments } = useGetPaymentsByStudent(schoolId, studentId);
-    const { data: receiptsData, isLoading: isLoadingReceipts } = useGetStudentReceipts(schoolId, studentId);
-
-    const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
-    };
+    const isLoading = loadingAccount || loadingPayments || loadingReceipts;
+    const account = accountsData?.data?.[0];
+    const payments = paymentsData?.data || [];
+    const receipts = receiptsData?.data || [];
 
     const handleDownloadPDF = (receiptId: string) => {
         const url = `${import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:5005'}/api/school/${schoolId}/fees/receipts/${receiptId}/pdf`;
         window.open(url, '_blank');
     };
 
-    if (!studentId) {
-        return (
-            <Box sx={{ p: 3 }}>
-                <Alert severity="warning">Please select a child profile from the top selector menu to view fee account details.</Alert>
-            </Box>
-        );
-    }
-
-    const isLoading = isLoadingAccount || isLoadingPayments || isLoadingReceipts;
-    const account = accountsData?.data?.[0]; // Get current academic year running ledger
-    const payments = paymentsData?.data || [];
-    const receipts = receiptsData?.data || [];
-
     if (isLoading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
-                <CircularProgress />
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                <CircularProgress size={32} />
             </Box>
         );
     }
 
     if (!account) {
         return (
-            <Box sx={{ p: 3 }}>
-                <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Fees & Dues</Typography>
-                <Alert severity="info">No fee account schedules assigned to {selectedChild?.firstName} for this academic year.</Alert>
-            </Box>
+            <Alert severity="info" sx={{ mt: 2, borderRadius: 2 }}>
+                No fee ledger assigned to <strong>{child.firstName} {child.lastName}</strong> for this academic year.
+                Please contact the school administration.
+            </Alert>
         );
     }
 
     return (
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" fontWeight={700} color="text.primary">
-                    Fee Ledger & Statements
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    View assigned structure breakdowns, receipts history, and paid balances for {selectedChild?.firstName}.
-                </Typography>
-            </Box>
-
-            <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 4, borderRadius: 3 }}>
-                Online payment gateway integrations are scheduled for V2. To settle outstanding balances, please contact the school cash counter.
-            </Alert>
-
-            {/* Account Summary Cards */}
+        <Box sx={{ mt: 3 }}>
+            {/* Summary cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, sm: 4 }}>
                     <Paper elevation={0} sx={{ p: 2.5, border: '1px solid #e2e8f0', borderRadius: 3, textAlign: 'center' }}>
@@ -108,7 +90,7 @@ const ParentFees: React.FC = () => {
                 </Grid>
             </Grid>
 
-            {/* Fee Items Details */}
+            {/* Itemized breakdown */}
             <Card sx={{ borderRadius: 4, border: '1px solid #f1f5f9', boxShadow: 'none', mb: 4 }}>
                 <CardContent>
                     <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Itemized Fee Breakdowns</Typography>
@@ -126,8 +108,8 @@ const ParentFees: React.FC = () => {
                 </CardContent>
             </Card>
 
+            {/* Receipts + Transactions */}
             <Grid container spacing={3}>
-                {/* Receipts list */}
                 <Grid size={{ xs: 12, md: 7 }}>
                     <Card sx={{ borderRadius: 4, border: '1px solid #f1f5f9', boxShadow: 'none', height: '100%' }}>
                         <CardContent>
@@ -145,8 +127,6 @@ const ParentFees: React.FC = () => {
                         </CardContent>
                     </Card>
                 </Grid>
-
-                {/* Recent transaction history log */}
                 <Grid size={{ xs: 12, md: 5 }}>
                     <Card sx={{ borderRadius: 4, border: '1px solid #f1f5f9', boxShadow: 'none', height: '100%' }}>
                         <CardContent>
@@ -156,7 +136,7 @@ const ParentFees: React.FC = () => {
                                     { name: 'Type', selector: (row: any) => row.paymentType?.toUpperCase() },
                                     { name: 'Date', selector: (row: any) => new Date(row.paymentDate || row.createdAt).toLocaleDateString() },
                                     { name: 'Method', selector: (row: any) => row.paymentMode?.toUpperCase() || 'N/A' },
-                                    { name: 'Paid Amount', selector: (row: any) => formatCurrency(row.amount), cell: (row: any) => <Typography variant="body2" fontWeight={700} color={row.paymentType === 'payment' ? 'success.main' : 'error.main'}>{formatCurrency(row.amount)}</Typography> }
+                                    { name: 'Amount', selector: (row: any) => formatCurrency(row.amount), cell: (row: any) => <Typography variant="body2" fontWeight={700} color={row.paymentType === 'payment' ? 'success.main' : 'error.main'}>{formatCurrency(row.amount)}</Typography> }
                                 ]}
                                 data={payments}
                                 emptyMessage="No transactions registered."
@@ -165,6 +145,102 @@ const ParentFees: React.FC = () => {
                     </Card>
                 </Grid>
             </Grid>
+        </Box>
+    );
+};
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+const ParentFees: React.FC = () => {
+    const schoolId = TokenService.getSchoolId() || '';
+    const { children, isLoading: childrenLoading } = useChildSelector();
+    const [activeTab, setActiveTab] = useState(0);
+
+    const formatCurrency = (val: number) =>
+        new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+
+    if (childrenLoading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 10 }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (children.length === 0) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="warning">No children linked to your account. Please contact school administration.</Alert>
+            </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            {/* Header */}
+            <Box sx={{ mb: 4 }}>
+                <Typography variant="h4" fontWeight={700} color="text.primary">
+                    Fees & Online Payments
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    View fee ledgers, outstanding balances, and payment receipts for all your children.
+                </Typography>
+            </Box>
+
+            <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 4, borderRadius: 3 }}>
+                Online payment gateway integrations are scheduled for V2. To settle outstanding balances, please contact the school cash counter.
+            </Alert>
+
+            {/* Child tabs */}
+            <Card sx={{ borderRadius: 4, border: '1px solid #f1f5f9', boxShadow: 'none' }}>
+                <Box sx={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <Tabs
+                        value={activeTab}
+                        onChange={(_, v) => setActiveTab(v)}
+                        variant="scrollable"
+                        scrollButtons="auto"
+                        sx={{ px: 2 }}
+                    >
+                        {children.map((child, idx) => (
+                            <Tab
+                                key={child.studentId}
+                                value={idx}
+                                label={
+                                    <Stack direction="row" spacing={1.5} alignItems="center">
+                                        <Avatar
+                                            src={child.profileImage}
+                                            sx={{ width: 28, height: 28, fontSize: 12, bgcolor: 'primary.main' }}
+                                        >
+                                            {child.firstName?.[0]}
+                                        </Avatar>
+                                        <Box sx={{ textAlign: 'left' }}>
+                                            <Typography variant="body2" fontWeight={600} lineHeight={1.2}>
+                                                {child.firstName} {child.lastName}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary" lineHeight={1}>
+                                                {child.className || `Class ${child.class}`} {child.sectionName ? `• ${child.sectionName}` : ''}
+                                            </Typography>
+                                        </Box>
+                                    </Stack>
+                                }
+                                sx={{ textTransform: 'none', minHeight: 64, alignItems: 'center' }}
+                            />
+                        ))}
+                    </Tabs>
+                </Box>
+
+                <CardContent sx={{ p: 3 }}>
+                    {children.map((child, idx) =>
+                        activeTab === idx ? (
+                            <ChildFeePanel
+                                key={child.studentId}
+                                child={child}
+                                schoolId={schoolId}
+                                formatCurrency={formatCurrency}
+                            />
+                        ) : null
+                    )}
+                </CardContent>
+            </Card>
         </Box>
     );
 };

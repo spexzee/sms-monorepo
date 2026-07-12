@@ -4,9 +4,9 @@ class FeePaymentValidator {
     validateRecord(body) {
         const errors = [];
         if (!body.studentId) errors.push('studentId is required.');
-        if (!body.accountId) errors.push('accountId is required.');
         if (!body.paymentMode) errors.push('paymentMode is required.');
-        if (!body.paymentItems || !Array.isArray(body.paymentItems) || body.paymentItems.length === 0) {
+        const rawItems = body.paymentItems || body.items;
+        if (!rawItems || !Array.isArray(rawItems) || rawItems.length === 0) {
             errors.push('paymentItems array must contain at least one item.');
         }
         return {

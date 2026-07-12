@@ -45,6 +45,7 @@ const FeeAccounts = lazy(() => import("../pages/SchoolAdmin/Fees/Accounts"));
 const PaymentCollection = lazy(() => import("../pages/SchoolAdmin/Fees/PaymentCollection"));
 const Receipts = lazy(() => import("../pages/SchoolAdmin/Fees/Receipts"));
 const FeeReports = lazy(() => import("../pages/SchoolAdmin/Fees/Reports"));
+const FeeDiscounts = lazy(() => import("../pages/SchoolAdmin/Fees/Discounts"));
 
 // Student / Parent Portal Fees
 const ParentFees = lazy(() => import("../pages/Parent/Fees"));
@@ -248,6 +249,7 @@ const MainRouters = () => {
           <Route path="/school-admin/fees/payments" element={<PaymentCollection />} />
           <Route path="/school-admin/fees/receipts" element={<Receipts />} />
           <Route path="/school-admin/fees/reports" element={<FeeReports />} />
+          <Route path="/school-admin/fees/discounts" element={<FeeDiscounts />} />
         </Route>
 
         {/* Teacher Routes */}

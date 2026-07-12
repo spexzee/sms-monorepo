@@ -30,6 +30,8 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import CloseIcon from '@mui/icons-material/Close';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import { Link } from 'react-router-dom';
 import TokenService from '../../../../queries/token/tokenService';
 import {
     useGetFeeAssignments,
@@ -147,7 +149,7 @@ const FeeAssignments: React.FC = () => {
             applyDiscountMutation.mutate(
                 {
                     studentId,
-                    discountTemplateId: selectedDiscountId
+                    discountId: selectedDiscountId
                 },
                 {
                     onSuccess: () => {
@@ -275,6 +277,16 @@ const FeeAssignments: React.FC = () => {
                     </Typography>
                 </Box>
                 <Stack direction="row" spacing={2}>
+                    <Button
+                        variant="outlined"
+                        color="secondary"
+                        component={Link}
+                        to="/school-admin/fees/discounts"
+                        startIcon={<LocalOfferIcon />}
+                        sx={{ borderRadius: 2 }}
+                    >
+                        Discount Templates
+                    </Button>
                     <Button variant="outlined" startIcon={<AssignmentTurnedInIcon />} onClick={() => setOpenAssignModal(true)} sx={{ borderRadius: 2 }}>
                         Assign Class Structure
                     </Button>
@@ -452,22 +464,52 @@ const FeeAssignments: React.FC = () => {
                         <Typography variant="body2" color="text.secondary">
                             Applying discount to <strong>{selectedStudentIds.length}</strong> selected students.
                         </Typography>
-                        <TextField
-                            select
-                            label="Discount / Scholarship Template"
-                            value={selectedDiscountId}
-                            onChange={(e) => setSelectedDiscountId(e.target.value)}
-                            fullWidth
-                        >
-                            {discounts.map((d: any) => (
-                                <MenuItem key={d.discountTemplateId} value={d.discountTemplateId}>{d.name} ({d.discountType === 'percentage' ? `${d.value}%` : formatCurrency(d.value)} waiver)</MenuItem>
-                            ))}
-                        </TextField>
+                        {discounts.length === 0 ? (
+                            <Box sx={{ py: 2, textCombineUpright: 'center' }}>
+                                <Alert severity="warning" sx={{ mb: 2 }}>
+                                    No discount templates found. Please create a discount template first.
+                                </Alert>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    component={Link}
+                                    to="/school-admin/fees/discounts"
+                                    fullWidth
+                                    startIcon={<LocalOfferIcon />}
+                                >
+                                    Create Discount Template
+                                </Button>
+                            </Box>
+                        ) : (
+                            <TextField
+                                select
+                                label="Discount / Scholarship Template"
+                                value={selectedDiscountId}
+                                onChange={(e) => setSelectedDiscountId(e.target.value)}
+                                fullWidth
+                            >
+                                {discounts.map((d: any) => {
+                                    const dId = d.discountId || d.discountTemplateId;
+                                    const dVal = d.discountValue !== undefined ? d.discountValue : d.value;
+                                    return (
+                                        <MenuItem key={dId} value={dId}>
+                                            {d.name} ({d.discountType === 'percentage' ? `${dVal}%` : formatCurrency(dVal)} waiver)
+                                        </MenuItem>
+                                    );
+                                })}
+                            </TextField>
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpenDiscountModal(false)}>Cancel</Button>
-                    <Button variant="contained" onClick={handleApplyDiscountSubmit} disabled={applyDiscountMutation.isPending}>Apply</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleApplyDiscountSubmit}
+                        disabled={discounts.length === 0 || applyDiscountMutation.isPending}
+                    >
+                        Apply
+                    </Button>
                 </DialogActions>
             </Dialog>
 

@@ -347,10 +347,10 @@ export const useUpdateDiscount = (schoolId: string, discountId: string) => {
     });
 };
 
-export const useDeleteDiscount = (schoolId: string, discountId: string) => {
+export const useDeleteDiscount = (schoolId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: () => useApi<ApiResponse<void>>("DELETE", `/api/school/${schoolId}/fees/discounts/${discountId}`),
+        mutationFn: (discountId: string) => useApi<ApiResponse<void>>("DELETE", `/api/school/${schoolId}/fees/discounts/${discountId}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: feeKeys.discounts(schoolId) });
         }
@@ -425,7 +425,6 @@ export const useGetAdjustments = (schoolId: string, params?: Record<string, any>
         enabled: !!schoolId
     });
 };
-
 
 // ── Dashboard & Reports Hooks ──
 

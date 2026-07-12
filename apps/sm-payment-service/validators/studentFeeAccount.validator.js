@@ -3,8 +3,10 @@
 class StudentFeeAccountValidator {
     validateAssign(body) {
         const errors = [];
-        if (!body.classId && (!body.studentIds || !Array.isArray(body.studentIds) || body.studentIds.length === 0)) {
-            errors.push('Either classId or studentIds array is required for fee assignment.');
+        // classId and studentIds are both optional — the service falls back to
+        // structure.applicableClasses when neither is provided.
+        if (body.studentIds !== undefined && (!Array.isArray(body.studentIds) || body.studentIds.length === 0)) {
+            errors.push('studentIds must be a non-empty array when provided.');
         }
         return {
             isValid: errors.length === 0,

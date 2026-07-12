@@ -73,18 +73,49 @@ class StudentFeeAccountService {
             return sec ? sec.name : sid;
         };
 
+        // Helper: resolve class name/labels → actual classIds stored on students.
+        // Students store class as classId (e.g. "CLS00001"), not the display name.
+        // The fee structure applicableClasses stores labels like "class-8" or "8".
+        // Returns only successfully resolved classIds (unrecognised labels are dropped).
+        const resolveClassIds = (classLabels) => {
+            return classLabels.reduce((acc, label) => {
+                const normalized = label.replace(/^class-/i, '').trim().toLowerCase();
+                const match = classes.find(c =>
+                    (c.name || '').toString().toLowerCase() === normalized ||
+                    (c.classId || '').toLowerCase() === normalized
+                );
+                if (match) acc.push(match.classId);
+                return acc;
+            }, []);
+        };
+
         // Query active students
         const studentQuery = { schoolId, status: "active" };
 
         if (assignDto.studentIds && assignDto.studentIds.length > 0) {
             studentQuery.studentId = { $in: assignDto.studentIds };
         } else if (assignDto.classId) {
-            studentQuery.class = assignDto.classId;
+            const [resolvedId] = resolveClassIds([assignDto.classId]);
+            if (!resolvedId) {
+                const error = new Error(`Class '${assignDto.classId}' not found in this school's class registry`);
+                error.statusCode = 404;
+                throw error;
+            }
+            studentQuery.class = resolvedId;
             if (assignDto.sectionId) {
                 studentQuery.section = assignDto.sectionId;
             }
+        } else if (structure.applicableClasses && structure.applicableClasses.length > 0) {
+            // Default: assign to ALL classes this structure is designed for
+            const resolvedIds = resolveClassIds(structure.applicableClasses);
+            if (resolvedIds.length === 0) {
+                const error = new Error('None of the applicable classes exist in this school\'s class registry');
+                error.statusCode = 404;
+                throw error;
+            }
+            studentQuery.class = { $in: resolvedIds };
         } else {
-            const error = new Error('Either classId or studentIds must be provided');
+            const error = new Error('Either classId or studentIds must be provided, or structure must have applicableClasses defined');
             error.statusCode = 400;
             throw error;
         }
