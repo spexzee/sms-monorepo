@@ -513,6 +513,122 @@ export const useGetConflictReport = (schoolId: string) => {
 };
 
 // ==========================================
+// AI TIMETABLE HOOKS
+// ==========================================
+
+export const useValidateAITimetable = (schoolId: string) => {
+    return useMutation({
+        mutationFn: (data: { rules: any[], options?: any }) =>
+            useApi<ApiResponse<any>>(
+                "POST",
+                `/api/academics/school/${schoolId}/ai/validate`,
+                data
+            ),
+    });
+};
+
+export const useGenerateAITimetable = (schoolId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { rules: any[], classId?: string, sectionId?: string, options?: any }) =>
+            useApi<ApiResponse<any>>(
+                "POST",
+                `/api/academics/school/${schoolId}/ai/generate`,
+                data
+            ),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["ai-draft", schoolId] });
+            queryClient.invalidateQueries({ queryKey: ["ai-draft-versions", schoolId] });
+        },
+    });
+};
+
+export const useGetAIDraft = (schoolId: string, version?: number) => {
+    return useQuery({
+        queryKey: ["ai-draft", schoolId, version],
+        queryFn: () =>
+            useApi<ApiResponse<any>>(
+                "GET",
+                `/api/academics/school/${schoolId}/ai/draft${version ? `?version=${version}` : ""}`
+            ),
+        enabled: !!schoolId,
+    });
+};
+
+export const useGetAIDraftVersions = (schoolId: string) => {
+    return useQuery({
+        queryKey: ["ai-draft-versions", schoolId],
+        queryFn: () =>
+            useApi<ApiResponse<any[]>>(
+                "GET",
+                `/api/academics/school/${schoolId}/ai/draft/versions`
+            ),
+        enabled: !!schoolId,
+    });
+};
+
+export const useDeleteAIDraftVersion = (schoolId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (version: number) =>
+            useApi<ApiResponse<any>>(
+                "DELETE",
+                `/api/academics/school/${schoolId}/ai/draft/${version}`
+            ),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["ai-draft-versions", schoolId] });
+            queryClient.invalidateQueries({ queryKey: ["ai-draft", schoolId] });
+        },
+    });
+};
+
+export const usePublishAIDraft = (schoolId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () =>
+            useApi<ApiResponse<any>>(
+                "POST",
+                `/api/academics/school/${schoolId}/ai/draft/publish`
+            ),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["class-timetable", schoolId] });
+            queryClient.invalidateQueries({ queryKey: ["teacher-timetable", schoolId] });
+            queryClient.invalidateQueries({ queryKey: ["conflict-report", schoolId] });
+            queryClient.invalidateQueries({ queryKey: ["ai-draft", schoolId] });
+        },
+    });
+};
+
+export const useUpdateAIDraftEntry = (schoolId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { classId: string, sectionId: string, dayOfWeek: string, periodNumber: number, subjectId: string, teacherId: string }) =>
+            useApi<ApiResponse<any>>(
+                "POST",
+                `/api/academics/school/${schoolId}/ai/draft/entry`,
+                data
+            ),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["ai-draft", schoolId] });
+        },
+    });
+};
+
+export const useDeleteAIDraftEntry = (schoolId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { classId: string, sectionId: string, dayOfWeek: string, periodNumber: number }) =>
+            useApi<ApiResponse<any>>(
+                "DELETE",
+                `/api/academics/school/${schoolId}/ai/draft/entry/${data.classId}/${data.sectionId}/${data.dayOfWeek}/${data.periodNumber}`
+            ),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["ai-draft", schoolId] });
+        },
+    });
+};
+
+// ==========================================
 // SUBSTITUTE HOOKS
 // ==========================================
 

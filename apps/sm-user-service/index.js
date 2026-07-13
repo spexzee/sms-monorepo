@@ -5,6 +5,7 @@ require('dotenv').config();
 const { connectDB, ensureDbConnection } = require('./configs/db');
 const teacherRoutes = require('./routes/teacher.routes');
 const studentRoutes = require('./routes/student.routes');
+const promotionRoutes = require('./routes/promotion.routes');
 const parentRoutes = require('./routes/parent.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const requestRoutes = require('./routes/request.routes');
@@ -59,6 +60,7 @@ app.use(ensureDbConnection);
 // School-specific user routes (stored in school databases)
 app.use('/api/school/:schoolId/teachers', teacherRoutes);
 app.use('/api/school/:schoolId/students', studentRoutes);
+app.use('/api/school/:schoolId/promotion', promotionRoutes);
 app.use('/api/school/:schoolId/parents', parentRoutes);
 app.use('/api/school/:schoolId/dashboard', dashboardRoutes);
 app.use('/api/school/:schoolId/requests', requestRoutes);

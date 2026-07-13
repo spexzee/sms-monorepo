@@ -8,6 +8,7 @@ const substituteController = require("../controllers/substitute.controller");
 const roomController = require("../controllers/room.controller");
 const periodSwapController = require("../controllers/period-swap.controller");
 const reportsController = require("../controllers/reports.controller");
+const aiController = require("../controllers/timetable-ai.controller");
 
 // Middleware
 const { Authenticated, authorizeRoles } = require("@sms/shared/middlewares");
@@ -110,6 +111,74 @@ router.patch(
     Authenticated,
     authorizeRoles("sch_admin"),
     configController.toggleTimetableDisable
+);
+
+// ==========================================
+// TIMETABLE AI ROUTES
+// ==========================================
+
+// Validate AI Rules
+router.post(
+    "/ai/validate",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    aiController.validateAITimetable
+);
+
+// Generate AI Timetable
+router.post(
+    "/ai/generate",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    aiController.generateAITimetable
+);
+
+// Get AI Draft
+router.get(
+    "/ai/draft",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    aiController.getAIDraft
+);
+
+// Get AI Draft Versions
+router.get(
+    "/ai/draft/versions",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    aiController.getAIDraftVersions
+);
+
+// Delete AI Draft Version
+router.delete(
+    "/ai/draft/:version",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    aiController.deleteAIDraftVersion
+);
+
+// Publish AI Draft
+router.post(
+    "/ai/draft/publish",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    aiController.publishAIDraft
+);
+
+// Update/Add AI Draft Entry
+router.post(
+    "/ai/draft/entry",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    aiController.updateAIDraftEntry
+);
+
+// Delete AI Draft Entry
+router.delete(
+    "/ai/draft/entry/:classId/:sectionId/:dayOfWeek/:periodNumber",
+    Authenticated,
+    authorizeRoles("sch_admin"),
+    aiController.deleteAIDraftEntry
 );
 
 // ==========================================

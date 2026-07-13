@@ -76,7 +76,7 @@ const AddMenusDialog: React.FC<AddMenusDialogProps> = ({
   const createMutation = useCreateMenu();
   const updateMutation = useUpdateMenu();
   const { data: schoolsData, isLoading: isLoadingSchools } = useGetSchools();
-  const { data: menusData } = useGetMenus();
+  const { data: menusData } = useGetMenus(1, 1000);
 
   const schools = schoolsData?.data || [];
   const menus = menusData?.data || [];

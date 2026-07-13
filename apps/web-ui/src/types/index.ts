@@ -1044,3 +1044,4 @@ export interface AbsentRecord {
 // ACTIVITY LOG TYPES
 // ==========================================
 export * from "./activity";
+export * from "./fee.types";

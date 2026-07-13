@@ -75,6 +75,9 @@ const schoolSchema = new mongoose.Schema(
                 default: 8, // For period-wise mode
             },
         },
+        currentAcademicYear: {
+            type: String,
+        },
     },
     {
         timestamps: true,

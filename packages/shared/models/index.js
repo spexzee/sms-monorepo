@@ -27,6 +27,7 @@ module.exports = {
     // Timetable Management
     TimetableConfigSchema: require('./timetable-config.model'),
     TimetableEntrySchema: require('./timetable-entry.model'),
+    TimetableAIDraftSchema: require('./timetable-ai-draft.model'),
     SubstituteAssignmentSchema: require('./substitute-assignment.model'),
     RoomSchema: require('./room.model'),
     PeriodSwapSchema: require('./period-swap.model'),
@@ -56,4 +57,17 @@ module.exports = {
 
     // Role Management
     RoleModel: require('./role.model'),
+
+    // Fee Management
+    FeeCategorySchema: require('./fee-category.model'),
+    FeeStructureSchema: require('./fee-structure.model'),
+    StudentFeeAssignmentSchema: require('./fee-assignment.model'),
+    FeePaymentSchema: require('./fee-payment.model'),
+    // Alias: feePayment.repository.js imports this as FeeTransactionSchema
+    FeeTransactionSchema: require('./fee-payment.model'),
+    FeeReceiptSchema: require('./fee-receipt.model').FeeReceiptSchema,
+    FeeReceiptCounterSchema: require('./fee-receipt.model').FeeReceiptCounterSchema,
+    FeeDiscountSchema: require('./fee-discount.model'),
+    StudentDiscountSchema: require('./student-discount.model'),
+    PromotionLogSchema: require('./promotion-log.model'),
 };

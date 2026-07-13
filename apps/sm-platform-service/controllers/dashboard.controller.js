@@ -412,9 +412,69 @@ const updateMenu = async (req, res) => {
       });
     }
 
+    // Cascade: if a main menu is set to inactive, deactivate all its submenus automatically
+    let cascadedCount = 0;
+    if (
+      updatedMenu.menuType === "main" &&
+      updateData.status === "inactive"
+    ) {
+      const cascadeResult = await Menu.updateMany(
+        { parentMenuId: menuId, menuType: "sub" },
+        { $set: { status: "inactive" } }
+      );
+      cascadedCount = cascadeResult.modifiedCount;
+    }
+
+    // Cascade: if a main menu is re-activated, re-activate all its submenus
+    if (
+      updatedMenu.menuType === "main" &&
+      updateData.status === "active"
+    ) {
+      const cascadeResult = await Menu.updateMany(
+        { parentMenuId: menuId, menuType: "sub" },
+        { $set: { status: "active" } }
+      );
+      cascadedCount = cascadeResult.modifiedCount;
+    }
+
+    // Cascade: propagate role and school activation/deactivation changes to submenus
+    if (updatedMenu.menuType === "main") {
+      const submenus = await Menu.find({ parentMenuId: menuId, menuType: "sub" });
+      if (submenus.length > 0) {
+        if (updateData.deactivatedRoles !== undefined) {
+          const parentDeactivated = updatedMenu.deactivatedRoles || [];
+          const prevDeactivated = currentMenu.deactivatedRoles || [];
+          const newlyDeactivated = parentDeactivated.filter(r => !prevDeactivated.includes(r));
+          const newlyActivated = prevDeactivated.filter(r => !parentDeactivated.includes(r));
+          for (const sub of submenus) {
+            let subRoles = sub.deactivatedRoles || [];
+            newlyDeactivated.forEach(r => {
+              if (!subRoles.includes(r)) subRoles.push(r);
+            });
+            subRoles = subRoles.filter(r => !newlyActivated.includes(r));
+            await Menu.updateOne({ menuId: sub.menuId }, { $set: { deactivatedRoles: subRoles } });
+          }
+        }
+        if (updateData.deactivatedSchools !== undefined) {
+          const parentDeactivated = updatedMenu.deactivatedSchools || [];
+          const prevDeactivated = currentMenu.deactivatedSchools || [];
+          const newlyDeactivated = parentDeactivated.filter(s => !prevDeactivated.includes(s));
+          const newlyActivated = prevDeactivated.filter(s => !parentDeactivated.includes(s));
+          for (const sub of submenus) {
+            let subSchools = sub.deactivatedSchools || [];
+            newlyDeactivated.forEach(s => {
+              if (!subSchools.includes(s)) subSchools.push(s);
+            });
+            subSchools = subSchools.filter(s => !newlyActivated.includes(s));
+            await Menu.updateOne({ menuId: sub.menuId }, { $set: { deactivatedSchools: subSchools } });
+          }
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Menu updated successfully",
+      message: `Menu updated successfully${cascadedCount > 0 ? `. ${cascadedCount} submenu(s) status updated automatically.` : ""}`,
       data: updatedMenu,
     });
   } catch (error) {
