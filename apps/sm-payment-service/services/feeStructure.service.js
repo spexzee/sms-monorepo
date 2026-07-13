@@ -21,7 +21,7 @@ class FeeStructureService {
         try {
             FeeCategoryModel = schoolDb.model("FeeCategory");
         } catch (e) {
-            FeeCategoryModel = schoolDb.model("FeeCategory", FeeCategorySchema);
+            FeeCategoryModel = schoolDb.model("FeeCategory", FeeCategorySchema.clone());
         }
 
         const categoryIds = feeItems.map(item => item.feeCategoryId);

@@ -20,7 +20,7 @@ class FeeDashboardService {
         try {
             return schoolDb.model("StudentDiscount");
         } catch (e) {
-            return schoolDb.model("StudentDiscount", StudentDiscountSchema);
+            return schoolDb.model("StudentDiscount", StudentDiscountSchema.clone());
         }
     }
 

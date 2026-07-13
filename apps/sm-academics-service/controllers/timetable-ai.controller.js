@@ -7,12 +7,12 @@ const TimetableAIService = require("../services/timetable-ai.service");
 const getModels = (schoolDbName) => {
     const schoolDb = getSchoolDbConnection(schoolDbName);
     return {
-        TimetableConfig: schoolDb.model("TimetableConfig", timetableConfigSchema),
-        Teacher: schoolDb.model("Teacher", teacherSchema),
-        Class: schoolDb.model("Class", classSchema),
-        Subject: schoolDb.model("Subject", subjectSchema),
-        TimetableAIDraft: schoolDb.model("TimetableAIDraft", timetableAIDraftSchema),
-        TimetableEntry: schoolDb.model("TimetableEntry", timetableEntrySchema),
+        TimetableConfig: schoolDb.models.TimetableConfig || schoolDb.model("TimetableConfig", timetableConfigSchema),
+        Teacher: schoolDb.models.Teacher || schoolDb.model("Teacher", teacherSchema),
+        Class: schoolDb.models.Class || schoolDb.model("Class", classSchema),
+        Subject: schoolDb.models.Subject || schoolDb.model("Subject", subjectSchema),
+        TimetableAIDraft: schoolDb.models.TimetableAIDraft || schoolDb.model("TimetableAIDraft", timetableAIDraftSchema),
+        TimetableEntry: schoolDb.models.TimetableEntry || schoolDb.model("TimetableEntry", timetableEntrySchema),
     };
 };
 

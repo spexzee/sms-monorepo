@@ -382,8 +382,8 @@ class FeePaymentService {
         // Save refund details link on the payment log
         originalTxn.refundDetails = {
             refundedAt: new Date(),
-            refundedBy,
-            refundedByName,
+            refundedBy: performedBy,
+            refundedByName: performedByName,
             refundAmount: totalRefundSum,
             refundMode: refundDto.refundMode,
             refundReferenceNumber: refundDto.refundReferenceNumber || '',

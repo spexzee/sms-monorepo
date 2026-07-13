@@ -104,7 +104,7 @@ const FeeAssignments: React.FC = () => {
     const { data: structuresData } = useGetFeeStructures(schoolId);
     const { data: discountsData } = useGetDiscounts(schoolId);
 
-    const assignMutation = useAssignFeeStructure(schoolId);
+    const assignMutation = useAssignFeeStructure(schoolId, assignTargetStructureId);
     const applyDiscountMutation = useApplyDiscountToStudent(schoolId);
     const adjustMutation = useCreateAdjustment(schoolId);
 
