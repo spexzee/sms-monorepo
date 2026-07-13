@@ -59,8 +59,16 @@ class FeePaymentService {
             throw error;
         }
 
-        if (['frozen', 'transferred_out', 'paid', 'waived'].includes(account.accountStatus)) {
+        if (['frozen', 'transferred_out', 'waived'].includes(account.accountStatus)) {
             const error = new Error(`Cannot record payment. Fee account is currently ${account.accountStatus}`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // Extra guard: check that there's at least some balance remaining in the breakdown
+        const hasOutstandingBalance = account.feeBreakdown.some(item => (item.balanceAmount || 0) > 0);
+        if (!hasOutstandingBalance) {
+            const error = new Error("Cannot record payment. All fee categories have been fully paid.");
             error.statusCode = 400;
             throw error;
         }

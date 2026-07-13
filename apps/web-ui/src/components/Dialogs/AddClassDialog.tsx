@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -13,7 +13,7 @@ import {
     Autocomplete,
 } from '@mui/material';
 import { Close as CloseIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { useCreateClass, useUpdateClass, useAddSection } from '../../queries/Class';
+import { useCreateClass, useUpdateClass, useAddSection, useRemoveSection, useAssignClassTeacher, useGetClasses } from '../../queries/Class';
 import { useNotification } from '../../hooks/useNotification';
 import { useGetTeachers } from '../../queries/Teacher';
 import type { Class, CreateClassPayload, Teacher } from '../../types';
@@ -52,6 +52,12 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
     const createMutation = useCreateClass(schoolId);
     const updateMutation = useUpdateClass(schoolId);
     const addSectionMutation = useAddSection(schoolId);
+    const removeSectionMutation = useRemoveSection(schoolId);
+    const assignTeacherMutation = useAssignClassTeacher(schoolId);
+
+    // Fetch all classes to determine which teachers are already class teachers
+    const { data: allClassesData } = useGetClasses(schoolId);
+    const allClasses = allClassesData?.data || [];
 
     // Fetch teachers for autocomplete (all active, no pagination limit)
     const { data: teachersData } = useGetTeachers(schoolId, { status: 'active', limit: 9999 } as any);
@@ -60,6 +66,40 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
         id: t.teacherId,
         label: `${t.firstName} ${t.lastName}`,
     }));
+
+    // Find all teachers currently assigned to any class section in the school
+    const assignedTeacherIds = useMemo(() => {
+        const ids = new Set<string>();
+        allClasses.forEach((cls: any) => {
+            cls.sections?.forEach((sec: any) => {
+                if (sec.classTeacherId) {
+                    ids.add(sec.classTeacherId);
+                }
+            });
+        });
+        return ids;
+    }, [allClasses]);
+
+    // Find teachers staged in newSections state
+    const stagedTeacherIds = useMemo(() => {
+        return new Set(newSections.map(s => s.teacherId).filter(Boolean));
+    }, [newSections]);
+
+    // Available options for a specific section (includes its current teacher if assigned)
+    const getAvailableTeacherOptionsForSection = (currentTeacherId?: string) => {
+        return teacherOptions.filter(
+            (option) =>
+                option.id === currentTeacherId ||
+                (!assignedTeacherIds.has(option.id) && !stagedTeacherIds.has(option.id))
+        );
+    };
+
+    // Available options for the staging of a new section
+    const availableTeacherOptionsForNewSection = useMemo(() => {
+        return teacherOptions.filter(
+            (option) => !assignedTeacherIds.has(option.id) && !stagedTeacherIds.has(option.id)
+        );
+    }, [teacherOptions, assignedTeacherIds, stagedTeacherIds]);
 
     useEffect(() => {
         if (editData) {
@@ -236,28 +276,81 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
 
                         {/* Existing Sections (edit mode) */}
                         {isEditMode && editData && editData.sections.length > 0 && (
-                            <Box>
-                                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
-                                    Existing Sections
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>
+                                    Existing Sections (Manage & Edit)
                                 </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                    {editData.sections.map((section) => {
-                                        const teacher = teachers.find((t) => t.teacherId === section.classTeacherId);
-                                        const label = teacher
-                                            ? `${section.name} · ${teacher.firstName} ${teacher.lastName}`
-                                            : section.name;
-                                        return (
-                                            <Chip
-                                                key={section.sectionId}
-                                                label={label}
-                                                color="primary"
-                                                variant="outlined"
-                                                size="small"
-                                                sx={{ borderRadius: '6px' }}
+                                {editData.sections.map((section) => {
+                                    const teacher = teachers.find((t) => t.teacherId === section.classTeacherId);
+                                    const currentTeacherOption = teacher
+                                        ? { id: teacher.teacherId, label: `${teacher.firstName} ${teacher.lastName}` }
+                                        : null;
+
+                                    return (
+                                        <Box
+                                            key={section.sectionId}
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1.5,
+                                                p: 1.5,
+                                                border: '1px solid rgba(255, 255, 255, 0.08)',
+                                                borderRadius: '8px',
+                                                background: 'rgba(255, 255, 255, 0.02)',
+                                            }}
+                                        >
+                                            <Typography sx={{ fontWeight: 600, minWidth: '80px' }}>
+                                                Section {section.name}
+                                            </Typography>
+                                            
+                                            <Autocomplete
+                                                options={getAvailableTeacherOptionsForSection(section.classTeacherId)}
+                                                getOptionLabel={(o) => o.label}
+                                                value={currentTeacherOption}
+                                                onChange={async (_, v) => {
+                                                    try {
+                                                        await assignTeacherMutation.mutateAsync({
+                                                            classId: editData.classId,
+                                                            sectionId: section.sectionId,
+                                                            data: { teacherId: v ? v.id : null as any },
+                                                        });
+                                                        notification.success(`Teacher assignment updated for Section ${section.name}`);
+                                                    } catch {
+                                                        notification.error("Failed to assign teacher");
+                                                    }
+                                                }}
+                                                isOptionEqualToValue={(o, v) => o.id === v.id}
+                                                sx={{ flex: 1 }}
+                                                renderInput={(params) => (
+                                                    <AppInput
+                                                        {...params}
+                                                        placeholder="Assign teacher (optional)"
+                                                    />
+                                                )}
                                             />
-                                        );
-                                    })}
-                                </Box>
+
+                                            <IconButton
+                                                color="error"
+                                                size="small"
+                                                onClick={async () => {
+                                                    if (window.confirm(`Are you sure you want to delete Section ${section.name}?`)) {
+                                                        try {
+                                                            await removeSectionMutation.mutateAsync({
+                                                                classId: editData.classId,
+                                                                sectionId: section.sectionId,
+                                                            });
+                                                            notification.success(`Section ${section.name} removed`);
+                                                        } catch {
+                                                            notification.error("Failed to delete section");
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </Box>
+                                    );
+                                })}
                             </Box>
                         )}
 
@@ -281,7 +374,7 @@ const ClassDialog: React.FC<ClassDialogProps> = ({ open, onClose, schoolId, edit
                                     sx={{ flex: 1, minWidth: 120 }}
                                 />
                                 <Autocomplete
-                                    options={teacherOptions}
+                                    options={availableTeacherOptionsForNewSection}
                                     getOptionLabel={(o) => o.label}
                                     value={newSectionTeacher}
                                     onChange={(_, v) => setNewSectionTeacher(v)}

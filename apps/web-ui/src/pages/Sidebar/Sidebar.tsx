@@ -2,7 +2,7 @@ import "./sidebar.scss";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { transformMenuData } from "./SidebarUtils";
+import { transformMenuData, DynamicIcon } from "./SidebarUtils";
 import {
   useGetSuperAdminMenus,
   useGetSchoolAdminMenus,
@@ -113,15 +113,28 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
 
   // Updated menu items logic based on role
   const getMenuItems = () => {
+    let items: SideBarMenuItemType[] = [];
     switch (role) {
       case "super_admin":
-        return transformMenuData(superAdminMenus?.data || [], role || undefined);
+        items = transformMenuData(superAdminMenus?.data || [], role || undefined);
+        break;
       case "sch_admin":
-        return transformMenuData(schoolAdminMenus?.data || [], role || undefined);
+        items = transformMenuData(schoolAdminMenus?.data || [], role || undefined);
+        if (items.length > 0 && !items.some(item => item.name.toLowerCase() === "promotion")) {
+          items.push({
+            name: "Promotion",
+            icon: <DynamicIcon icon="material-symbols:school-outline" />,
+            path: `/school-admin/promotion`,
+            isExpandable: false
+          });
+        }
+        break;
       default:
         // Handle all other school-specific roles
-        return transformMenuData(userMenus?.data || [], role || undefined);
+        items = transformMenuData(userMenus?.data || [], role || undefined);
+        break;
     }
+    return items;
   };
 
   const menuItems = getMenuItems();
@@ -292,22 +305,21 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
                         padding: "12px 16px",
                         cursor: "pointer",
                         display: "flex",
-                        alignItems: "center",
-                        whiteSpace: "nowrap",
+                        alignItems: "flex-start",
                       }}
                     >
                       <span
                         style={{
                           display: "flex",
-                          alignItems: "center",
+                          alignItems: "flex-start",
                           gap: "12px",
                           color: isSelected ? "white" : "#cbd5e1",
                           fontWeight: isSelected ? "600" : "500",
                           flex: 1,
                         }}
                       >
-                        {item.icon}
-                        <span style={{ flex: 1 }}>{item.name}</span>
+                        <span style={{ display: "flex", alignItems: "center", paddingTop: "2px", flexShrink: 0 }}>{item.icon}</span>
+                        <span style={{ flex: 1, wordBreak: "break-word" }}>{item.name}</span>
                       </span>
                       {item.isExpandable && (
                         <span
@@ -385,7 +397,7 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
                                 onMouseLeave={() => setHoveredSubItem(null)}
                                 style={{
                                   display: "flex",
-                                  alignItems: "center",
+                                  alignItems: "flex-start",
                                   gap: "12px",
                                   padding: "10px 16px",
                                   color: isSubItemActive ? "white" : "#94a3b8",
@@ -395,7 +407,6 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
                                   textDecoration: "none",
                                   transition: "all 0.2s ease",
                                   cursor: "pointer",
-                                  whiteSpace: "nowrap",
                                 }}
                               >
                                 <span
@@ -408,6 +419,8 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
                                     alignItems: "center",
                                     justifyContent: "center",
                                     width: "20px",
+                                    flexShrink: 0,
+                                    paddingTop: "2px",
                                   }}
                                 >
                                   {subItem.icon}
@@ -418,6 +431,7 @@ const Sidebar = ({ isOpen, onClose, role, onLogout }: SidebarProps) => {
                                     fontWeight: isSubItemActive ? "600" : "500",
                                     fontSize: "0.875rem",
                                     flex: 1,
+                                    wordBreak: "break-word",
                                   }}
                                 >
                                   {subItem.name}

@@ -35,6 +35,7 @@ const SchoolAdminLeaveRequests = lazy(() => import("../pages/SchoolAdmin/Leave/R
 const SchoolAdminTransport = lazy(() => import("../pages/SchoolAdmin/Transport/TransportRoutes"));
 const VehicleManagement = lazy(() => import("../pages/SchoolAdmin/Transport/VehicleManagement"));
 const DriverManagement = lazy(() => import("../pages/SchoolAdmin/Transport/DriverManagement"));
+const SchoolAdminPromotion = lazy(() => import("../pages/SchoolAdmin/Promotion"));
 
 // Fee Management Pages
 const FeeDashboard = lazy(() => import("../pages/SchoolAdmin/Fees/Dashboard"));
@@ -239,6 +240,7 @@ const MainRouters = () => {
 
           <Route path="/school-admin/location" element={<SchoolLocation />} />
           <Route path="/school-admin/profile" element={<SchoolAdminProfile />} />
+          <Route path="/school-admin/promotion" element={<SchoolAdminPromotion />} />
 
           {/* Fee Management Routes */}
           <Route path="/school-admin/fees/dashboard" element={<FeeDashboard />} />

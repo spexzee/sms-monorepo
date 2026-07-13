@@ -68,6 +68,20 @@ const studentSchema = new mongoose.Schema(
         signature: {
             type: String,
         },
+        academicYear: {
+            type: String,
+        },
+        promotionHistory: [
+            {
+                fromClass: { type: String },
+                fromSection: { type: String },
+                toClass: { type: String },
+                toSection: { type: String },
+                academicYear: { type: String },
+                promotedAt: { type: Date, default: Date.now },
+                promotedBy: { type: String },
+            }
+        ],
     },
     {
         timestamps: true,
