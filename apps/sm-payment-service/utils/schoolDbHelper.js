@@ -31,11 +31,11 @@ const getSchoolDbName = async (schoolId) => {
         try {
             SchoolModelInstance = superAdminDb.model("School");
         } catch (e) {
-            ModelInstance = superAdminDb.model("School", schoolsSchema);
+            SchoolModelInstance = superAdminDb.model("School", schoolsSchema);
         }
 
         // Find the school by schoolId
-        const school = await ModelInstance.findOne({ schoolId }).lean();
+        const school = await SchoolModelInstance.findOne({ schoolId }).lean();
 
         if (!school || !school.schoolDbName) {
             throw new Error(`School not found or schoolDbName missing for ID: ${schoolId}`);
