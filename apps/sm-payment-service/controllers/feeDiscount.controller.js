@@ -13,7 +13,7 @@ const _FeeDiscountSchema = new mongoose.Schema(
         description:        { type: String, default: '' },
         discountType:       { type: String, required: true, enum: ['percentage', 'flat'] },
         discountValue:      { type: Number, required: true, min: 0 },
-        appliesTo:          { type: String, required: true, enum: ['all_fees', 'specific_category'] },
+        appliesTo:          { type: String, required: true, enum: ['all_fees', 'tuition_only', 'specific_category'] },
         specificCategoryId: { type: String, default: null },
         isActive:           { type: Boolean, default: true },
         createdBy:          { type: String, default: 'system' }
@@ -30,7 +30,7 @@ const _StudentDiscountSchema = new mongoose.Schema(
         discountName:       { type: String, required: true },
         discountType:       { type: String, enum: ['percentage', 'flat'], required: true },
         discountValue:      { type: Number, required: true },
-        appliesTo:          { type: String, enum: ['all_fees', 'specific_category'], required: true },
+        appliesTo:          { type: String, enum: ['all_fees', 'tuition_only', 'specific_category'], required: true },
         specificCategoryId: { type: String, default: null },
         amountWaived:       { type: Number, default: 0 },
         feeAccountId:       { type: String, default: null },

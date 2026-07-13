@@ -16,7 +16,7 @@ const _FeeDiscountSchema = new mongoose.Schema(
         description:        { type: String, default: '' },
         discountType:       { type: String, required: true, enum: ['percentage', 'flat'] },
         discountValue:      { type: Number, required: true, min: 0 },
-        appliesTo:          { type: String, required: true, enum: ['all_fees', 'specific_category'] },
+        appliesTo:          { type: String, required: true, enum: ['all_fees', 'tuition_only', 'specific_category'] },
         specificCategoryId: { type: String, default: null },
         isActive:           { type: Boolean, default: true },
         createdBy:          { type: String, default: 'system' }
@@ -33,7 +33,7 @@ const _StudentDiscountSchema = new mongoose.Schema(
         discountName:       { type: String, required: true },
         discountType:       { type: String, enum: ['percentage', 'flat'], required: true },
         discountValue:      { type: Number, required: true },
-        appliesTo:          { type: String, enum: ['all_fees', 'specific_category'], required: true },
+        appliesTo:          { type: String, enum: ['all_fees', 'tuition_only', 'specific_category'], required: true },
         specificCategoryId: { type: String, default: null },
         amountWaived:       { type: Number, default: 0 },
         feeAccountId:       { type: String, default: null },
@@ -166,6 +166,33 @@ class StudentDiscountController {
                         message: `Fee category with ID '${targetCatId}' is not part of this student's fee structure.`
                     });
                 }
+            } else if (discountTemplate.appliesTo === 'tuition_only') {
+                let found = false;
+                account.feeBreakdown.forEach(item => {
+                    const name = (item.categoryName || '').toLowerCase();
+                    if (name === 'tuition' || name === 'tuition fee' || name === 'tuition fees') {
+                        found = true;
+                        const baseAmt = (item.originalAmount || 0) + (item.adjustments || 0);
+                        let itemDiscount = 0;
+                        if (discountTemplate.discountType === 'percentage') {
+                            itemDiscount = Math.round(baseAmt * (val / 100));
+                        } else {
+                            itemDiscount = val;
+                        }
+                        const maxAllowed = Math.max(0, baseAmt - (item.waivedAmount || 0) - (item.discountAmount || 0));
+                        const finalDiscount = Math.min(itemDiscount, maxAllowed);
+
+                        item.discountAmount = (item.discountAmount || 0) + finalDiscount;
+                        totalWaiverAdded += finalDiscount;
+                    }
+                });
+
+                if (!found) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Tuition fee category not found in this student's fee structure."
+                    });
+                }
             } else {
                 // appliesTo === 'all_fees'
                 if (discountTemplate.discountType === 'percentage') {
@@ -259,6 +286,20 @@ class StudentDiscountController {
                 if (record.appliesTo === 'specific_category') {
                     account.feeBreakdown.forEach(item => {
                         if (item.feeCategoryId === record.specificCategoryId) {
+                            const baseAmt = (item.originalAmount || 0) + (item.adjustments || 0);
+                            let itemDiscount = 0;
+                            if (record.discountType === 'percentage') {
+                                itemDiscount = Math.round(baseAmt * (val / 100));
+                            } else {
+                                itemDiscount = val;
+                            }
+                            item.discountAmount = Math.max(0, (item.discountAmount || 0) - itemDiscount);
+                        }
+                    });
+                } else if (record.appliesTo === 'tuition_only') {
+                    account.feeBreakdown.forEach(item => {
+                        const name = (item.categoryName || '').toLowerCase();
+                        if (name === 'tuition' || name === 'tuition fee' || name === 'tuition fees') {
                             const baseAmt = (item.originalAmount || 0) + (item.adjustments || 0);
                             let itemDiscount = 0;
                             if (record.discountType === 'percentage') {

@@ -29,8 +29,7 @@ class FeeAdjustmentController {
                 });
             }
 
-            // 1. Fetch student's running ledger account
-            let account = await StudentFeeAccountRepository.findByStudentAndYear(schoolId, studentId, '2026-2027');
+            let account = null;
             if (!account) {
                 const StudentFeeAssignmentModel = await StudentFeeAccountRepository.getModel(schoolId);
                 account = await StudentFeeAssignmentModel.findOne({ schoolId, studentId, isDeleted: false }).sort({ academicYear: -1 });
@@ -132,9 +131,7 @@ class FeeAdjustmentController {
                 query.studentId = studentId;
             }
 
-            const page = parseInt(req.query.page, 10) || 1;
-            const limit = parseInt(req.query.limit, 10) || 10;
-            const skip = (page - 1) * limit;
+            const { page = 1, limit = 10, skip = 0 } = req.pagination || {};
 
             const totalRecords = await TransactionModel.countDocuments(query);
             const data = await TransactionModel.find(query)

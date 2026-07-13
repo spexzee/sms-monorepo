@@ -24,7 +24,7 @@ const FeeDiscountSchema = new mongoose.Schema(
         appliesTo: {
             type: String,
             required: true,
-            enum: ['all_fees', 'specific_category']
+            enum: ['all_fees', 'tuition_only', 'specific_category']
         },
 
         // Only set when appliesTo === 'specific_category'
