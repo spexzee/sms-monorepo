@@ -200,10 +200,13 @@ export const useGetStudentFeeAccounts = (schoolId: string, studentId: string) =>
     });
 };
 
-export const useAssignFeeStructure = (schoolId: string, structureId: string) => {
+export const useAssignFeeStructure = (schoolId: string, structureId?: string) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (data: any) => useApi<ApiResponse<any>>("POST", `/api/school/${schoolId}/fees/assignments/structures/${structureId}/assign`, data),
+        mutationFn: (data: any) => {
+            const finalStructureId = structureId || data?.feeStructureId;
+            return useApi<ApiResponse<any>>("POST", `/api/school/${schoolId}/fees/assignments/structures/${finalStructureId}/assign`, data);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: feeKeys.assignments(schoolId) });
         }

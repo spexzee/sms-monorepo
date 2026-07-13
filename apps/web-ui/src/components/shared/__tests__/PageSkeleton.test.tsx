@@ -1,5 +1,4 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import PageSkeleton from '../PageSkeleton';
 
 describe('PageSkeleton', () => {
