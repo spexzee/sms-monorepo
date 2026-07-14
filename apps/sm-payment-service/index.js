@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const { matchOrigin } = require('@sms/shared/utils');
 
 const { connectDB, ensureDbConnection } = require('./configs/db');
 const { commonRateLimiter } = require('@sms/shared/middlewares');
@@ -26,7 +27,7 @@ const allowedUrls = process.env.ALLOWED_ORIGINS
 const corsOptions = {
     origin: (origin, callback) => {
         // Allow requests with no origin (mobile apps, Postman, etc.)
-        if (!origin || allowedUrls.includes(origin)) {
+        if (!origin || allowedUrls.some(url => matchOrigin(origin, url))) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));

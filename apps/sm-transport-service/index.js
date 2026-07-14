@@ -10,6 +10,7 @@ const vehicleRoutes = require('./routes/vehicle.routes');
 const { commonRateLimiter } = require('@sms/shared/middlewares');
 const { initSocket } = require('./utils/socketManager');
 const { initCronJobs } = require('./utils/cronJobs');
+const { matchOrigin } = require('@sms/shared/utils');
 const http = require('http');
 
 const app = express();
@@ -21,7 +22,7 @@ const allowedUrls = process.env.ALLOWED_ORIGINS
 
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedUrls.includes(origin)) {
+        if (!origin || allowedUrls.some(url => matchOrigin(origin, url))) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
