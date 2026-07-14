@@ -9,4 +9,5 @@ module.exports = {
   ...emailStyleTemplates,
   ...pagination,
   ...require("./activityLogger"),
+  ...require("./originMatcher"),
 };

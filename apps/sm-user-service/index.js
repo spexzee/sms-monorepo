@@ -24,6 +24,7 @@ const testEmailRoutes = require('./routes/testEmail.routes');
 const roleRoutes = require('./routes/role.routes');
 const { initCronJobs } = require('./utils/cronJobs');
 const { commonRateLimiter } = require('@sms/shared/middlewares');
+const { matchOrigin } = require('@sms/shared/utils');
 
 const app = express();
 
@@ -35,7 +36,7 @@ const allowedUrls = process.env.ALLOWED_ORIGINS
 const corsOptions = {
     origin: (origin, callback) => {
         // Allow requests with no origin (mobile apps, Postman, etc.)
-        if (!origin || allowedUrls.includes(origin)) {
+        if (!origin || allowedUrls.some(url => matchOrigin(origin, url))) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
