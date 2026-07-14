@@ -10,6 +10,7 @@ import TokenService from "../queries/token/tokenService";
 const LoginPage = lazy(() => import("../pages/LoginPage"));
 const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
 const UnauthorizedPage = lazy(() => import("../pages/UnauthorizedPage"));
+const CreateSuperAdminSecret = lazy(() => import("../pages/SuperAdmin/CreateSuperAdminSecret"));
 
 // Super Admin Pages
 const SuperAdminDashboard = lazy(() => import("../pages/SuperAdmin/Dashboard"));
@@ -158,6 +159,7 @@ const MainRouters = () => {
         />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/secret-setup-super-admin" element={<CreateSuperAdminSecret />} />
 
         {/* Super Admin Routes */}
         <Route element={<ProtectedRoute allowedRoles={["super_admin"]} />}>
