@@ -3,9 +3,17 @@ import { Box, Typography, Container } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AppButton } from '../components/shared/AppButton';
+import { useAuth } from '../context/AuthContext';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <Box
@@ -187,23 +195,36 @@ const NotFoundPage: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
           >
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-              <AppButton
-                variant="outlined"
-                color="primary"
-                onClick={() => navigate(-1)}
-                sx={{ px: 4, py: 1.5, minWidth: 150 }}
-              >
-                Go Back
-              </AppButton>
-              <AppButton
-                variant="contained"
-                color="primary"
-                onClick={() => navigate('/')}
-                sx={{ px: 4, py: 1.5, minWidth: 150 }}
-              >
-                Go Home
-              </AppButton>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <AppButton
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => navigate(-1)}
+                  sx={{ px: 4, py: 1.5, minWidth: 150 }}
+                >
+                  Go Back
+                </AppButton>
+                <AppButton
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate('/')}
+                  sx={{ px: 4, py: 1.5, minWidth: 150 }}
+                >
+                  Go Home
+                </AppButton>
+              </Box>
+              {isAuthenticated && (
+                <AppButton
+                  variant="text"
+                  color="error"
+                  onClick={handleLogout}
+                  startIcon={<LogoutIcon />}
+                  sx={{ px: 4, py: 1, minWidth: 150 }}
+                >
+                  Logout
+                </AppButton>
+              )}
             </Box>
           </motion.div>
         </Box>
