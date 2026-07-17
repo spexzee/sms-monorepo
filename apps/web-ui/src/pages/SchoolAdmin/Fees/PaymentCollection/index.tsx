@@ -31,6 +31,8 @@ import type { StudentFeeAccount } from '../../../../types/fee.types';
 const CollectPayment: React.FC = () => {
     const schoolId = TokenService.getSchoolId() || '';
     const [searchQuery, setSearchQuery] = useState('');
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
     const [selectedStudent, setSelectedStudent] = useState<StudentFeeAccount | null>(null);
 
     // Collect configurations state
@@ -48,7 +50,7 @@ const CollectPayment: React.FC = () => {
         severity: 'success'
     });
 
-    const { data: studentsData, isLoading: isLoadingStudents } = useGetFeeAssignments(schoolId, { search: searchQuery });
+    const { data: studentsData, isLoading: isLoadingStudents } = useGetFeeAssignments(schoolId, { search: searchQuery, page, limit });
     const collectPaymentMutation = useRecordPayment(schoolId);
 
     const formatCurrency = (val: number) => {
@@ -340,7 +342,10 @@ const CollectPayment: React.FC = () => {
                             size="small"
                             placeholder="Search by student name or roll number..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setPage(1);
+                            }}
                             sx={{ width: { xs: '100%', sm: 320 } }}
                         />
                     </Box>
@@ -348,7 +353,7 @@ const CollectPayment: React.FC = () => {
                         columns={[
                             { name: 'Student Name', selector: (row: StudentFeeAccount) => row.studentName, cell: (row: StudentFeeAccount) => <Typography variant="body2" fontWeight={600}>{row.studentName}</Typography> },
                             { name: 'Class', selector: (row: StudentFeeAccount) => row.className },
-                            { name: 'Structure Assigned', selector: (row: StudentFeeAccount) => row.feeStructureName },
+                            // { name: 'Structure Assigned', selector: (row: StudentFeeAccount) => row.feeStructureName },
                             { name: 'Net Dues Balance', selector: (row: StudentFeeAccount) => row.totalBalance, cell: (row: StudentFeeAccount) => <Typography variant="body2" fontWeight={700} color={row.totalBalance > 0 ? 'error.main' : 'success.main'}>{formatCurrency(row.totalBalance)}</Typography> },
                             {
                                 name: 'Action',
@@ -362,6 +367,14 @@ const CollectPayment: React.FC = () => {
                         data={students}
                         isLoading={isLoadingStudents}
                         emptyMessage="No student fee accounts found."
+                        paginationServer={true}
+                        paginationTotalRows={studentsData?.pagination?.totalRecords || studentsData?.pagination?.total || 0}
+                        onChangePage={(newPage) => setPage(newPage)}
+                        onChangeRowsPerPage={(newLimit) => {
+                            setLimit(newLimit);
+                            setPage(1);
+                        }}
+                        paginationPerPage={limit}
                     />
                 </CardContent>
             </Card>

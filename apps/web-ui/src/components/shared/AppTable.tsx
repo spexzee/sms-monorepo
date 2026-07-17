@@ -30,6 +30,12 @@ export interface AppTableProps<T> {
   selectableRows?: boolean;
   onSelectedRowsChange?: (selected: { selectedRows: T[] }) => void;
   actions?: React.ReactNode;
+  pagination?: boolean;
+  paginationPerPage?: number;
+  paginationServer?: boolean;
+  paginationTotalRows?: number;
+  onChangePage?: (page: number) => void;
+  onChangeRowsPerPage?: (currentRowsPerPage: number, currentPage: number) => void;
 }
 
 export const AppTable = <T,>({
@@ -42,6 +48,12 @@ export const AppTable = <T,>({
   selectableRows = false,
   onSelectedRowsChange,
   actions,
+  pagination = true,
+  paginationPerPage = 10,
+  paginationServer = false,
+  paginationTotalRows = 0,
+  onChangePage,
+  onChangeRowsPerPage,
 }: AppTableProps<T>) => {
   const transformedColumns: TableColumn<T>[] = columns.map((col) => ({
     name: col.name,
@@ -106,6 +118,13 @@ export const AppTable = <T,>({
           highlightOnHover
           pointerOnHover={!!onRowClick}
           responsive
+          pagination={pagination}
+          paginationPerPage={paginationPerPage}
+          paginationServer={paginationServer}
+          paginationTotalRows={paginationTotalRows}
+          onChangePage={onChangePage}
+          onChangeRowsPerPage={onChangeRowsPerPage}
+          paginationRowsPerPageOptions={[10, 20, 50, 100]}
         />
       </Paper>
     </Box>

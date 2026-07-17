@@ -281,7 +281,7 @@ class FeePaymentService {
         const originalTxn = await TransactionModel.findOne({
             schoolId,
             transactionId: paymentId,
-            type: "payment",
+            paymentType: "payment",
             isDeleted: false
         });
 

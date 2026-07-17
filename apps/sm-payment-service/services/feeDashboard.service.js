@@ -42,7 +42,7 @@ class FeeDashboardService {
                     totalOutstanding: { $sum: "$totalBalance" },
                     totalDefaulters: {
                         $sum: {
-                            $cond: [{ $eq: ["$accountStatus", "overdue"] }, 1, 0]
+                            $cond: [{ $gt: ["$totalBalance", 0] }, 1, 0]
                         }
                     }
                 }
@@ -64,15 +64,15 @@ class FeeDashboardService {
             {
                 $match: {
                     schoolId,
-                    type: "payment",
-                    createdAt: { $gte: startOfToday },
+                    paymentType: "payment",
+                    paymentDate: { $gte: startOfToday },
                     isDeleted: false
                 }
             },
             {
                 $group: {
                     _id: null,
-                    total: { $sum: "$amount" }
+                    total: { $sum: "$totalAmountReceived" }
                 }
             }
         ]);
@@ -139,15 +139,15 @@ class FeeDashboardService {
             {
                 $match: {
                     schoolId,
-                    type: "payment",
-                    createdAt: { $gte: startOfToday },
+                    paymentType: "payment",
+                    paymentDate: { $gte: startOfToday },
                     isDeleted: false
                 }
             },
             {
                 $group: {
                     _id: "$paymentMode",
-                    total: { $sum: "$amount" },
+                    total: { $sum: "$totalAmountReceived" },
                     count: { $sum: 1 }
                 }
             }
@@ -161,7 +161,7 @@ class FeeDashboardService {
      */
     async getMonthlyCollection(schoolId, academicYear) {
         const TransactionModel = await FeePaymentRepository.getModel(schoolId);
-        const query = { schoolId, type: "payment", isDeleted: false };
+        const query = { schoolId, paymentType: "payment", isDeleted: false };
         if (academicYear) query.academicYear = academicYear;
 
         return await TransactionModel.aggregate([
@@ -172,7 +172,7 @@ class FeeDashboardService {
                         month: { $month: "$paymentDate" },
                         year: { $year: "$paymentDate" }
                     },
-                    totalAmount: { $sum: "$amount" },
+                    totalAmount: { $sum: "$totalAmountReceived" },
                     transactionCount: { $sum: 1 }
                 }
             },
@@ -229,7 +229,7 @@ class FeeDashboardService {
      */
     async exportCollectionToExcel(schoolId, filters, responseStream) {
         const TransactionModel = await FeePaymentRepository.getModel(schoolId);
-        const query = { schoolId, type: "payment", isDeleted: false };
+        const query = { schoolId, paymentType: "payment", isDeleted: false };
         
         if (filters.startDate || filters.endDate) {
             query.paymentDate = {};

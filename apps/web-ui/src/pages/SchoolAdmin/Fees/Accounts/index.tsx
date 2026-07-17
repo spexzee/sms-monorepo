@@ -41,9 +41,11 @@ import type { StudentFeeAccount } from '../../../../types/fee.types';
 const FeeAccounts: React.FC = () => {
     const schoolId = TokenService.getSchoolId() || '';
     const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
     const [selectedAccount, setSelectedAccount] = useState<StudentFeeAccount | null>(null);
 
-    const { data: assignmentsData, isLoading } = useGetFeeAssignments(schoolId, { search: searchTerm });
+    const { data: assignmentsData, isLoading } = useGetFeeAssignments(schoolId, { search: searchTerm, page, limit });
     const { data: paymentsData } = useGetPaymentsByStudent(schoolId, selectedAccount?.studentId || '');
 
     const freezeMutation = useFreezeAccount(schoolId, selectedAccount?.assignmentId || '');
@@ -137,10 +139,10 @@ const FeeAccounts: React.FC = () => {
             name: 'Class',
             selector: (row: StudentFeeAccount) => row.className,
         },
-        {
-            name: 'Structure Name',
-            selector: (row: StudentFeeAccount) => row.feeStructureName,
-        },
+        // {
+        //     name: 'Structure Name',
+        //     selector: (row: StudentFeeAccount) => row.feeStructureName,
+        // },
         {
             name: 'Outstanding Balance',
             selector: (row: StudentFeeAccount) => row.totalBalance,
@@ -358,7 +360,10 @@ const FeeAccounts: React.FC = () => {
                             size="small"
                             placeholder="Search student ledger..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setPage(1);
+                            }}
                             sx={{ width: { xs: '100%', sm: 300 } }}
                         />
                     </Box>
@@ -367,6 +372,14 @@ const FeeAccounts: React.FC = () => {
                         data={assignments}
                         isLoading={isLoading}
                         emptyMessage="No assigned student running ledgers found."
+                        paginationServer={true}
+                        paginationTotalRows={assignmentsData?.pagination?.totalRecords || assignmentsData?.pagination?.total || 0}
+                        onChangePage={(newPage) => setPage(newPage)}
+                        onChangeRowsPerPage={(newLimit) => {
+                            setLimit(newLimit);
+                            setPage(1);
+                        }}
+                        paginationPerPage={limit}
                     />
                 </CardContent>
             </Card>

@@ -69,6 +69,7 @@ const PeriodAttendance = () => {
     const { data: studentsData, isLoading: studentsLoading } = useGetStudents(schoolId, {
         class: selectedClass,
         section: selectedSection || undefined,
+        limit: 500,
     });
     const students = studentsData?.data || [];
 

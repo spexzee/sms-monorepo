@@ -1,8 +1,11 @@
 export interface Pagination {
-  total: number;
-  page: number;
+  total?: number;
+  totalRecords?: number;
+  page?: number;
+  currentPage?: number;
   limit: number;
-  totalPages: number;
+  totalPages?: number;
+  pages?: number;
 }
 
 // Common API Response wrapper
