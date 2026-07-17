@@ -11,6 +11,7 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import TokenService from '../../../../queries/token/tokenService';
 import {
     useGetFeeDashboardStats,
@@ -22,10 +23,17 @@ import { AppTable } from '../../../../components/shared/AppTable';
 
 const FeeDashboard: React.FC = () => {
     const schoolId = TokenService.getSchoolId() || '';
-    const { data: statsData, isLoading: isLoadingStats } = useGetFeeDashboardStats(schoolId);
-    const { data: paymentsData, isLoading: isLoadingPayments } = useGetPayments(schoolId, { limit: 5 });
-    const { data: classwiseData } = useGetClasswiseCollectionReport(schoolId);
-    const { data: todayCollectionData } = useGetTodayCollectionReport(schoolId);
+    const { data: statsData, isLoading: isLoadingStats, refetch: refetchStats } = useGetFeeDashboardStats(schoolId);
+    const { data: paymentsData, isLoading: isLoadingPayments, refetch: refetchPayments } = useGetPayments(schoolId, { limit: 5 });
+    const { data: classwiseData, refetch: refetchClasswise } = useGetClasswiseCollectionReport(schoolId);
+    const { data: todayCollectionData, refetch: refetchToday } = useGetTodayCollectionReport(schoolId);
+
+    const handleRefresh = () => {
+        refetchStats();
+        refetchPayments();
+        refetchClasswise();
+        refetchToday();
+    };
 
     const stats = statsData?.data;
     const recentPayments = paymentsData?.data || [];
@@ -65,10 +73,10 @@ const FeeDashboard: React.FC = () => {
         },
         {
             name: 'Amount',
-            selector: (row: any) => row.amount,
+            selector: (row: any) => row.totalAmountReceived,
             cell: (row: any) => (
                 <Typography variant="body2" fontWeight={700} color="success.main">
-                    {formatCurrency(row.amount)}
+                    {formatCurrency(row.totalAmountReceived)}
                 </Typography>
             )
         }
@@ -86,6 +94,9 @@ const FeeDashboard: React.FC = () => {
                     </Typography>
                 </Box>
                 <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
+                    <Button variant="outlined" color="primary" onClick={handleRefresh} startIcon={<RefreshIcon />} sx={{ borderRadius: 2 }}>
+                        Refresh
+                    </Button>
                     <Button variant="contained" color="primary" component={Link} to="/school-admin/fees/payments" startIcon={<ReceiptIcon />} sx={{ borderRadius: 2 }}>
                         Collect Payment
                     </Button>
@@ -179,26 +190,33 @@ const FeeDashboard: React.FC = () => {
                             <Typography variant="h6" fontWeight={700} color="#1e293b" sx={{ mb: 3 }}>
                                 Collections By Class
                             </Typography>
-                            <Stack spacing={2.5}>
+                            <Grid container spacing={2} sx={{ maxHeight: 400, overflowY: 'auto', pr: 1 }}>
                                 {classwiseStats.length === 0 ? (
-                                    <Typography variant="body2" color="text.secondary">No structure assignments recorded yet.</Typography>
+                                    <Grid size={{ xs: 12 }}>
+                                        <Typography variant="body2" color="text.secondary">No structure assignments recorded yet.</Typography>
+                                    </Grid>
                                 ) : (
-                                    classwiseStats.slice(0, 5).map((item: any) => {
+                                    classwiseStats.map((item: any) => {
                                         const percent = item.totalExpected > 0 ? (item.totalCollected / item.totalExpected) * 100 : 0;
                                         return (
-                                            <Box key={item._id}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                                    <Typography variant="body2" fontWeight={600} color="text.primary">{item.className}</Typography>
-                                                    <Typography variant="body2" fontWeight={700} color="text.secondary">
-                                                        {formatCurrency(item.totalCollected)} / {formatCurrency(item.totalExpected)} ({Math.round(percent)}%)
+                                            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item._id}>
+                                                <Box sx={{ p: 1.5, border: '1px solid #f1f5f9', borderRadius: 2, height: '100%' }}>
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                                        <Typography variant="body2" fontWeight={600} color="text.primary">{item.className}</Typography>
+                                                        <Typography variant="caption" fontWeight={700} color="text.secondary">
+                                                            {Math.round(percent)}%
+                                                        </Typography>
+                                                    </Box>
+                                                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                                                        {formatCurrency(item.totalCollected)} / {formatCurrency(item.totalExpected)}
                                                     </Typography>
+                                                    <LinearProgress variant="determinate" value={percent} sx={{ height: 6, borderRadius: 3, bgcolor: '#f1f5f9' }} />
                                                 </Box>
-                                                <LinearProgress variant="determinate" value={percent} sx={{ height: 8, borderRadius: 4, bgcolor: '#f1f5f9' }} />
-                                            </Box>
+                                            </Grid>
                                         );
                                     })
                                 )}
-                            </Stack>
+                            </Grid>
                         </CardContent>
                     </Card>
                 </Grid>

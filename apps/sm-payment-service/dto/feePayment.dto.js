@@ -31,14 +31,15 @@ class RefundPaymentDTO {
 
 class FeePaymentResponseDTO {
     constructor(model) {
-        this.paymentId = model.paymentId || model.transactionId;
-        this.transactionId = model.transactionId;
+        this.paymentId = model.paymentId;
+        this.transactionId = model.paymentId;
         this.studentId = model.studentId;
         this.studentName = model.studentName;
+        this.academicYear = model.academicYear;
         this.paymentMode = model.paymentMode;
         this.paymentDate = model.paymentDate;
         this.referenceNumber = model.referenceNumber;
-        this.totalAmountReceived = model.amount;
+        this.totalAmountReceived = model.totalAmountReceived;
         this.status = model.status || 'completed';
         this.receiptId = model.receiptId;
     }

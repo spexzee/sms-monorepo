@@ -260,6 +260,7 @@ export const useRecordPayment = (schoolId: string) => {
             if (variables.accountId) {
                 queryClient.invalidateQueries({ queryKey: feeKeys.assignment(schoolId, variables.accountId) });
             }
+            queryClient.invalidateQueries({ queryKey: feeKeys.assignments(schoolId) });
             queryClient.invalidateQueries({ queryKey: feeKeys.dashboardStats(schoolId) });
         }
     });

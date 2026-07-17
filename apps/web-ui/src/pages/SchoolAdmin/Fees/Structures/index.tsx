@@ -42,17 +42,12 @@ import {
     usePublishFeeStructure,
     useAssignFeeStructure
 } from '../../../../queries/Fee';
+import { useGetClasses } from '../../../../queries/Class';
 import { AppTable } from '../../../../components/shared/AppTable';
 import type { FeeStructure, FeeCategory } from '../../../../types/fee.types';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 
-const CLASS_OPTIONS = [
-    { value: 'class-6', label: 'Class 6' },
-    { value: 'class-7', label: 'Class 7' },
-    { value: 'class-8', label: 'Class 8' },
-    { value: 'class-9', label: 'Class 9' },
-    { value: 'class-10', label: 'Class 10' }
-];
+// Dynamic class options will be mapped from useGetClasses
 
 const FREQUENCY_OPTIONS = [
     { value: 'one_time', label: 'One Time' },
@@ -97,6 +92,12 @@ const FeeStructures: React.FC = () => {
 
     const { data: structuresData, isLoading } = useGetFeeStructures(schoolId, { search: searchTerm });
     const { data: categoriesData } = useGetFeeCategories(schoolId);
+    const { data: classesData } = useGetClasses(schoolId);
+
+    const CLASS_OPTIONS = (classesData?.data || []).map((c: any) => ({
+        value: c.classId,
+        label: c.name
+    }));
 
     const createMutation = useCreateFeeStructure(schoolId);
     const updateMutation = useUpdateFeeStructure(schoolId);
@@ -283,13 +284,13 @@ const FeeStructures: React.FC = () => {
         { name: 'Total Fee Amount', selector: (row: FeeStructure) => row.totalFeeAmount, cell: (row: FeeStructure) => <Typography variant="body2" fontWeight={700} color="success.main">{formatCurrency(row.totalFeeAmount)}</Typography> },
         {
             name: 'Applicable Classes',
-            selector: (row: FeeStructure) => row.applicableClasses.join(', '),
             cell: (row: FeeStructure) => (
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {row.applicableClasses.map((cls, idx) => (
-                        <Chip key={idx} label={cls.toUpperCase()} size="small" variant="outlined" />
-                    ))}
-                </Box>
+                <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                    {row.applicableClasses.map(c => {
+                        const classLabel = CLASS_OPTIONS.find((opt: any) => opt.value === c)?.label || c;
+                        return <Chip key={c} label={classLabel} size="small" variant="outlined" />;
+                    })}
+                </Stack>
             )
         },
         {
@@ -676,9 +677,10 @@ const FeeStructures: React.FC = () => {
                         Students who already have a ledger for <strong>{assignTarget?.academicYear}</strong> will be skipped automatically.
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
-                        {assignTarget?.applicableClasses?.map((cls) => (
-                            <Chip key={cls} label={cls.toUpperCase()} color="primary" variant="outlined" size="small" />
-                        ))}
+                        {assignTarget?.applicableClasses?.map((cls) => {
+                            const classLabel = CLASS_OPTIONS.find((opt: any) => opt.value === cls)?.label || cls;
+                            return <Chip key={cls} label={classLabel} color="primary" variant="outlined" size="small" />;
+                        })}
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>

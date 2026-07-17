@@ -351,7 +351,11 @@ const getAllStudents = async (req, res) => {
 
     // If teacher role, filter by their assigned classes only
     if (userRole === "teacher" && userClasses && userClasses.length > 0) {
-      query.class = { $in: userClasses };
+      const allowedCombinations = userClasses.map(uc => {
+        const [cls, sec] = uc.split('#');
+        return sec ? { class: cls, section: sec } : { class: cls };
+      });
+      query.$or = allowedCombinations;
     }
 
     const sectionIdFilter = section || req.query.sectionId;
@@ -361,7 +365,7 @@ const getAllStudents = async (req, res) => {
       if (typeof classIdFilter === 'string' && classIdFilter.includes(',')) {
         const classArray = classIdFilter.split(",").map((c) => c.trim());
         query.class = { $in: classArray };
-      } else if (!query.class) {
+      } else {
         query.class = classIdFilter;
       }
     }

@@ -37,7 +37,7 @@ class FeePaymentRepository extends BaseRepository {
         const { studentId, paymentMode, startDate, endDate } = filters;
         const { limit = 10, skip = 0 } = pagination || {};
 
-        const query = { schoolId, type: 'payment', isDeleted: false };
+        const query = { schoolId, paymentType: 'payment', isDeleted: false };
         if (studentId) query.studentId = studentId;
         if (paymentMode) query.paymentMode = paymentMode;
 
@@ -65,7 +65,7 @@ class FeePaymentRepository extends BaseRepository {
         return await FeeTransaction.find({
             schoolId,
             studentId,
-            type: 'payment',
+            paymentType: 'payment',
             isDeleted: false
         }).sort({ createdAt: -1 }).lean();
     }
@@ -79,8 +79,8 @@ class FeePaymentRepository extends BaseRepository {
             {
                 $match: {
                     schoolId,
-                    type: 'payment',
-                    createdAt: { $gte: startOfToday },
+                    paymentType: 'payment',
+                    paymentDate: { $gte: startOfToday },
                     isDeleted: false
                 }
             },

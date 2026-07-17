@@ -41,16 +41,11 @@ import {
     useApplyDiscountToStudent,
     useCreateAdjustment
 } from '../../../../queries/Fee';
+import { useGetClasses } from '../../../../queries/Class';
 import { AppTable } from '../../../../components/shared/AppTable';
 import type { StudentFeeAccount } from '../../../../types/fee.types';
 
-const CLASS_OPTIONS = [
-    { value: 'class-6', label: 'Class 6' },
-    { value: 'class-7', label: 'Class 7' },
-    { value: 'class-8', label: 'Class 8' },
-    { value: 'class-9', label: 'Class 9' },
-    { value: 'class-10', label: 'Class 10' }
-];
+// Dynamic class options will be mapped from useGetClasses
 
 const ADJUSTMENT_TYPES = [
     { value: 'charge', label: 'Additional Charge' },
@@ -89,6 +84,9 @@ const FeeAssignments: React.FC = () => {
     // Details Drawer
     const [activeDrawerAccount, setActiveDrawerAccount] = useState<StudentFeeAccount | null>(null);
 
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+
     const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
         message: '',
@@ -100,9 +98,15 @@ const FeeAssignments: React.FC = () => {
     };
 
     // Queries & Mutations
-    const { data: assignmentsData, isLoading } = useGetFeeAssignments(schoolId, { academicYear, classId, status, search });
+    const { data: assignmentsData, isLoading } = useGetFeeAssignments(schoolId, { academicYear, classId, status, search, page, limit });
     const { data: structuresData } = useGetFeeStructures(schoolId);
     const { data: discountsData } = useGetDiscounts(schoolId);
+    const { data: classesData } = useGetClasses(schoolId);
+
+    const CLASS_OPTIONS = (classesData?.data || []).map((c: any) => ({
+        value: c.classId,
+        label: c.name
+    }));
 
     const assignMutation = useAssignFeeStructure(schoolId, assignTargetStructureId);
     const applyDiscountMutation = useApplyDiscountToStudent(schoolId);
@@ -220,10 +224,10 @@ const FeeAssignments: React.FC = () => {
             name: 'Class',
             selector: (row: StudentFeeAccount) => row.className,
         },
-        {
-            name: 'Structure Assigned',
-            selector: (row: StudentFeeAccount) => row.feeStructureName,
-        },
+        // {
+        //     name: 'Structure Assigned',
+        //     selector: (row: StudentFeeAccount) => row.feeStructureName || 'Unassigned',
+        // },
         {
             name: 'Outstanding Balance',
             selector: (row: StudentFeeAccount) => row.totalBalance,
@@ -309,7 +313,10 @@ const FeeAssignments: React.FC = () => {
                         <Grid size={{ xs: 12, sm: 3 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Academic Year</InputLabel>
-                                <Select value={academicYear} label="Academic Year" onChange={(e) => setAcademicYear(e.target.value)}>
+                                <Select value={academicYear} label="Academic Year" onChange={(e) => {
+                                    setAcademicYear(e.target.value);
+                                    setPage(1);
+                                }}>
                                     <MenuItem value="2026-2027">2026-2027</MenuItem>
                                     <MenuItem value="2027-2028">2027-2028</MenuItem>
                                 </Select>
@@ -318,7 +325,10 @@ const FeeAssignments: React.FC = () => {
                         <Grid size={{ xs: 12, sm: 3 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Class</InputLabel>
-                                <Select value={classId} label="Class" onChange={(e) => setClassId(e.target.value)}>
+                                <Select value={classId} label="Class" onChange={(e) => {
+                                    setClassId(e.target.value);
+                                    setPage(1);
+                                }}>
                                     <MenuItem value="">All Classes</MenuItem>
                                     {CLASS_OPTIONS.map(c => (
                                         <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
@@ -329,7 +339,10 @@ const FeeAssignments: React.FC = () => {
                         <Grid size={{ xs: 12, sm: 3 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Ledger Status</InputLabel>
-                                <Select value={status} label="Ledger Status" onChange={(e) => setStatus(e.target.value)}>
+                                <Select value={status} label="Ledger Status" onChange={(e) => {
+                                    setStatus(e.target.value);
+                                    setPage(1);
+                                }}>
                                     <MenuItem value="">All Statuses</MenuItem>
                                     <MenuItem value="active">Active Dues</MenuItem>
                                     <MenuItem value="paid">Fully Paid</MenuItem>
@@ -345,7 +358,10 @@ const FeeAssignments: React.FC = () => {
                                 size="small"
                                 label="Search Student..."
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    setPage(1);
+                                }}
                             />
                         </Grid>
                     </Grid>
@@ -359,6 +375,14 @@ const FeeAssignments: React.FC = () => {
                         data={assignments}
                         isLoading={isLoading}
                         emptyMessage="No assigned student structures found."
+                        paginationServer={true}
+                        paginationTotalRows={assignmentsData?.pagination?.totalRecords || assignmentsData?.pagination?.total || 0}
+                        onChangePage={(newPage) => setPage(newPage)}
+                        onChangeRowsPerPage={(newLimit) => {
+                            setLimit(newLimit);
+                            setPage(1);
+                        }}
+                        paginationPerPage={limit}
                     />
                 </CardContent>
             </Card>
