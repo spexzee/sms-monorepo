@@ -37,8 +37,7 @@ async function addAdmin() {
   });
 
   console.log("School Admin Created Successfully!");
-  console.log(`Email: ${admin.email}`);
-  console.log(`Password: password123`);
+  console.log("Admin credentials created (see script source / secrets manager for details).");
   
   process.exit(0);
 }

@@ -23,9 +23,7 @@ async function patchEmails() {
   const mainConnection = await mongoose.connect(MONGO_URI);
   console.log("Connected to SuperAdmin DB");
 
-  // 1. Clear existing registry for demo safety (optional, but good to reset)
-  console.log("Clearing EmailRegistry...");
-  await EmailRegistryModel.deleteMany({});
+
 
   const registryEntries = [];
 
@@ -116,6 +114,9 @@ async function patchEmails() {
     }
   }
 
+  // 1. Clear existing registry for demo safety (optional, but good to reset)
+  console.log("Clearing EmailRegistry...");
+  await EmailRegistryModel.deleteMany({});
   await EmailRegistryModel.insertMany(uniqueEntries);
 
   console.log("EmailRegistry patched successfully!");

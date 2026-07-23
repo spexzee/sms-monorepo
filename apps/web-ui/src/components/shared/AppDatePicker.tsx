@@ -46,6 +46,7 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
         )}
         <DatePicker
           {...props}
+          format="dd-MM-yyyy"
           closeOnSelect
           slotProps={{
             textField: {

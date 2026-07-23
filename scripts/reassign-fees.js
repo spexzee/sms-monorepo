@@ -67,7 +67,10 @@ async function doReassign() {
 
 function generateToken() {
     const jwt = require("jsonwebtoken");
-    const JWT_SECRET = process.env.JWT_SECRET || "sm-dynamic-demo-secret-key-2026";
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+        throw new Error("JWT_SECRET must be set to mint an admin token");
+    }
     return jwt.sign({
         userId: "USR-55C28DEB",
         email: "schooladmin@demoschool.com",

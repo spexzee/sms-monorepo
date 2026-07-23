@@ -41,8 +41,13 @@ async function patchTeacherClasses() {
       }
     }
 
+    const totalPairs = classes.reduce((sum, c) => sum + (c.sections?.length || 0), 0);
+    const targetCount = Math.min(3, totalPairs);
+    let attempts = 0;
+    const maxAttempts = 200;
     // Assign 2 more random sections to make it realistic
-    while (assignedClassSectionPairs.length < 3) {
+    while (assignedClassSectionPairs.length < targetCount && attempts < maxAttempts) {
+      attempts++;
       const randomClass = classes[Math.floor(Math.random() * classes.length)];
       if (randomClass.sections && randomClass.sections.length > 0) {
           const randomSection = randomClass.sections[Math.floor(Math.random() * randomClass.sections.length)];

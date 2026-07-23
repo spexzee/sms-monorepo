@@ -33,7 +33,7 @@ import { AppInput } from '../../../components/shared/AppInput';
 import { AppSelect } from '../../../components/shared/AppSelect';
 import { AppButton } from '../../../components/shared/AppButton';
 import { AppDatePicker } from '../../../components/shared/AppDatePicker';
-import { format } from 'date-fns';
+import { format, parse, isValid, startOfDay } from 'date-fns';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -127,6 +127,7 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
     const [editingExam, setEditingExam] = useState<any>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [examToDelete, setExamToDelete] = useState<any>(null);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const updateExam = useUpdateExam(schoolId);
     const deleteExam = useDeleteExam(schoolId);
@@ -144,6 +145,7 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
             gradingSystemId: typeof exam.gradingSystemId === 'object' ? exam.gradingSystemId._id : exam.gradingSystemId,
             status: exam.status || 'draft'
         });
+        setErrors({});
         setOpen(true);
     };
 
@@ -165,6 +167,29 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
     };
 
     const handleSubmit = () => {
+        const newErrors: Record<string, string> = {};
+        if (!formData.name?.trim()) newErrors.name = 'Name is required';
+        if (!formData.startDate) newErrors.startDate = 'Commencement Date is required';
+        if (!formData.endDate) newErrors.endDate = 'Conclusion Date is required';
+
+        if (formData.startDate) {
+            const start = parse(formData.startDate, 'yyyy-MM-dd', new Date());
+            if (!isValid(start)) newErrors.startDate = 'Invalid date';
+            else if (start < startOfDay(new Date())) newErrors.startDate = 'Cannot be in the past';
+        }
+        if (formData.endDate) {
+            const end = parse(formData.endDate, 'yyyy-MM-dd', new Date());
+            if (!isValid(end)) newErrors.endDate = 'Invalid date';
+            else if (end < startOfDay(new Date())) newErrors.endDate = 'Cannot be in the past';
+        }
+        if (formData.startDate && formData.endDate && !newErrors.startDate && !newErrors.endDate) {
+            const start = parse(formData.startDate, 'yyyy-MM-dd', new Date());
+            const end = parse(formData.endDate, 'yyyy-MM-dd', new Date());
+            if (end < start) newErrors.endDate = 'End date cannot be before start date';
+        }
+
+        setErrors(newErrors);
+        if (Object.keys(newErrors).length > 0) return;
         if (editingExam) {
             updateExam.mutate({ examId: editingExam.examId, data: formData }, {
                 onSuccess: () => {
@@ -445,19 +470,23 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <AppDatePicker
                                     label="Commencement Date"
-                                    value={formData.startDate ? new Date(formData.startDate) : null}
+                                    value={formData.startDate ? parse(formData.startDate, 'yyyy-MM-dd', new Date()) : null}
                                     onChange={(date) => setFormData({ ...formData, startDate: date ? format(date, 'yyyy-MM-dd') : '' })}
-                                    maxDate={formData.endDate ? new Date(formData.endDate) : undefined}
+                                    maxDate={formData.endDate ? parse(formData.endDate, 'yyyy-MM-dd', new Date()) : undefined}
                                     disablePast
+                                    error={!!errors.startDate}
+                                    helperText={errors.startDate}
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <AppDatePicker
                                     label="Conclusion Date"
-                                    value={formData.endDate ? new Date(formData.endDate) : null}
+                                    value={formData.endDate ? parse(formData.endDate, 'yyyy-MM-dd', new Date()) : null}
                                     onChange={(date) => setFormData({ ...formData, endDate: date ? format(date, 'yyyy-MM-dd') : '' })}
-                                    minDate={formData.startDate ? new Date(formData.startDate) : undefined}
+                                    minDate={formData.startDate ? parse(formData.startDate, 'yyyy-MM-dd', new Date()) : undefined}
                                     disablePast
+                                    error={!!errors.endDate}
+                                    helperText={errors.endDate}
                                 />
                             </Grid>
                         </Grid>

@@ -36,7 +36,7 @@ import { AppInput } from '../../../components/shared/AppInput';
 import { AppSelect } from '../../../components/shared/AppSelect';
 import { AppButton } from '../../../components/shared/AppButton';
 import { AppDatePicker } from '../../../components/shared/AppDatePicker';
-import { format } from 'date-fns';
+import { format, parse, isValid, startOfDay } from 'date-fns';
 import { useAuth } from '../../../context/AuthContext';
 import {
     useCreateExamTerm,
@@ -143,6 +143,23 @@ const ExamTermsTab = ({ schoolId }: { schoolId: string }) => {
         if (!formData.academicYear?.trim()) newErrors.academicYear = 'Academic year is required';
         if (!formData.startDate) newErrors.startDate = 'Start date is required';
         if (!formData.endDate) newErrors.endDate = 'End date is required';
+
+        if (formData.startDate) {
+            const start = parse(formData.startDate, 'yyyy-MM-dd', new Date());
+            if (!isValid(start)) newErrors.startDate = 'Invalid date';
+            else if (start < startOfDay(new Date())) newErrors.startDate = 'Cannot be in the past';
+        }
+        if (formData.endDate) {
+            const end = parse(formData.endDate, 'yyyy-MM-dd', new Date());
+            if (!isValid(end)) newErrors.endDate = 'Invalid date';
+            else if (end < startOfDay(new Date())) newErrors.endDate = 'Cannot be in the past';
+        }
+        if (formData.startDate && formData.endDate && !newErrors.startDate && !newErrors.endDate) {
+            const start = parse(formData.startDate, 'yyyy-MM-dd', new Date());
+            const end = parse(formData.endDate, 'yyyy-MM-dd', new Date());
+            if (end < start) newErrors.endDate = 'End date cannot be before start date';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -246,18 +263,18 @@ const ExamTermsTab = ({ schoolId }: { schoolId: string }) => {
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <AppDatePicker
                                 label="Start Date"
-                                value={formData.startDate ? new Date(formData.startDate) : null}
+                                value={formData.startDate ? parse(formData.startDate, 'yyyy-MM-dd', new Date()) : null}
                                 onChange={(date) => handleFieldChange('startDate', date ? format(date, 'yyyy-MM-dd') : '')}
-                                maxDate={formData.endDate ? new Date(formData.endDate) : undefined}
+                                maxDate={formData.endDate ? parse(formData.endDate, 'yyyy-MM-dd', new Date()) : undefined}
                                 disablePast
                                 error={!!errors.startDate}
                                 helperText={errors.startDate}
                             />
                             <AppDatePicker
                                 label="End Date"
-                                value={formData.endDate ? new Date(formData.endDate) : null}
+                                value={formData.endDate ? parse(formData.endDate, 'yyyy-MM-dd', new Date()) : null}
                                 onChange={(date) => handleFieldChange('endDate', date ? format(date, 'yyyy-MM-dd') : '')}
-                                minDate={formData.startDate ? new Date(formData.startDate) : undefined}
+                                minDate={formData.startDate ? parse(formData.startDate, 'yyyy-MM-dd', new Date()) : undefined}
                                 disablePast
                                 error={!!errors.endDate}
                                 helperText={errors.endDate}
