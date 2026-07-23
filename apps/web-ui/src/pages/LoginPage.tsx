@@ -345,9 +345,10 @@ const LoginPage: React.FC = () => {
                   <Typography variant="body2" sx={{ color: '#64748B' }}>
                     Don't have an account? <Typography
                       variant="body2"
-                      component="span"
+                      component="a"
+                      href="mailto:smsystem.2000@gmail.com"
                       color="primary"
-                      sx={{ fontWeight: 700, cursor: 'pointer' }}
+                      sx={{ fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}
                     >
                       Contact Admin
                     </Typography>
