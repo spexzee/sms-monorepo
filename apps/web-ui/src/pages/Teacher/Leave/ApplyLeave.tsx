@@ -21,7 +21,7 @@ import { AppButton } from '../../../components/shared/AppButton';
 import { AppDatePicker } from '../../../components/shared/AppDatePicker';
 import { AppCard } from '../../../components/shared/AppCard';
 import { AppSection } from '../../../components/shared/AppSection';
-import { format, isValid } from 'date-fns';
+import { format, isValid, parse, startOfDay } from 'date-fns';
 
 const leaveTypes: { value: LeaveType; label: string; description: string }[] = [
     { value: 'casual', label: 'Casual Leave', description: 'For personal matters' },
@@ -60,13 +60,20 @@ const TeacherApplyLeave: React.FC = () => {
     const validate = () => {
         const newErrors: Record<string, string> = {};
         if (!formData.leaveType) newErrors.leaveType = 'Please select leave type';
-        if (!formData.startDate || !isValid(new Date(formData.startDate))) newErrors.startDate = 'Please enter a valid start date';
-        if (!formData.endDate || !isValid(new Date(formData.endDate))) newErrors.endDate = 'Please enter a valid end date';
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
-        if (isValid(start) && isValid(end) && end < start) {
+        
+        const start = formData.startDate ? parse(formData.startDate, 'yyyy-MM-dd', new Date()) : null;
+        const end = formData.endDate ? parse(formData.endDate, 'yyyy-MM-dd', new Date()) : null;
+        
+        if (!start || !isValid(start)) newErrors.startDate = 'Please enter a valid start date';
+        else if (start < startOfDay(new Date())) newErrors.startDate = 'Cannot be in the past';
+        
+        if (!end || !isValid(end)) newErrors.endDate = 'Please enter a valid end date';
+        else if (end < startOfDay(new Date())) newErrors.endDate = 'Cannot be in the past';
+        
+        if (start && end && isValid(start) && isValid(end) && end < start) {
             newErrors.endDate = 'End date cannot be before start date';
         }
+        
         if (!formData.reason.trim()) newErrors.reason = 'Please provide a reason';
         if (formData.reason.trim().length < 10) newErrors.reason = 'Reason must be at least 10 characters';
 
@@ -152,8 +159,10 @@ const TeacherApplyLeave: React.FC = () => {
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <AppDatePicker
                                             label="Start Date"
-                                            value={formData.startDate ? new Date(formData.startDate) : null}
+                                            value={formData.startDate ? parse(formData.startDate, 'yyyy-MM-dd', new Date()) : null}
                                             onChange={(date) => handleChange('startDate', (date && isValid(date)) ? format(date, 'yyyy-MM-dd') : '')}
+                                            maxDate={formData.endDate ? parse(formData.endDate, 'yyyy-MM-dd', new Date()) : undefined}
+                                            disablePast
                                             error={!!errors.startDate}
                                             helperText={errors.startDate}
                                         />
@@ -161,8 +170,10 @@ const TeacherApplyLeave: React.FC = () => {
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <AppDatePicker
                                             label="End Date"
-                                            value={formData.endDate ? new Date(formData.endDate) : null}
+                                            value={formData.endDate ? parse(formData.endDate, 'yyyy-MM-dd', new Date()) : null}
                                             onChange={(date) => handleChange('endDate', (date && isValid(date)) ? format(date, 'yyyy-MM-dd') : '')}
+                                            minDate={formData.startDate ? parse(formData.startDate, 'yyyy-MM-dd', new Date()) : undefined}
+                                            disablePast
                                             error={!!errors.endDate}
                                             helperText={errors.endDate}
                                         />
