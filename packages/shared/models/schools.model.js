@@ -38,6 +38,29 @@ const schoolSchema = new mongoose.Schema(
         schoolWebsite: {
             type: String,
         },
+        schoolTagline: {
+            type: String,
+        },
+        // Subdomain for school-specific login page branding
+        // e.g. "greenvalley" → greenvalley.spexzee.me
+        subdomain: {
+            type: String,
+            unique: true,
+            sparse: true, // allows multiple schools to have null subdomain
+            lowercase: true,
+            trim: true,
+        },
+        // Per-school login page theme configuration
+        loginTheme: {
+            primaryColor:    { type: String }, // hex e.g. "#6366F1"
+            backgroundColor: { type: String }, // left panel bg
+            textColor:       { type: String }, // heading text color
+            accentColor:     { type: String }, // gradient accent
+            fontFamily:      { type: String }, // e.g. "Inter"
+            // When set, this HTML string replaces the ENTIRE login page
+            // (both left and right panels). Only used for advanced custom branding.
+            customLoginHtml: { type: String },
+        },
         location: {
             latitude: {
                 type: Number,

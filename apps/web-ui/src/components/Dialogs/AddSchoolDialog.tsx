@@ -43,6 +43,16 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
     schoolEmail: "",
     schoolContact: "",
     schoolWebsite: "",
+    schoolTagline: "",
+    subdomain: "",
+    loginTheme: {
+      primaryColor: "",
+      backgroundColor: "",
+      textColor: "",
+      accentColor: "",
+      fontFamily: "",
+      customLoginHtml: "",
+    },
     attendanceSettings: {
       mode: 'simple',
       workingHours: { start: '08:00', end: '16:00' },
@@ -57,6 +67,19 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
   const createMutation = useCreateSchool();
   const updateMutation = useUpdateSchool();
 
+  /**
+   * PhoneInput stores only the 10-digit number (no country code).
+   * Stored values in the DB may be in formats like:
+   *   "+919876543210", "09876543210", "9876543210"
+   * This helper strips down to the last 10 digits.
+   */
+  const stripPhonePrefix = (phone?: string): string => {
+    if (!phone) return '';
+    const digitsOnly = phone.replace(/\D/g, '');
+    // Return last 10 digits
+    return digitsOnly.slice(-10);
+  };
+
   // Populate form when editData changes
   useEffect(() => {
     if (editData) {
@@ -66,8 +89,18 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
         schoolLogo: editData.schoolLogo || '',
         schoolAddress: editData.schoolAddress || '',
         schoolEmail: editData.schoolEmail || '',
-        schoolContact: editData.schoolContact || '',
+        schoolContact: stripPhonePrefix(editData.schoolContact),
         schoolWebsite: editData.schoolWebsite || '',
+        schoolTagline: editData.schoolTagline || '',
+        subdomain: editData.subdomain || '',
+        loginTheme: {
+          primaryColor: editData.loginTheme?.primaryColor || '',
+          backgroundColor: editData.loginTheme?.backgroundColor || '',
+          textColor: editData.loginTheme?.textColor || '',
+          accentColor: editData.loginTheme?.accentColor || '',
+          fontFamily: editData.loginTheme?.fontFamily || '',
+          customLoginHtml: editData.loginTheme?.customLoginHtml || '',
+        },
         attendanceSettings: editData.attendanceSettings || {
           mode: 'simple',
           workingHours: { start: '08:00', end: '16:00' },
@@ -85,6 +118,16 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
         schoolEmail: '',
         schoolContact: '',
         schoolWebsite: '',
+        schoolTagline: '',
+        subdomain: '',
+        loginTheme: {
+          primaryColor: '',
+          backgroundColor: '',
+          textColor: '',
+          accentColor: '',
+          fontFamily: '',
+          customLoginHtml: '',
+        },
         attendanceSettings: {
           mode: 'simple',
           workingHours: { start: '08:00', end: '16:00' },
@@ -121,6 +164,12 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
     ) {
       newErrors.schoolEmail = "Invalid email format";
     }
+    if (
+      formData.subdomain &&
+      !/^[a-z0-9-]+$/.test(formData.subdomain)
+    ) {
+      newErrors.subdomain = 'Subdomain: only lowercase letters, numbers, and hyphens (e.g., greenvalley)';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -140,8 +189,16 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
             schoolLogo: formData.schoolLogo,
             schoolAddress: formData.schoolAddress,
             schoolEmail: formData.schoolEmail,
-            schoolContact: formData.schoolContact,
+            // Re-add +91 prefix if the field has a 10-digit value
+            schoolContact: formData.schoolContact
+              ? formData.schoolContact.startsWith('+')
+                ? formData.schoolContact
+                : `+91${formData.schoolContact}`
+              : '',
             schoolWebsite: formData.schoolWebsite,
+            schoolTagline: formData.schoolTagline,
+            subdomain: formData.subdomain || undefined,
+            loginTheme: formData.loginTheme,
             attendanceSettings: formData.attendanceSettings,
           },
         });
@@ -165,6 +222,16 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
       schoolEmail: '',
       schoolContact: '',
       schoolWebsite: '',
+      schoolTagline: '',
+      subdomain: '',
+      loginTheme: {
+        primaryColor: '',
+        backgroundColor: '',
+        textColor: '',
+        accentColor: '',
+        fontFamily: '',
+        customLoginHtml: '',
+      },
       attendanceSettings: {
         mode: 'simple',
         workingHours: { start: '08:00', end: '16:00' },
@@ -296,6 +363,137 @@ const SchoolDialog: React.FC<SchoolDialogProps> = ({
               label="Website"
               value={formData.schoolWebsite}
               onChange={handleChange}
+            />
+
+            <Divider sx={{ my: 1 }} />
+
+            <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1.2 }}>
+              Subdomain &amp; Login Branding
+            </Typography>
+
+            <AppInput
+              name="subdomain"
+              label="Subdomain Slug"
+              labelHint="Used for school-specific login page"
+              value={(formData as any).subdomain || ''}
+              onChange={handleChange}
+              error={!!errors.subdomain}
+              helperText={errors.subdomain || 'e.g. "greenvalley" → greenvalley.spexzee.me'}
+              placeholder="greenvalley"
+            />
+
+            <AppInput
+              name="schoolTagline"
+              label="School Tagline"
+              labelHint="Shown on the login page left panel"
+              value={(formData as any).schoolTagline || ''}
+              onChange={handleChange}
+              placeholder="Excellence in Education since 1992"
+            />
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B', mb: 0.5, display: 'block' }}>
+                  Primary Color
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <input
+                    type="color"
+                    value={(formData as any).loginTheme?.primaryColor || '#6366F1'}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      loginTheme: { ...(prev as any).loginTheme, primaryColor: e.target.value },
+                    }))}
+                    style={{ width: 40, height: 36, border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                  />
+                  <AppInput
+                    size="small"
+                    value={(formData as any).loginTheme?.primaryColor || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      loginTheme: { ...(prev as any).loginTheme, primaryColor: e.target.value },
+                    }))}
+                    placeholder="#6366F1"
+                  />
+                </Box>
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B', mb: 0.5, display: 'block' }}>
+                  Background Color
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <input
+                    type="color"
+                    value={(formData as any).loginTheme?.backgroundColor || '#EEF2FF'}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      loginTheme: { ...(prev as any).loginTheme, backgroundColor: e.target.value },
+                    }))}
+                    style={{ width: 40, height: 36, border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                  />
+                  <AppInput
+                    size="small"
+                    value={(formData as any).loginTheme?.backgroundColor || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      loginTheme: { ...(prev as any).loginTheme, backgroundColor: e.target.value },
+                    }))}
+                    placeholder="#EEF2FF"
+                  />
+                </Box>
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ color: '#64748B', mb: 0.5, display: 'block' }}>
+                  Accent Color
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <input
+                    type="color"
+                    value={(formData as any).loginTheme?.accentColor || '#6366F1'}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      loginTheme: { ...(prev as any).loginTheme, accentColor: e.target.value },
+                    }))}
+                    style={{ width: 40, height: 36, border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                  />
+                  <AppInput
+                    size="small"
+                    value={(formData as any).loginTheme?.accentColor || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      loginTheme: { ...(prev as any).loginTheme, accentColor: e.target.value },
+                    }))}
+                    placeholder="#818CF8"
+                  />
+                </Box>
+              </Box>
+
+              <AppInput
+                name="fontFamily"
+                label="Font Family"
+                value={(formData as any).loginTheme?.fontFamily || ''}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  loginTheme: { ...(prev as any).loginTheme, fontFamily: e.target.value },
+                }))}
+                placeholder="Inter"
+                size="small"
+              />
+            </Box>
+
+            <AppInput
+              label="Custom Login HTML (optional)"
+              labelHint="When set, replaces the ENTIRE login page with this HTML"
+              value={(formData as any).loginTheme?.customLoginHtml || ''}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                loginTheme: { ...(prev as any).loginTheme, customLoginHtml: e.target.value },
+              }))}
+              multiline
+              rows={5}
+              placeholder={`<!DOCTYPE html><html>...</html>\n\nUse window.parent.postMessage({ type: 'SMS_LOGIN', email, password }) to submit login.`}
             />
 
             <Divider sx={{ my: 1 }} />
