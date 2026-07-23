@@ -238,9 +238,70 @@ const updateSchoolById = async (req, res) => {
   }
 };
 
+// Get school by subdomain (PUBLIC — no auth required)
+// Used by the login page to fetch school branding before user logs in
+const getSchoolBySubdomain = async (req, res) => {
+  try {
+    const { subdomain } = req.params;
+
+    if (!subdomain) {
+      return res.status(400).json({
+        success: false,
+        message: "Subdomain is required",
+      });
+    }
+
+    const school = await School.findOne(
+      { subdomain: subdomain.toLowerCase().trim() },
+      // Projection: only return public-safe fields
+      {
+        schoolName: 1,
+        schoolLogo: 1,
+        schoolAddress: 1,
+        schoolEmail: 1,
+        schoolContact: 1,
+        schoolWebsite: 1,
+        schoolTagline: 1,
+        loginTheme: 1,
+        status: 1,
+        _id: 0,
+      }
+    );
+
+    if (!school) {
+      return res.status(404).json({
+        success: false,
+        schoolNotFound: true,
+        message: `No school found for subdomain: ${subdomain}`,
+      });
+    }
+
+    if (school.status === "inactive") {
+      return res.status(403).json({
+        success: false,
+        message: "This school is currently inactive.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "School branding fetched successfully",
+      data: school,
+    });
+  } catch (error) {
+    console.error("Error fetching school by subdomain:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching school branding",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createSchool,
   getSchoolById,
   getAllSchools,
   updateSchoolById,
+  getSchoolBySubdomain,
 };

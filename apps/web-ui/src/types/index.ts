@@ -18,6 +18,15 @@ export interface ApiResponse<T> {
 }
 
 // School Types
+export interface SchoolLoginTheme {
+  primaryColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  accentColor?: string;
+  fontFamily?: string;
+  customLoginHtml?: string;
+}
+
 export interface School {
   schoolId: string;
   schoolName: string;
@@ -28,6 +37,9 @@ export interface School {
   schoolEmail?: string;
   schoolContact?: string;
   schoolWebsite?: string;
+  schoolTagline?: string;
+  subdomain?: string;
+  loginTheme?: SchoolLoginTheme;
   location?: {
     latitude: number;
     longitude: number;
@@ -55,6 +67,16 @@ export interface CreateSchoolPayload {
   schoolEmail?: string;
   schoolContact?: string;
   schoolWebsite?: string;
+  schoolTagline?: string;
+  subdomain?: string;
+  loginTheme?: {
+    primaryColor?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    accentColor?: string;
+    fontFamily?: string;
+    customLoginHtml?: string;
+  };
   attendanceSettings?: {
     mode?: "simple" | "period_wise" | "check_in_out";
     workingHours?: {
@@ -75,6 +97,16 @@ export interface UpdateSchoolPayload {
   schoolEmail?: string;
   schoolContact?: string;
   schoolWebsite?: string;
+  schoolTagline?: string;
+  subdomain?: string;
+  loginTheme?: {
+    primaryColor?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    accentColor?: string;
+    fontFamily?: string;
+    customLoginHtml?: string;
+  };
   location?: {
     latitude: number;
     longitude: number;
