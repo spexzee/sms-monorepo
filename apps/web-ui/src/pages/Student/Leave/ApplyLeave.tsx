@@ -155,6 +155,8 @@ const ApplyLeave: React.FC = () => {
                                             label="Start Date"
                                             value={formData.startDate ? new Date(formData.startDate) : null}
                                             onChange={(date) => handleChange('startDate', (date && isValid(date)) ? format(date, 'yyyy-MM-dd') : '')}
+                                            maxDate={formData.endDate ? new Date(formData.endDate) : undefined}
+                                            disablePast
                                             error={!!errors.startDate}
                                             helperText={errors.startDate}
                                         />
@@ -164,6 +166,8 @@ const ApplyLeave: React.FC = () => {
                                             label="End Date"
                                             value={formData.endDate ? new Date(formData.endDate) : null}
                                             onChange={(date) => handleChange('endDate', (date && isValid(date)) ? format(date, 'yyyy-MM-dd') : '')}
+                                            minDate={formData.startDate ? new Date(formData.startDate) : undefined}
+                                            disablePast
                                             error={!!errors.endDate}
                                             helperText={errors.endDate}
                                         />

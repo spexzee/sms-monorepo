@@ -447,6 +447,8 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
                                     label="Commencement Date"
                                     value={formData.startDate ? new Date(formData.startDate) : null}
                                     onChange={(date) => setFormData({ ...formData, startDate: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                    maxDate={formData.endDate ? new Date(formData.endDate) : undefined}
+                                    disablePast
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
@@ -454,6 +456,8 @@ const ExamListView = ({ schoolId, onSelect }: { schoolId: string, onSelect: (exa
                                     label="Conclusion Date"
                                     value={formData.endDate ? new Date(formData.endDate) : null}
                                     onChange={(date) => setFormData({ ...formData, endDate: date ? format(date, 'yyyy-MM-dd') : '' })}
+                                    minDate={formData.startDate ? new Date(formData.startDate) : undefined}
+                                    disablePast
                                 />
                             </Grid>
                         </Grid>

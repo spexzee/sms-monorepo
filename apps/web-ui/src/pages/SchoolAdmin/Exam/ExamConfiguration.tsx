@@ -248,6 +248,8 @@ const ExamTermsTab = ({ schoolId }: { schoolId: string }) => {
                                 label="Start Date"
                                 value={formData.startDate ? new Date(formData.startDate) : null}
                                 onChange={(date) => handleFieldChange('startDate', date ? format(date, 'yyyy-MM-dd') : '')}
+                                maxDate={formData.endDate ? new Date(formData.endDate) : undefined}
+                                disablePast
                                 error={!!errors.startDate}
                                 helperText={errors.startDate}
                             />
@@ -255,6 +257,8 @@ const ExamTermsTab = ({ schoolId }: { schoolId: string }) => {
                                 label="End Date"
                                 value={formData.endDate ? new Date(formData.endDate) : null}
                                 onChange={(date) => handleFieldChange('endDate', date ? format(date, 'yyyy-MM-dd') : '')}
+                                minDate={formData.startDate ? new Date(formData.startDate) : undefined}
+                                disablePast
                                 error={!!errors.endDate}
                                 helperText={errors.endDate}
                             />
